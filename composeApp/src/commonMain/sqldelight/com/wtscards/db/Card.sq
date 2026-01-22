@@ -33,5 +33,8 @@ DELETE FROM CardEntity;
 deleteById:
 DELETE FROM CardEntity WHERE sportsCardProId = ?;
 
+deleteByIds:
+DELETE FROM CardEntity WHERE sportsCardProId IN ?;
+
 count:
 SELECT COUNT(*) FROM CardEntity;

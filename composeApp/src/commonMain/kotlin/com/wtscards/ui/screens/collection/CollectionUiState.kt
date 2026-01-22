@@ -15,5 +15,8 @@ data class CollectionUiState(
     val displayedCards: List<Card> = emptyList(),
     val searchQuery: String = "",
     val sortOption: SortOption = SortOption.PRICE_DESC,
-    val error: String? = null
+    val error: String? = null,
+    val isEditMode: Boolean = false,
+    val selectedCardIds: Set<String> = emptySet(),
+    val showDeleteConfirmDialog: Boolean = false
 )

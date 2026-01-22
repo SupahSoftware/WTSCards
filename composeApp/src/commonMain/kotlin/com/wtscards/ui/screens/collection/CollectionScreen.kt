@@ -22,10 +22,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +40,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +59,7 @@ import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
+import com.wtscards.ui.theme.errorColor
 import com.wtscards.ui.theme.successColor
 import com.wtscards.ui.theme.textPrimary
 import com.wtscards.ui.theme.textSecondary
@@ -70,56 +79,115 @@ fun CollectionScreen(
     onSearchQueryChanged: (String) -> Unit,
     onSortOptionChanged: (SortOption) -> Unit,
     onRefresh: () -> Unit,
+    onToggleEditMode: () -> Unit,
+    onToggleCardSelection: (String) -> Unit,
+    onDeleteClick: () -> Unit,
+    onDeleteConfirm: () -> Unit,
+    onDeleteCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp)
-    ) {
-        // Search and Sort Row
-        SearchAndSortRow(
-            searchQuery = uiState.searchQuery,
-            sortOption = uiState.sortOption,
-            onSearchQueryChanged = onSearchQueryChanged,
-            onSortOptionChanged = onSortOptionChanged
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Content
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp)
         ) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(color = accentPrimary)
-                }
-                uiState.error != null -> {
-                    Text(
-                        text = uiState.error,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                uiState.displayedCards.isEmpty() -> {
-                    val message = if (uiState.searchQuery.isNotBlank()) {
-                        "No cards match your search"
-                    } else {
-                        "Your collection is empty"
+            // Search and Sort Row
+            SearchAndSortRow(
+                searchQuery = uiState.searchQuery,
+                sortOption = uiState.sortOption,
+                isEditMode = uiState.isEditMode,
+                onSearchQueryChanged = onSearchQueryChanged,
+                onSortOptionChanged = onSortOptionChanged,
+                onToggleEditMode = onToggleEditMode
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Content
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(color = accentPrimary)
                     }
-                    Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = textSecondary
-                    )
-                }
-                else -> {
-                    CardList(
-                        cards = uiState.displayedCards,
-                        searchQuery = uiState.searchQuery,
-                        sortOption = uiState.sortOption
-                    )
+                    uiState.error != null -> {
+                        Text(
+                            text = uiState.error,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    uiState.displayedCards.isEmpty() -> {
+                        val message = if (uiState.searchQuery.isNotBlank()) {
+                            "No cards match your search"
+                        } else {
+                            "Your collection is empty"
+                        }
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = textSecondary
+                        )
+                    }
+                    else -> {
+                        CardList(
+                            cards = uiState.displayedCards,
+                            searchQuery = uiState.searchQuery,
+                            sortOption = uiState.sortOption,
+                            isEditMode = uiState.isEditMode,
+                            selectedCardIds = uiState.selectedCardIds,
+                            onToggleCardSelection = onToggleCardSelection
+                        )
+                    }
                 }
             }
+        }
+
+        // Delete FAB - shown in edit mode
+        if (uiState.isEditMode) {
+            FloatingActionButton(
+                onClick = onDeleteClick,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(24.dp),
+                containerColor = errorColor
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete selected",
+                    tint = textPrimary
+                )
+            }
+        }
+
+        // Delete confirmation dialog
+        if (uiState.showDeleteConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = onDeleteCancel,
+                title = {
+                    Text(
+                        text = "Delete Cards",
+                        color = textPrimary
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Are you sure you want to delete ${uiState.selectedCardIds.size} item${if (uiState.selectedCardIds.size != 1) "s" else ""}?",
+                        color = textSecondary
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = onDeleteConfirm) {
+                        Text("Delete", color = errorColor)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDeleteCancel) {
+                        Text("Cancel", color = textSecondary)
+                    }
+                },
+                containerColor = bgSurface
+            )
         }
     }
 }
@@ -128,8 +196,10 @@ fun CollectionScreen(
 private fun SearchAndSortRow(
     searchQuery: String,
     sortOption: SortOption,
+    isEditMode: Boolean,
     onSearchQueryChanged: (String) -> Unit,
-    onSortOptionChanged: (SortOption) -> Unit
+    onSortOptionChanged: (SortOption) -> Unit,
+    onToggleEditMode: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -177,6 +247,28 @@ private fun SearchAndSortRow(
                 .weight(1f)
                 .fillMaxHeight()
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Edit Button
+        Box(
+            modifier = Modifier
+                .size(SearchRowHeight)
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (isEditMode) errorColor else accentPrimary)
+                .then(Modifier.padding(4.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            IconButton(
+                onClick = onToggleEditMode
+            ) {
+                Icon(
+                    imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
+                    contentDescription = if (isEditMode) "Exit edit mode" else "Edit",
+                    tint = textPrimary
+                )
+            }
+        }
     }
 }
 
@@ -264,7 +356,10 @@ private fun SortOption.isAscending(): Boolean = when (this) {
 private fun CardList(
     cards: List<Card>,
     searchQuery: String,
-    sortOption: SortOption
+    sortOption: SortOption,
+    isEditMode: Boolean,
+    selectedCardIds: Set<String>,
+    onToggleCardSelection: (String) -> Unit
 ) {
     // Key the list state to filters so it resets when they change
     val listState = remember(searchQuery, sortOption) {
@@ -282,7 +377,7 @@ private fun CardList(
                     var lastY = 0f
                     var velocity = 0f
                     var lastTime = System.currentTimeMillis()
-                    
+
                     awaitPointerEventScope {
                         while (true) {
                             val event = awaitPointerEvent()
@@ -298,11 +393,11 @@ private fun CardList(
                                         val currentTime = System.currentTimeMillis()
                                         val delta = lastY - currentY
                                         val timeDelta = (currentTime - lastTime).coerceAtLeast(1)
-                                        
+
                                         velocity = delta / timeDelta * 2000 // pixels per second
                                         lastY = currentY
                                         lastTime = currentTime
-                                        
+
                                         coroutineScope.launch {
                                             listState.scrollBy(delta)
                                         }
@@ -334,10 +429,15 @@ private fun CardList(
                 items = cards,
                 key = { it.sportsCardProId }
             ) { card ->
-                CardRow(card = card)
+                CardRow(
+                    card = card,
+                    isEditMode = isEditMode,
+                    isSelected = card.sportsCardProId in selectedCardIds,
+                    onToggleSelection = { onToggleCardSelection(card.sportsCardProId) }
+                )
             }
         }
-        
+
         androidx.compose.foundation.VerticalScrollbar(
             adapter = androidx.compose.foundation.rememberScrollbarAdapter(listState),
             modifier = Modifier
@@ -353,7 +453,12 @@ private fun CardList(
 }
 
 @Composable
-private fun CardRow(card: Card) {
+private fun CardRow(
+    card: Card,
+    isEditMode: Boolean,
+    isSelected: Boolean,
+    onToggleSelection: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -362,6 +467,21 @@ private fun CardRow(card: Card) {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Checkbox (shown in edit mode)
+        if (isEditMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onToggleSelection() },
+                modifier = Modifier.size(24.dp),
+                colors = CheckboxDefaults.colors(
+                    checkedColor = accentPrimary,
+                    uncheckedColor = textTertiary,
+                    checkmarkColor = bgSurface
+                )
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+
         // Card Info (takes remaining space)
         Column(modifier = Modifier.weight(1f)) {
             Text(

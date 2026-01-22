@@ -78,6 +78,10 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
         queries.deleteAll()
     }
 
+    suspend fun deleteCardsByIds(ids: List<String>) = withContext(Dispatchers.IO) {
+        queries.deleteByIds(ids)
+    }
+
     suspend fun getCount(): Long = withContext(Dispatchers.IO) {
         queries.count().executeAsOne()
     }

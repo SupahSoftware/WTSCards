@@ -91,4 +91,47 @@ class CollectionViewModel(
             }
         }
     }
+
+    fun toggleEditMode() {
+        uiState = if (uiState.isEditMode) {
+            uiState.copy(isEditMode = false, selectedCardIds = emptySet())
+        } else {
+            uiState.copy(isEditMode = true)
+        }
+    }
+
+    fun toggleCardSelection(cardId: String) {
+        val newSelection = if (cardId in uiState.selectedCardIds) {
+            uiState.selectedCardIds - cardId
+        } else {
+            uiState.selectedCardIds + cardId
+        }
+        uiState = uiState.copy(selectedCardIds = newSelection)
+    }
+
+    fun showDeleteConfirmation() {
+        uiState = uiState.copy(showDeleteConfirmDialog = true)
+    }
+
+    fun dismissDeleteConfirmation() {
+        uiState = uiState.copy(showDeleteConfirmDialog = false)
+    }
+
+    fun confirmDelete() {
+        coroutineScope.launch {
+            try {
+                cardUseCase.deleteCards(uiState.selectedCardIds.toList())
+                uiState = uiState.copy(
+                    showDeleteConfirmDialog = false,
+                    isEditMode = false,
+                    selectedCardIds = emptySet()
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    showDeleteConfirmDialog = false,
+                    error = e.message ?: "Failed to delete cards"
+                )
+            }
+        }
+    }
 }

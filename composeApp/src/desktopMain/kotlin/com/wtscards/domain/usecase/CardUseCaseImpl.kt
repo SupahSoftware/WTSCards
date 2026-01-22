@@ -44,4 +44,8 @@ class CardUseCaseImpl(
             }
         }
     }
+
+    override suspend fun deleteCards(cardIds: List<String>) {
+        localDataSource.deleteCardsByIds(cardIds)
+    }
 }

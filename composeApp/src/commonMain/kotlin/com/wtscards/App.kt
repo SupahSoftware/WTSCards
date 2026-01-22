@@ -66,6 +66,11 @@ fun MainScreen(
                     onSearchQueryChanged = collectionViewModel::onSearchQueryChanged,
                     onSortOptionChanged = collectionViewModel::onSortOptionChanged,
                     onRefresh = collectionViewModel::onRefresh,
+                    onToggleEditMode = collectionViewModel::toggleEditMode,
+                    onToggleCardSelection = collectionViewModel::toggleCardSelection,
+                    onDeleteClick = collectionViewModel::showDeleteConfirmation,
+                    onDeleteConfirm = collectionViewModel::confirmDelete,
+                    onDeleteCancel = collectionViewModel::dismissDeleteConfirmation,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
