@@ -24,6 +24,8 @@ import com.wtscards.ui.screens.import.ImportViewModel
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
 import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 fun main() = application {
@@ -88,24 +90,67 @@ fun main() = application {
                             val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
                             val file = files?.firstOrNull() as? File
 
-                            if (file != null && file.extension.lowercase() == "csv") {
-                                val result = CsvParser.parseFile(file)
-                                result.fold(
-                                    onSuccess = { cards ->
-                                        importViewModel.onFileDropped(cards)
-                                    },
-                                    onFailure = { error ->
-                                        importViewModel.onFileDropped(emptyList())
-                                    }
-                                )
+                            if (file == null) {
+                                return false
+                            }
+
+                            if (file.extension.lowercase() != "csv") {
+                                importViewModel.onImportError("Only CSV files are supported")
                                 return true
                             }
+
+                            val result = CsvParser.parseFile(file)
+                            result.fold(
+                                onSuccess = { cards ->
+                                    if (cards.isEmpty()) {
+                                        importViewModel.onImportError("No valid card data found in CSV")
+                                    } else {
+                                        importViewModel.onFileDropped(cards)
+                                    }
+                                },
+                                onFailure = { error ->
+                                    importViewModel.onImportError(error.message ?: "Failed to parse CSV file")
+                                }
+                            )
+                            return true
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                        importViewModel.onImportError("Failed to process file")
                     }
                     return false
                 }
+            }
+        }
+
+        val onBrowseFiles: () -> Unit = onBrowseFiles@{
+            val fileChooser = JFileChooser().apply {
+                dialogTitle = "Select CSV File"
+                fileFilter = FileNameExtensionFilter("CSV Files (*.csv)", "csv")
+                isAcceptAllFileFilterUsed = false
+            }
+
+            val result = fileChooser.showOpenDialog(null)
+            if (result == JFileChooser.APPROVE_OPTION) {
+                val file = fileChooser.selectedFile
+                if (file.extension.lowercase() != "csv") {
+                    importViewModel.onImportError("Only CSV files are supported")
+                    return@onBrowseFiles
+                }
+
+                val parseResult = CsvParser.parseFile(file)
+                parseResult.fold(
+                    onSuccess = { cards ->
+                        if (cards.isEmpty()) {
+                            importViewModel.onImportError("No valid card data found in CSV")
+                        } else {
+                            importViewModel.onFileDropped(cards)
+                        }
+                    },
+                    onFailure = { error ->
+                        importViewModel.onImportError(error.message ?: "Failed to parse CSV file")
+                    }
+                )
             }
         }
 
@@ -125,7 +170,8 @@ fun main() = application {
         ) {
             App(
                 dependencies = dependencies,
-                importViewModel = importViewModel
+                importViewModel = importViewModel,
+                onBrowseFiles = onBrowseFiles
             )
         }
     }

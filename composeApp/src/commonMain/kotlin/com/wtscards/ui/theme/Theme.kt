@@ -16,6 +16,7 @@ val textPrimary = Color(0xFFE0E0E0)
 val textSecondary = Color(0xFFB0B0B0)
 val textTertiary = Color(0xFF7A7A7A)
 val textPlaceholder = Color(0xFF999999)
+val textOnAccent = Color(0xFF1A1A1A)
 
 // --- Accent & Interactive ---
 val accentPrimary = Color(0xFF4FC3F7)
@@ -44,9 +45,9 @@ private val WTSColorScheme = darkColorScheme(
     background = bgPrimary,
     surface = bgSurface,
     surfaceVariant = bgSecondary,
-    onPrimary = bgPrimary,
-    onSecondary = bgPrimary,
-    onTertiary = bgPrimary,
+    onPrimary = textOnAccent,
+    onSecondary = textOnAccent,
+    onTertiary = textOnAccent,
     onBackground = textPrimary,
     onSurface = textPrimary,
     onSurfaceVariant = textSecondary,

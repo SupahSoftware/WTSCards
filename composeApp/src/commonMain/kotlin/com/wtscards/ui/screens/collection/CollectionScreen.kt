@@ -61,6 +61,7 @@ import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
 import com.wtscards.ui.theme.errorColor
 import com.wtscards.ui.theme.successColor
+import com.wtscards.ui.theme.textOnAccent
 import com.wtscards.ui.theme.textPrimary
 import com.wtscards.ui.theme.textSecondary
 import com.wtscards.ui.theme.textTertiary
@@ -155,7 +156,7 @@ fun CollectionScreen(
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete selected",
-                    tint = textPrimary
+                    tint = textOnAccent
                 )
             }
         }
@@ -265,7 +266,7 @@ private fun SearchAndSortRow(
                 Icon(
                     imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
                     contentDescription = if (isEditMode) "Exit edit mode" else "Edit",
-                    tint = textPrimary
+                    tint = textOnAccent
                 )
             }
         }

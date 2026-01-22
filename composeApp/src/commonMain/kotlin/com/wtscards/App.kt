@@ -24,7 +24,8 @@ import com.wtscards.ui.theme.bgPrimary
 @Composable
 fun App(
     dependencies: AppDependencies,
-    importViewModel: ImportViewModel
+    importViewModel: ImportViewModel,
+    onBrowseFiles: () -> Unit
 ) {
     WTSCardsTheme {
         Surface(
@@ -33,7 +34,8 @@ fun App(
         ) {
             MainScreen(
                 dependencies = dependencies,
-                importViewModel = importViewModel
+                importViewModel = importViewModel,
+                onBrowseFiles = onBrowseFiles
             )
         }
     }
@@ -42,7 +44,8 @@ fun App(
 @Composable
 fun MainScreen(
     dependencies: AppDependencies,
-    importViewModel: ImportViewModel
+    importViewModel: ImportViewModel,
+    onBrowseFiles: () -> Unit
 ) {
     var currentRoute by remember { mutableStateOf(NavigationItem.Collection.route) }
 
@@ -77,6 +80,7 @@ fun MainScreen(
             NavigationItem.Import.route -> {
                 ImportScreen(
                     uiState = importViewModel.uiState,
+                    onBrowseFiles = onBrowseFiles,
                     modifier = Modifier.padding(paddingValues)
                 )
             }

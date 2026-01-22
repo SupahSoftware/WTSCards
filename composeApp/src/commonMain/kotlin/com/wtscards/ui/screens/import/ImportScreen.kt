@@ -14,6 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,12 +32,15 @@ import com.wtscards.ui.theme.bgHover
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderDivider
 import com.wtscards.ui.theme.successColor
+import com.wtscards.ui.theme.textOnAccent
 import com.wtscards.ui.theme.textPrimary
 import com.wtscards.ui.theme.textSecondary
+import com.wtscards.ui.theme.textTertiary
 
 @Composable
 fun ImportScreen(
     uiState: ImportUiState,
+    onBrowseFiles: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -44,7 +50,7 @@ fun ImportScreen(
         contentAlignment = Alignment.Center
     ) {
         when (val state = uiState.importState) {
-            is ImportState.Idle -> IdleContent()
+            is ImportState.Idle -> IdleContent(onBrowseFiles = onBrowseFiles)
             is ImportState.Hovering -> HoveringContent(state.fileName)
             is ImportState.Parsing -> LoadingContent("Parsing CSV...")
             is ImportState.ConflictDetected -> Unit // Dialog handled externally
@@ -56,7 +62,7 @@ fun ImportScreen(
 }
 
 @Composable
-private fun IdleContent() {
+private fun IdleContent(onBrowseFiles: () -> Unit) {
     DropZoneBox(isHovering = false) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,6 +81,29 @@ private fun IdleContent() {
                 color = textSecondary,
                 textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "or",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textTertiary
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onBrowseFiles,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accentPrimary,
+                    contentColor = textOnAccent
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FolderOpen,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("Browse files")
+            }
         }
     }
 }

@@ -69,6 +69,10 @@ class ImportViewModel(
         uiState = uiState.copy(importState = ImportState.Idle)
     }
 
+    fun onImportError(message: String) {
+        uiState = uiState.copy(importState = ImportState.Error(message))
+    }
+
     private suspend fun performImport(cards: List<Card>, strategy: ImportStrategy) {
         uiState = uiState.copy(importState = ImportState.Importing)
         try {
