@@ -32,7 +32,7 @@ import javax.swing.filechooser.FileNameExtensionFilter
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 fun main() = application {
     val screenSize = Toolkit.getDefaultToolkit().screenSize
-    val preferredWidth = 1920
+    val preferredWidth = 1440
     val preferredHeight = 1080
 
     val (windowWidth, windowHeight) = if (screenSize.width >= preferredWidth && screenSize.height >= preferredHeight) {
