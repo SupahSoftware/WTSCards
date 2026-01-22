@@ -40,6 +40,11 @@ insertOrderCard:
 INSERT INTO OrderCardEntity (orderId, cardId)
 VALUES (?, ?);
 
+updateOrder:
+UPDATE OrderEntity
+SET name = ?, streetAddress = ?, city = ?, state = ?, zipcode = ?, shippingType = ?, shippingCost = ?
+WHERE id = ?;
+
 deleteById:
 DELETE FROM OrderEntity WHERE id = ?;
 

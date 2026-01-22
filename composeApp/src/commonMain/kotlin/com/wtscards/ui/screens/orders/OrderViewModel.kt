@@ -61,9 +61,33 @@ class OrderViewModel(
         uiState = uiState.copy(showCreateDialog = true)
     }
 
+    fun onEditOrder(order: Order) {
+        val shippingPriceStr = (order.shippingCost / 100.0).let {
+            if (it == it.toLong().toDouble()) {
+                String.format("%.2f", it)
+            } else {
+                it.toString()
+            }
+        }
+        uiState = uiState.copy(
+            showCreateDialog = true,
+            editingOrderId = order.id,
+            createFormState = CreateOrderFormState(
+                name = order.name,
+                streetAddress = order.streetAddress,
+                city = order.city,
+                state = order.state,
+                zipcode = order.zipcode,
+                shippingType = order.shippingType ?: "Bubble mailer",
+                shippingPrice = shippingPriceStr
+            )
+        )
+    }
+
     fun onDismissCreateDialog() {
         uiState = uiState.copy(
             showCreateDialog = false,
+            editingOrderId = null,
             createFormState = CreateOrderFormState()
         )
     }
@@ -130,39 +154,60 @@ class OrderViewModel(
         }
     }
 
-    fun onCreateOrder() {
+    fun onCreateOrUpdateOrder() {
         if (!uiState.createFormState.isValid()) return
 
         uiState = uiState.copy(
             createFormState = uiState.createFormState.copy(isSaving = true)
         )
 
+        val isEditMode = uiState.editingOrderId != null
+
         coroutineScope.launch {
             try {
                 val form = uiState.createFormState
                 val shippingCostInPennies = ((form.shippingPrice.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                val order = Order(
-                    id = UUID.randomUUID().toString(),
-                    name = form.name.toTitleCase(),
-                    streetAddress = form.streetAddress.toTitleCase(),
-                    city = form.city.toTitleCase(),
-                    state = form.state.uppercase(),
-                    zipcode = form.zipcode,
-                    shippingType = form.shippingType,
-                    shippingCost = shippingCostInPennies,
-                    createdAt = System.currentTimeMillis(),
-                    cards = emptyList()
-                )
 
-                orderUseCase.createOrder(order)
+                if (isEditMode) {
+                    // Find the existing order to preserve createdAt and cards
+                    val existingOrder = uiState.orders.find { it.id == uiState.editingOrderId }
+                    val order = Order(
+                        id = uiState.editingOrderId!!,
+                        name = form.name.toTitleCase(),
+                        streetAddress = form.streetAddress.toTitleCase(),
+                        city = form.city.toTitleCase(),
+                        state = form.state.uppercase(),
+                        zipcode = form.zipcode,
+                        shippingType = form.shippingType,
+                        shippingCost = shippingCostInPennies,
+                        createdAt = existingOrder?.createdAt ?: System.currentTimeMillis(),
+                        cards = existingOrder?.cards ?: emptyList()
+                    )
+                    orderUseCase.updateOrder(order)
+                } else {
+                    val order = Order(
+                        id = UUID.randomUUID().toString(),
+                        name = form.name.toTitleCase(),
+                        streetAddress = form.streetAddress.toTitleCase(),
+                        city = form.city.toTitleCase(),
+                        state = form.state.uppercase(),
+                        zipcode = form.zipcode,
+                        shippingType = form.shippingType,
+                        shippingCost = shippingCostInPennies,
+                        createdAt = System.currentTimeMillis(),
+                        cards = emptyList()
+                    )
+                    orderUseCase.createOrder(order)
+                }
 
                 uiState = uiState.copy(
                     showCreateDialog = false,
+                    editingOrderId = null,
                     createFormState = CreateOrderFormState()
                 )
             } catch (e: Exception) {
                 uiState = uiState.copy(
-                    error = e.message ?: "Failed to create order",
+                    error = e.message ?: if (isEditMode) "Failed to update order" else "Failed to create order",
                     createFormState = uiState.createFormState.copy(isSaving = false)
                 )
             }

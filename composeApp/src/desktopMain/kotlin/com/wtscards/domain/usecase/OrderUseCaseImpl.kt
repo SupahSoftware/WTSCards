@@ -26,6 +26,10 @@ class OrderUseCaseImpl(
         orderLocalDataSource.insertOrder(order)
     }
 
+    override suspend fun updateOrder(order: Order) {
+        orderLocalDataSource.updateOrder(order)
+    }
+
     override suspend fun deleteOrder(id: String) {
         orderLocalDataSource.deleteOrder(id)
     }

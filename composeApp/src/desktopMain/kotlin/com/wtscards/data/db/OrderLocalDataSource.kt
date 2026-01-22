@@ -68,6 +68,19 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
         }
     }
 
+    suspend fun updateOrder(order: Order) = withContext(Dispatchers.IO) {
+        orderQueries.updateOrder(
+            name = order.name,
+            streetAddress = order.streetAddress,
+            city = order.city,
+            state = order.state,
+            zipcode = order.zipcode,
+            shippingType = order.shippingType,
+            shippingCost = order.shippingCost,
+            id = order.id
+        )
+    }
+
     suspend fun deleteOrder(id: String) = withContext(Dispatchers.IO) {
         database.transaction {
             orderQueries.deleteOrderCardsByOrderId(id)

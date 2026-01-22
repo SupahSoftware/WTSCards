@@ -8,6 +8,7 @@ data class OrderUiState(
     val orders: List<Order> = emptyList(),
     val error: String? = null,
     val showCreateDialog: Boolean = false,
+    val editingOrderId: String? = null,
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
     val addCardsDialogState: AddCardsDialogState? = null,
     val availableCards: List<Card> = emptyList(),

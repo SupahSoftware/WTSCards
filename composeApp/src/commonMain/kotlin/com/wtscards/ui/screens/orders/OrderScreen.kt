@@ -74,7 +74,8 @@ fun OrderScreen(
     onZipcodeChanged: (String) -> Unit,
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
-    onCreateOrder: () -> Unit,
+    onCreateOrUpdateOrder: () -> Unit,
+    onEditOrder: (Order) -> Unit,
     onShowAddCardsDialog: (String) -> Unit,
     onDismissAddCardsDialog: () -> Unit,
     onAddCardsSearchChanged: (String) -> Unit,
@@ -130,7 +131,8 @@ fun OrderScreen(
                     else -> {
                         OrderList(
                             orders = uiState.orders,
-                            onShowAddCardsDialog = onShowAddCardsDialog
+                            onShowAddCardsDialog = onShowAddCardsDialog,
+                            onEditOrder = onEditOrder
                         )
                     }
                 }
@@ -152,10 +154,11 @@ fun OrderScreen(
             )
         }
 
-        // Create Order Dialog
+        // Create/Edit Order Dialog
         if (uiState.showCreateDialog) {
             CreateOrderDialog(
                 formState = uiState.createFormState,
+                isEditMode = uiState.editingOrderId != null,
                 onDismiss = onDismissCreateDialog,
                 onNameChanged = onNameChanged,
                 onStreetAddressChanged = onStreetAddressChanged,
@@ -164,7 +167,7 @@ fun OrderScreen(
                 onZipcodeChanged = onZipcodeChanged,
                 onShippingTypeChanged = onShippingTypeChanged,
                 onShippingPriceChanged = onShippingPriceChanged,
-                onCreateOrder = onCreateOrder
+                onConfirm = onCreateOrUpdateOrder
             )
         }
         
@@ -205,7 +208,8 @@ fun OrderScreen(
 @Composable
 private fun OrderList(
     orders: List<Order>,
-    onShowAddCardsDialog: (String) -> Unit
+    onShowAddCardsDialog: (String) -> Unit,
+    onEditOrder: (Order) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -217,7 +221,8 @@ private fun OrderList(
         ) { order ->
             OrderCard(
                 order = order,
-                onShowAddCardsDialog = onShowAddCardsDialog
+                onShowAddCardsDialog = onShowAddCardsDialog,
+                onEditOrder = onEditOrder
             )
         }
     }
@@ -226,7 +231,8 @@ private fun OrderList(
 @Composable
 private fun OrderCard(
     order: Order,
-    onShowAddCardsDialog: (String) -> Unit
+    onShowAddCardsDialog: (String) -> Unit,
+    onEditOrder: (Order) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -303,17 +309,21 @@ private fun OrderCard(
                 color = successColor
             )
             
-            androidx.compose.material3.TextButton(
-                onClick = { onShowAddCardsDialog(order.id) },
-                modifier = Modifier.padding(0.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
-            ) {
-                Text(
-                    text = "ADD CARDS",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = accentPrimary
-                )
-            }
+            Text(
+                text = "ADD CARDS",
+                style = MaterialTheme.typography.bodyLarge,
+                color = accentPrimary,
+                modifier = Modifier.clickable { onShowAddCardsDialog(order.id) }
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "EDIT ORDER",
+                style = MaterialTheme.typography.bodyLarge,
+                color = accentPrimary,
+                modifier = Modifier.clickable { onEditOrder(order) }
+            )
         }
     }
 }
@@ -328,6 +338,7 @@ private val shippingTypeOptions = listOf("Bubble mailer", "Envelope", "Box", "Ot
 @Composable
 private fun CreateOrderDialog(
     formState: CreateOrderFormState,
+    isEditMode: Boolean,
     onDismiss: () -> Unit,
     onNameChanged: (String) -> Unit,
     onStreetAddressChanged: (String) -> Unit,
@@ -336,13 +347,13 @@ private fun CreateOrderDialog(
     onZipcodeChanged: (String) -> Unit,
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
-    onCreateOrder: () -> Unit
+    onConfirm: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Create Order",
+                text = if (isEditMode) "Edit Order" else "Create Order",
                 style = MaterialTheme.typography.titleLarge,
                 color = textPrimary
             )
@@ -427,7 +438,7 @@ private fun CreateOrderDialog(
         },
         confirmButton = {
             Button(
-                onClick = onCreateOrder,
+                onClick = onConfirm,
                 enabled = formState.isValid(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = accentPrimary,
@@ -437,7 +448,7 @@ private fun CreateOrderDialog(
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Create Order")
+                Text(if (isEditMode) "Save Changes" else "Create Order")
             }
         },
         dismissButton = {
