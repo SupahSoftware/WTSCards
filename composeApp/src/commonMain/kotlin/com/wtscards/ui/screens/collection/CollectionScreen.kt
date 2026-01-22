@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -50,9 +51,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Card
 import com.wtscards.ui.theme.accentPrimary
@@ -428,13 +431,13 @@ private fun CardList(
         ) {
             items(
                 items = cards,
-                key = { it.sportsCardProId }
+                key = { it.id }
             ) { card ->
                 CardRow(
                     card = card,
                     isEditMode = isEditMode,
-                    isSelected = card.sportsCardProId in selectedCardIds,
-                    onToggleSelection = { onToggleCardSelection(card.sportsCardProId) }
+                    isSelected = card.id in selectedCardIds,
+                    onToggleSelection = { onToggleCardSelection(card.id) }
                 )
             }
         }
@@ -460,68 +463,97 @@ private fun CardRow(
     isSelected: Boolean,
     onToggleSelection: () -> Unit
 ) {
+    val showGradeBadge = card.gradedString.isNotBlank() && card.gradedString.lowercase() != "ungraded"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(8.dp))
-            .background(bgSurface)
-            .padding(16.dp),
+            .background(bgSurface),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Checkbox (shown in edit mode)
-        if (isEditMode) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onToggleSelection() },
-                modifier = Modifier.size(24.dp),
-                colors = CheckboxDefaults.colors(
-                    checkedColor = accentPrimary,
-                    uncheckedColor = textTertiary,
-                    checkmarkColor = bgSurface
-                )
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
-
-        // Card Info (takes remaining space)
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = card.name,
-                style = MaterialTheme.typography.bodyLarge,
-                color = textPrimary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = card.setName,
-                style = MaterialTheme.typography.bodySmall,
-                color = textSecondary
-            )
-            if (card.gradedString.isNotBlank() && card.gradedString.lowercase() != "ungraded") {
+        // Grade badge (rotated 90 degrees)
+        if (showGradeBadge) {
+            Box(
+                modifier = Modifier
+                    .width(24.dp)
+                    .fillMaxHeight()
+                    .background(
+                        color = accentPrimary,
+                        shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = card.gradedString,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = accentPrimary
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = textOnAccent,
+                    modifier = Modifier
+                        .graphicsLayer { rotationZ = 90f }
                 )
             }
         }
 
-        // eBay Button (before price, with 16dp margin)
-        IconButton(
-            onClick = { UrlUtils.openEbaySoldListings(card.name) },
-            modifier = Modifier.size(40.dp)
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(Res.drawable.ebay_button_logo),
-                contentDescription = "Search on eBay",
-                modifier = Modifier.size(32.dp),
-                contentScale = ContentScale.Fit
-            )
-        }
+            // Checkbox (shown in edit mode)
+            if (isEditMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onToggleSelection() },
+                    modifier = Modifier.size(24.dp),
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = accentPrimary,
+                        uncheckedColor = textTertiary,
+                        checkmarkColor = bgSurface
+                    )
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
 
-        Spacer(modifier = Modifier.width(16.dp))
+            // Card Info (takes remaining space)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = card.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = card.setName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textSecondary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "You own x${card.quantity}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textTertiary
+                )
+            }
 
-        // Price (rightmost)
-        Column(horizontalAlignment = Alignment.End) {
+            // eBay Button (before price, with 16dp margin)
+            IconButton(
+                onClick = { UrlUtils.openEbaySoldListings(card.name) },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Image(
+                    painter = painterResource(Res.drawable.ebay_button_logo),
+                    contentDescription = "Search on eBay",
+                    modifier = Modifier.size(32.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Price (rightmost)
             if (card.priceInPennies > 0) {
                 Text(
                     text = formatPrice(card.priceInPennies),
@@ -533,13 +565,6 @@ private fun CardRow(
                     text = "No sales",
                     style = MaterialTheme.typography.bodyLarge,
                     color = warningColor
-                )
-            }
-            if (card.quantity > 1) {
-                Text(
-                    text = "x${card.quantity}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textTertiary
                 )
             }
         }

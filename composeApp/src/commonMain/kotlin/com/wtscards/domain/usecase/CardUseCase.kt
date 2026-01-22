@@ -9,4 +9,5 @@ interface CardUseCase {
     suspend fun findCollisions(cards: List<Card>): List<Card>
     suspend fun importCards(cards: List<Card>, strategy: ImportStrategy)
     suspend fun deleteCards(cardIds: List<String>)
+    suspend fun addCard(card: Card)
 }

@@ -29,12 +29,13 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
         queries.selectById(id).executeAsOneOrNull()?.toCard()
     }
 
-    suspend fun getCardsByIds(ids: List<String>): List<Card> = withContext(Dispatchers.IO) {
-        queries.selectByIds(ids).executeAsList().map { it.toCard() }
+    suspend fun getCardsBySportsCardProIds(ids: List<String>): List<Card> = withContext(Dispatchers.IO) {
+        queries.selectBySportsCardProIds(ids).executeAsList().map { it.toCard() }
     }
 
     suspend fun insertCard(card: Card) = withContext(Dispatchers.IO) {
         queries.insert(
+            id = card.id,
             sportsCardProId = card.sportsCardProId,
             name = card.name,
             setName = card.setName,
@@ -46,6 +47,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
 
     suspend fun insertOrReplaceCard(card: Card) = withContext(Dispatchers.IO) {
         queries.insertOrReplace(
+            id = card.id,
             sportsCardProId = card.sportsCardProId,
             name = card.name,
             setName = card.setName,
@@ -59,6 +61,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
         queries.transaction {
             cards.forEach { card ->
                 queries.insertOrReplace(
+                    id = card.id,
                     sportsCardProId = card.sportsCardProId,
                     name = card.name,
                     setName = card.setName,
@@ -88,6 +91,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
 
     private fun CardEntity.toCard(): Card {
         return Card(
+            id = id,
             sportsCardProId = sportsCardProId,
             name = name,
             setName = setName,

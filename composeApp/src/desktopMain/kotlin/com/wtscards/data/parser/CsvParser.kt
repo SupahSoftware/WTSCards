@@ -2,6 +2,7 @@ package com.wtscards.data.parser
 
 import com.wtscards.data.model.Card
 import java.io.File
+import java.util.UUID
 
 object CsvParser {
 
@@ -37,6 +38,7 @@ object CsvParser {
             if (sportsCardProId.isBlank()) return null
 
             Card(
+                id = UUID.randomUUID().toString(),
                 sportsCardProId = sportsCardProId,
                 name = nameInfo,
                 setName = setName,

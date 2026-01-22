@@ -1,7 +1,8 @@
 package com.wtscards.data.model
 
 data class Card(
-    val sportsCardProId: String,
+    val id: String,
+    val sportsCardProId: String?,
     val name: String,
     val setName: String,
     val priceInPennies: Long,

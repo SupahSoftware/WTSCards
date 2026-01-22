@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import com.wtscards.ui.components.ImportConflictDialog
 import com.wtscards.ui.navigation.BottomNavBar
 import com.wtscards.ui.navigation.NavigationItem
+import com.wtscards.ui.screens.addcard.AddCardScreen
+import com.wtscards.ui.screens.addcard.AddCardViewModel
 import com.wtscards.ui.screens.collection.CollectionScreen
 import com.wtscards.ui.screens.collection.CollectionViewModel
 import com.wtscards.ui.screens.import.ImportScreen
@@ -53,6 +55,10 @@ fun MainScreen(
         CollectionViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
     }
 
+    val addCardViewModel = remember {
+        AddCardViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
+    }
+
     Scaffold(
         containerColor = bgPrimary,
         bottomBar = {
@@ -74,6 +80,21 @@ fun MainScreen(
                     onDeleteClick = collectionViewModel::showDeleteConfirmation,
                     onDeleteConfirm = collectionViewModel::confirmDelete,
                     onDeleteCancel = collectionViewModel::dismissDeleteConfirmation,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            NavigationItem.AddCard.route -> {
+                AddCardScreen(
+                    uiState = addCardViewModel.uiState,
+                    onNameChanged = addCardViewModel::onNameChanged,
+                    onCardNumberChanged = addCardViewModel::onCardNumberChanged,
+                    onSetNameChanged = addCardViewModel::onSetNameChanged,
+                    onParallelNameChanged = addCardViewModel::onParallelNameChanged,
+                    onGradeOptionChanged = addCardViewModel::onGradeOptionChanged,
+                    onQuantityChanged = addCardViewModel::onQuantityChanged,
+                    onSave = addCardViewModel::onSave,
+                    canSave = addCardViewModel.canSave(),
+                    onClearToast = addCardViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )
             }

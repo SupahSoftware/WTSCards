@@ -17,8 +17,9 @@ class CardUseCaseImpl(
     }
 
     override suspend fun findCollisions(cards: List<Card>): List<Card> {
-        val incomingIds = cards.map { it.sportsCardProId }
-        return localDataSource.getCardsByIds(incomingIds)
+        val incomingIds = cards.mapNotNull { it.sportsCardProId }
+        if (incomingIds.isEmpty()) return emptyList()
+        return localDataSource.getCardsBySportsCardProIds(incomingIds)
     }
 
     override suspend fun importCards(cards: List<Card>, strategy: ImportStrategy) {
@@ -28,17 +29,24 @@ class CardUseCaseImpl(
                 localDataSource.insertOrReplaceCards(cards)
             }
             ImportStrategy.UPDATE_PRICES_ONLY -> {
-                val existingIds = localDataSource.getAllCards().map { it.sportsCardProId }.toSet()
+                val existingCards = localDataSource.getAllCards()
+                val existingBySportsCardProId = existingCards
+                    .filter { it.sportsCardProId != null }
+                    .associateBy { it.sportsCardProId }
+
                 cards.forEach { card ->
-                    if (card.sportsCardProId in existingIds) {
-                        localDataSource.updatePrice(card.sportsCardProId, card.priceInPennies)
+                    val existingCard = card.sportsCardProId?.let { existingBySportsCardProId[it] }
+                    if (existingCard != null) {
+                        localDataSource.updatePrice(existingCard.id, card.priceInPennies)
                     } else {
                         localDataSource.insertCard(card)
                     }
                 }
             }
             ImportStrategy.SAFE_IMPORT -> {
-                val existingIds = localDataSource.getAllCards().map { it.sportsCardProId }.toSet()
+                val existingIds = localDataSource.getAllCards()
+                    .mapNotNull { it.sportsCardProId }
+                    .toSet()
                 val newCards = cards.filter { it.sportsCardProId !in existingIds }
                 newCards.forEach { localDataSource.insertCard(it) }
             }
@@ -47,5 +55,9 @@ class CardUseCaseImpl(
 
     override suspend fun deleteCards(cardIds: List<String>) {
         localDataSource.deleteCardsByIds(cardIds)
+    }
+
+    override suspend fun addCard(card: Card) {
+        localDataSource.insertCard(card)
     }
 }

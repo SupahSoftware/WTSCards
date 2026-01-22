@@ -1,5 +1,6 @@
 CREATE TABLE CardEntity (
-    sportsCardProId TEXT NOT NULL PRIMARY KEY,
+    id TEXT NOT NULL PRIMARY KEY,
+    sportsCardProId TEXT,
     name TEXT NOT NULL,
     setName TEXT NOT NULL,
     priceInPennies INTEGER NOT NULL,
@@ -11,30 +12,33 @@ selectAll:
 SELECT * FROM CardEntity;
 
 selectById:
+SELECT * FROM CardEntity WHERE id = ?;
+
+selectBySportsCardProId:
 SELECT * FROM CardEntity WHERE sportsCardProId = ?;
 
-selectByIds:
+selectBySportsCardProIds:
 SELECT * FROM CardEntity WHERE sportsCardProId IN ?;
 
 insert:
-INSERT INTO CardEntity (sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO CardEntity (id, sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 insertOrReplace:
-INSERT OR REPLACE INTO CardEntity (sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO CardEntity (id, sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updatePrice:
-UPDATE CardEntity SET priceInPennies = ? WHERE sportsCardProId = ?;
+UPDATE CardEntity SET priceInPennies = ? WHERE id = ?;
 
 deleteAll:
 DELETE FROM CardEntity;
 
 deleteById:
-DELETE FROM CardEntity WHERE sportsCardProId = ?;
+DELETE FROM CardEntity WHERE id = ?;
 
 deleteByIds:
-DELETE FROM CardEntity WHERE sportsCardProId IN ?;
+DELETE FROM CardEntity WHERE id IN ?;
 
 count:
 SELECT COUNT(*) FROM CardEntity;

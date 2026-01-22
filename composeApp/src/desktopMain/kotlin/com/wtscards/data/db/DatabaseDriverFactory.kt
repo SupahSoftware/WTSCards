@@ -7,17 +7,31 @@ import java.io.File
 
 object DatabaseDriverFactory {
     private const val DATABASE_NAME = "wtscards.db"
+    private const val SCHEMA_VERSION = 2 // Increment this to force recreation
 
     fun createDriver(): SqlDriver {
         val appDataDir = getAppDataDirectory()
         appDataDir.mkdirs()
         val databaseFile = File(appDataDir, DATABASE_NAME)
-        val databaseExists = databaseFile.exists()
+        val versionFile = File(appDataDir, "schema_version")
 
+        val currentVersion = if (versionFile.exists()) {
+            versionFile.readText().toIntOrNull() ?: 0
+        } else {
+            0
+        }
+
+        // If schema version changed, delete old database
+        if (databaseFile.exists() && currentVersion < SCHEMA_VERSION) {
+            databaseFile.delete()
+        }
+
+        val databaseExists = databaseFile.exists()
         val driver = JdbcSqliteDriver("jdbc:sqlite:${databaseFile.absolutePath}")
 
         if (!databaseExists) {
             WTSCardsDatabase.Schema.create(driver)
+            versionFile.writeText(SCHEMA_VERSION.toString())
         }
 
         return driver
