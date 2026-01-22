@@ -3,8 +3,10 @@ package com.wtscards.ui.screens.collection
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.wtscards.data.model.Card
 import com.wtscards.domain.usecase.CardUseCase
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -28,9 +30,10 @@ class CollectionViewModel(
             .onEach { cards ->
                 uiState = uiState.copy(
                     isLoading = false,
-                    cards = cards,
+                    allCards = cards,
                     error = null
                 )
+                updateDisplayedCards()
             }
             .catch { e ->
                 uiState = uiState.copy(
@@ -41,12 +44,59 @@ class CollectionViewModel(
             .launchIn(coroutineScope)
     }
 
+    fun onSearchQueryChanged(query: String) {
+        uiState = uiState.copy(searchQuery = query)
+        updateDisplayedCards()
+    }
+
+    fun onSortOptionChanged(sortOption: SortOption) {
+        coroutineScope.launch {
+            // Clear list and show loading
+            uiState = uiState.copy(
+                sortOption = sortOption,
+                displayedCards = emptyList(),
+                isLoading = true
+            )
+
+            // Brief delay to prevent flickering
+            delay(400)
+
+            // Update with sorted list
+            uiState = uiState.copy(isLoading = false)
+            updateDisplayedCards()
+        }
+    }
+
+    private fun updateDisplayedCards() {
+        val filtered = if (uiState.searchQuery.isBlank()) {
+            uiState.allCards
+        } else {
+            uiState.allCards.filter { card ->
+                card.name.contains(uiState.searchQuery, ignoreCase = true)
+            }
+        }
+
+        val sorted = when (uiState.sortOption) {
+            SortOption.NAME_ASC -> filtered.sortedBy { it.name.lowercase() }
+            SortOption.NAME_DESC -> filtered.sortedByDescending { it.name.lowercase() }
+            SortOption.PRICE_ASC -> filtered.sortedBy { it.priceInPennies }
+            SortOption.PRICE_DESC -> filtered.sortedByDescending { it.priceInPennies }
+        }
+
+        uiState = uiState.copy(displayedCards = sorted)
+    }
+
     fun onRefresh() {
         coroutineScope.launch {
             uiState = uiState.copy(isLoading = true)
             try {
                 val cards = cardUseCase.getAllCards()
-                uiState = uiState.copy(isLoading = false, cards = cards, error = null)
+                uiState = uiState.copy(
+                    isLoading = false,
+                    allCards = cards,
+                    error = null
+                )
+                updateDisplayedCards()
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     isLoading = false,

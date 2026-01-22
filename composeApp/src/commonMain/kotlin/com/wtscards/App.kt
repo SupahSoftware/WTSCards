@@ -63,6 +63,8 @@ fun MainScreen(
             NavigationItem.Collection.route -> {
                 CollectionScreen(
                     uiState = collectionViewModel.uiState,
+                    onSearchQueryChanged = collectionViewModel::onSearchQueryChanged,
+                    onSortOptionChanged = collectionViewModel::onSortOptionChanged,
                     onRefresh = collectionViewModel::onRefresh,
                     modifier = Modifier.padding(paddingValues)
                 )
