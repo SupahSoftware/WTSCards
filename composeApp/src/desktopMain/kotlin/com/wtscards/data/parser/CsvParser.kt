@@ -15,7 +15,7 @@ object CsvParser {
 
             val cards = lines.drop(1) // Skip header row
                 .filter { it.isNotBlank() }
-                .mapNotNull { line -> parseLine(line) }
+                .flatMap { line -> parseLine(line) }
 
             Result.success(cards)
         } catch (e: Exception) {
@@ -23,10 +23,10 @@ object CsvParser {
         }
     }
 
-    private fun parseLine(line: String): Card? {
+    private fun parseLine(line: String): List<Card> {
         return try {
             val columns = parseCSVLine(line)
-            if (columns.size < 10) return null
+            if (columns.size < 10) return emptyList()
 
             val sportsCardProId = columns[0].trim()
             val nameInfo = columns[1].trim()
@@ -35,19 +35,22 @@ object CsvParser {
             val gradedString = columns[4].trim()
             val quantity = columns[9].trim().toIntOrNull() ?: 1
 
-            if (sportsCardProId.isBlank()) return null
+            if (sportsCardProId.isBlank()) return emptyList()
 
-            Card(
-                id = UUID.randomUUID().toString(),
-                sportsCardProId = sportsCardProId,
-                name = nameInfo,
-                setName = setName,
-                priceInPennies = priceInPennies,
-                gradedString = gradedString,
-                quantity = quantity
-            )
+            // Create separate card instances for each quantity
+            List(quantity) {
+                Card(
+                    id = UUID.randomUUID().toString(),
+                    sportsCardProId = sportsCardProId,
+                    name = nameInfo,
+                    setName = setName,
+                    priceInPennies = priceInPennies,
+                    gradedString = gradedString,
+                    priceSold = null
+                )
+            }
         } catch (e: Exception) {
-            null
+            emptyList()
         }
     }
 

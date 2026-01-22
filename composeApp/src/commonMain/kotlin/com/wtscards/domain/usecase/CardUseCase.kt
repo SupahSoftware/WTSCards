@@ -10,4 +10,5 @@ interface CardUseCase {
     suspend fun importCards(cards: List<Card>, strategy: ImportStrategy)
     suspend fun deleteCards(cardIds: List<String>)
     suspend fun addCard(card: Card)
+    suspend fun addCards(cards: List<Card>)
 }

@@ -17,9 +17,11 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import com.wtscards.data.db.CardLocalDataSource
 import com.wtscards.data.db.DatabaseDriverFactory
+import com.wtscards.data.db.OrderLocalDataSource
 import com.wtscards.data.parser.CsvParser
 import com.wtscards.db.WTSCardsDatabase
 import com.wtscards.domain.usecase.CardUseCaseImpl
+import com.wtscards.domain.usecase.OrderUseCaseImpl
 import com.wtscards.ui.screens.import.ImportViewModel
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
@@ -49,11 +51,14 @@ fun main() = application {
         val dependencies = remember {
             val driver = DatabaseDriverFactory.createDriver()
             val database = WTSCardsDatabase(driver)
-            val localDataSource = CardLocalDataSource(database)
-            val cardUseCase = CardUseCaseImpl(localDataSource)
+            val cardLocalDataSource = CardLocalDataSource(database)
+            val orderLocalDataSource = OrderLocalDataSource(database)
+            val cardUseCase = CardUseCaseImpl(cardLocalDataSource)
+            val orderUseCase = OrderUseCaseImpl(orderLocalDataSource, cardLocalDataSource)
 
             AppDependencies(
                 cardUseCase = cardUseCase,
+                orderUseCase = orderUseCase,
                 coroutineScope = coroutineScope
             )
         }

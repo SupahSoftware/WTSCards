@@ -1,0 +1,48 @@
+CREATE TABLE OrderEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    streetAddress TEXT NOT NULL,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    zipcode TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE OrderCardEntity (
+    orderId TEXT NOT NULL,
+    cardId TEXT NOT NULL,
+    PRIMARY KEY (orderId, cardId),
+    FOREIGN KEY (orderId) REFERENCES OrderEntity(id) ON DELETE CASCADE,
+    FOREIGN KEY (cardId) REFERENCES CardEntity(id) ON DELETE CASCADE
+);
+
+selectAll:
+SELECT * FROM OrderEntity ORDER BY createdAt DESC;
+
+selectAllOrderCards:
+SELECT * FROM OrderCardEntity;
+
+selectById:
+SELECT * FROM OrderEntity WHERE id = ?;
+
+selectCardsByOrderId:
+SELECT c.* FROM CardEntity c
+INNER JOIN OrderCardEntity oc ON c.id = oc.cardId
+WHERE oc.orderId = ?;
+
+insert:
+INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+insertOrderCard:
+INSERT INTO OrderCardEntity (orderId, cardId)
+VALUES (?, ?);
+
+deleteById:
+DELETE FROM OrderEntity WHERE id = ?;
+
+deleteOrderCardsByOrderId:
+DELETE FROM OrderCardEntity WHERE orderId = ?;
+
+count:
+SELECT COUNT(*) FROM OrderEntity;

@@ -20,6 +20,8 @@ import com.wtscards.ui.screens.collection.CollectionViewModel
 import com.wtscards.ui.screens.import.ImportScreen
 import com.wtscards.ui.screens.import.ImportState
 import com.wtscards.ui.screens.import.ImportViewModel
+import com.wtscards.ui.screens.orders.OrderScreen
+import com.wtscards.ui.screens.orders.OrderViewModel
 import com.wtscards.ui.theme.WTSCardsTheme
 import com.wtscards.ui.theme.bgPrimary
 
@@ -55,6 +57,10 @@ fun MainScreen(
         CollectionViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
     }
 
+    val orderViewModel = remember {
+        OrderViewModel(dependencies.orderUseCase, dependencies.cardUseCase, dependencies.coroutineScope)
+    }
+
     val addCardViewModel = remember {
         AddCardViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
     }
@@ -80,6 +86,28 @@ fun MainScreen(
                     onDeleteClick = collectionViewModel::showDeleteConfirmation,
                     onDeleteConfirm = collectionViewModel::confirmDelete,
                     onDeleteCancel = collectionViewModel::dismissDeleteConfirmation,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            NavigationItem.Orders.route -> {
+                OrderScreen(
+                    uiState = orderViewModel.uiState,
+                    onShowCreateDialog = orderViewModel::onShowCreateDialog,
+                    onDismissCreateDialog = orderViewModel::onDismissCreateDialog,
+                    onNameChanged = orderViewModel::onNameChanged,
+                    onStreetAddressChanged = orderViewModel::onStreetAddressChanged,
+                    onCityChanged = orderViewModel::onCityChanged,
+                    onStateChanged = orderViewModel::onStateChanged,
+                    onZipcodeChanged = orderViewModel::onZipcodeChanged,
+                    onCreateOrder = orderViewModel::onCreateOrder,
+                    onShowAddCardsDialog = orderViewModel::onShowAddCardsDialog,
+                    onDismissAddCardsDialog = orderViewModel::onDismissAddCardsDialog,
+                    onAddCardsSearchChanged = orderViewModel::onAddCardsSearchChanged,
+                    onToggleCardSelection = orderViewModel::onToggleCardSelection,
+                    onProceedToPriceConfirmation = orderViewModel::onProceedToPriceConfirmation,
+                    onCardPriceChanged = orderViewModel::onCardPriceChanged,
+                    onConfirmAddCards = orderViewModel::onConfirmAddCards,
+                    onClearToast = orderViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )
             }

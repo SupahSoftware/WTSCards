@@ -7,5 +7,5 @@ data class Card(
     val setName: String,
     val priceInPennies: Long,
     val gradedString: String,
-    val quantity: Int
+    val priceSold: Long? = null
 )

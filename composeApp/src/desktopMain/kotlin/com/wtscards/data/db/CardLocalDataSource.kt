@@ -15,14 +15,14 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
     private val queries = database.cardQueries
 
     fun getAllCardsFlow(): Flow<List<Card>> {
-        return queries.selectAll()
+        return queries.selectUnsold()
             .asFlow()
             .mapToList(Dispatchers.IO)
             .map { entities -> entities.map { it.toCard() } }
     }
 
     suspend fun getAllCards(): List<Card> = withContext(Dispatchers.IO) {
-        queries.selectAll().executeAsList().map { it.toCard() }
+        queries.selectUnsold().executeAsList().map { it.toCard() }
     }
 
     suspend fun getCardById(id: String): Card? = withContext(Dispatchers.IO) {
@@ -41,7 +41,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
             setName = card.setName,
             priceInPennies = card.priceInPennies,
             gradedString = card.gradedString,
-            quantity = card.quantity.toLong()
+            priceSold = card.priceSold
         )
     }
 
@@ -53,7 +53,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
             setName = card.setName,
             priceInPennies = card.priceInPennies,
             gradedString = card.gradedString,
-            quantity = card.quantity.toLong()
+            priceSold = card.priceSold
         )
     }
 
@@ -67,7 +67,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
                     setName = card.setName,
                     priceInPennies = card.priceInPennies,
                     gradedString = card.gradedString,
-                    quantity = card.quantity.toLong()
+                    priceSold = card.priceSold
                 )
             }
         }
@@ -75,6 +75,10 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
 
     suspend fun updatePrice(id: String, priceInPennies: Long) = withContext(Dispatchers.IO) {
         queries.updatePrice(priceInPennies, id)
+    }
+
+    suspend fun updatePriceSold(id: String, priceSold: Long) = withContext(Dispatchers.IO) {
+        queries.updatePriceSold(priceSold, id)
     }
 
     suspend fun deleteAllCards() = withContext(Dispatchers.IO) {
@@ -97,7 +101,7 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
             setName = setName,
             priceInPennies = priceInPennies,
             gradedString = gradedString,
-            quantity = quantity.toInt()
+            priceSold = priceSold
         )
     }
 }

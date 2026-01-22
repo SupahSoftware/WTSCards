@@ -59,21 +59,30 @@ class AddCardViewModel(
         coroutineScope.launch {
             try {
                 val quantity = uiState.quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
+                
+                // Create separate card instances for each quantity
+                val cards = List(quantity) {
+                    Card(
+                        id = UUID.randomUUID().toString(),
+                        sportsCardProId = null,
+                        name = buildCardName(),
+                        setName = uiState.setName.toTitleCase(),
+                        priceInPennies = 0L,
+                        gradedString = uiState.gradeOption,
+                        priceSold = null
+                    )
+                }
 
-                val card = Card(
-                    id = UUID.randomUUID().toString(),
-                    sportsCardProId = null,
-                    name = buildCardName(),
-                    setName = uiState.setName.toTitleCase(),
-                    priceInPennies = 0L,
-                    gradedString = uiState.gradeOption,
-                    quantity = quantity
-                )
+                cardUseCase.addCards(cards)
 
-                cardUseCase.addCard(card)
+                val successMessage = if (quantity == 1) {
+                    "Card added successfully"
+                } else {
+                    "$quantity cards added successfully"
+                }
 
                 uiState = defaultState.copy(
-                    toastMessage = ToastMessage("Card added successfully", isError = false)
+                    toastMessage = ToastMessage(successMessage, isError = false)
                 )
             } catch (e: Exception) {
                 uiState = uiState.copy(

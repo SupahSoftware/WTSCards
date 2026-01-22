@@ -51,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -232,8 +233,8 @@ private fun SearchAndSortRow(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = textPrimary,
                 unfocusedTextColor = textPrimary,
-                focusedBorderColor = accentPrimary,
-                unfocusedBorderColor = borderInput,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
                 cursorColor = accentPrimary,
                 focusedContainerColor = bgSurface,
                 unfocusedContainerColor = bgSurface
@@ -524,17 +525,11 @@ private fun CardRow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = textPrimary
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = card.setName,
                     style = MaterialTheme.typography.bodySmall,
                     color = textSecondary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "You own x${card.quantity}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textTertiary
                 )
             }
 

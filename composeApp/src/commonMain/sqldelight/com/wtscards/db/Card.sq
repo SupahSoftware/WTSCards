@@ -5,11 +5,14 @@ CREATE TABLE CardEntity (
     setName TEXT NOT NULL,
     priceInPennies INTEGER NOT NULL,
     gradedString TEXT NOT NULL,
-    quantity INTEGER NOT NULL
+    priceSold INTEGER
 );
 
 selectAll:
 SELECT * FROM CardEntity;
+
+selectUnsold:
+SELECT * FROM CardEntity WHERE priceSold IS NULL;
 
 selectById:
 SELECT * FROM CardEntity WHERE id = ?;
@@ -21,15 +24,18 @@ selectBySportsCardProIds:
 SELECT * FROM CardEntity WHERE sportsCardProId IN ?;
 
 insert:
-INSERT INTO CardEntity (id, sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
+INSERT INTO CardEntity (id, sportsCardProId, name, setName, priceInPennies, gradedString, priceSold)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 insertOrReplace:
-INSERT OR REPLACE INTO CardEntity (id, sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
+INSERT OR REPLACE INTO CardEntity (id, sportsCardProId, name, setName, priceInPennies, gradedString, priceSold)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 updatePrice:
 UPDATE CardEntity SET priceInPennies = ? WHERE id = ?;
+
+updatePriceSold:
+UPDATE CardEntity SET priceSold = ? WHERE id = ?;
 
 deleteAll:
 DELETE FROM CardEntity;
@@ -42,3 +48,6 @@ DELETE FROM CardEntity WHERE id IN ?;
 
 count:
 SELECT COUNT(*) FROM CardEntity;
+
+countUnsold:
+SELECT COUNT(*) FROM CardEntity WHERE priceSold IS NULL;
