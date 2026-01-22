@@ -53,9 +53,11 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
                 city = order.city,
                 state = order.state,
                 zipcode = order.zipcode,
+                shippingType = order.shippingType,
+                shippingCost = order.shippingCost,
                 createdAt = order.createdAt
             )
-            
+
             // Insert order-card relationships
             order.cards.forEach { card ->
                 orderQueries.insertOrderCard(
@@ -102,6 +104,8 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             city = city,
             state = state,
             zipcode = zipcode,
+            shippingType = shippingType,
+            shippingCost = shippingCost,
             createdAt = createdAt,
             cards = cards
         )

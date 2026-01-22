@@ -20,6 +20,8 @@ data class CreateOrderFormState(
     val city: String = "",
     val state: String = "",
     val zipcode: String = "",
+    val shippingType: String = "Bubble mailer",
+    val shippingPrice: String = "5.00",
     val isSaving: Boolean = false
 ) {
     fun isValid(): Boolean {

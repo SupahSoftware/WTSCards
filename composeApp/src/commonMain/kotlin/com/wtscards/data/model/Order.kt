@@ -7,6 +7,8 @@ data class Order(
     val city: String,
     val state: String,
     val zipcode: String,
+    val shippingType: String? = null,
+    val shippingCost: Long = 0,
     val createdAt: Long,
     val cards: List<Card> = emptyList()
 )

@@ -102,6 +102,34 @@ class OrderViewModel(
         )
     }
 
+    fun onShippingTypeChanged(shippingType: String) {
+        // Set default price based on shipping type
+        val defaultPrice = when (shippingType) {
+            "Bubble mailer" -> "5.00"
+            "Envelope" -> "1.00"
+            "Box" -> "10.00"
+            "Other" -> "0.00"
+            else -> "0.00"
+        }
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(
+                shippingType = shippingType,
+                shippingPrice = defaultPrice
+            )
+        )
+    }
+
+    fun onShippingPriceChanged(price: String) {
+        // Only allow digits and decimal point
+        val filtered = price.filter { it.isDigit() || it == '.' }
+        // Only allow one decimal point
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(
+                createFormState = uiState.createFormState.copy(shippingPrice = filtered)
+            )
+        }
+    }
+
     fun onCreateOrder() {
         if (!uiState.createFormState.isValid()) return
 
@@ -112,6 +140,7 @@ class OrderViewModel(
         coroutineScope.launch {
             try {
                 val form = uiState.createFormState
+                val shippingCostInPennies = ((form.shippingPrice.toDoubleOrNull() ?: 0.0) * 100).toLong()
                 val order = Order(
                     id = UUID.randomUUID().toString(),
                     name = form.name.toTitleCase(),
@@ -119,6 +148,8 @@ class OrderViewModel(
                     city = form.city.toTitleCase(),
                     state = form.state.uppercase(),
                     zipcode = form.zipcode,
+                    shippingType = form.shippingType,
+                    shippingCost = shippingCostInPennies,
                     createdAt = System.currentTimeMillis(),
                     cards = emptyList()
                 )

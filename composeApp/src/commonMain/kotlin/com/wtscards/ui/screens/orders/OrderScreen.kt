@@ -1,6 +1,9 @@
 package com.wtscards.ui.screens.orders
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -21,22 +25,32 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Order
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgPrimary
 import com.wtscards.ui.theme.bgSecondary
@@ -58,6 +72,8 @@ fun OrderScreen(
     onCityChanged: (String) -> Unit,
     onStateChanged: (String) -> Unit,
     onZipcodeChanged: (String) -> Unit,
+    onShippingTypeChanged: (String) -> Unit,
+    onShippingPriceChanged: (String) -> Unit,
     onCreateOrder: () -> Unit,
     onShowAddCardsDialog: (String) -> Unit,
     onDismissAddCardsDialog: () -> Unit,
@@ -146,6 +162,8 @@ fun OrderScreen(
                 onCityChanged = onCityChanged,
                 onStateChanged = onStateChanged,
                 onZipcodeChanged = onZipcodeChanged,
+                onShippingTypeChanged = onShippingTypeChanged,
+                onShippingPriceChanged = onShippingPriceChanged,
                 onCreateOrder = onCreateOrder
             )
         }
@@ -245,9 +263,21 @@ private fun OrderCard(
                 color = textTertiary
             )
             
-            // Display cards if present
-            if (order.cards.isNotEmpty()) {
+            // Display shipping and cards if present
+            if (order.shippingType != null || order.cards.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
+
+                // Shipping line item first
+                if (order.shippingType != null) {
+                    Text(
+                        text = "Shipping: ${order.shippingType}    ${formatPrice(order.shippingCost)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                // Cards
                 order.cards.forEach { card ->
                     Text(
                         text = "${card.name}    ${formatPrice(card.priceSold ?: 0)}",
@@ -258,14 +288,16 @@ private fun OrderCard(
                 }
             }
         }
-        
+
         // Right side: total price and add cards button
         Column(
             modifier = Modifier.align(Alignment.CenterVertically),
             horizontalAlignment = Alignment.End
         ) {
+            val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
+            val total = cardsTotal + order.shippingCost
             Text(
-                text = formatPrice(order.cards.sumOf { it.priceSold ?: 0 }),
+                text = formatPrice(total),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 color = successColor
@@ -291,6 +323,8 @@ private fun formatPrice(priceInPennies: Long): String {
     return "$${String.format("%.2f", dollars)}"
 }
 
+private val shippingTypeOptions = listOf("Bubble mailer", "Envelope", "Box", "Other")
+
 @Composable
 private fun CreateOrderDialog(
     formState: CreateOrderFormState,
@@ -300,6 +334,8 @@ private fun CreateOrderDialog(
     onCityChanged: (String) -> Unit,
     onStateChanged: (String) -> Unit,
     onZipcodeChanged: (String) -> Unit,
+    onShippingTypeChanged: (String) -> Unit,
+    onShippingPriceChanged: (String) -> Unit,
     onCreateOrder: () -> Unit
 ) {
     AlertDialog(
@@ -317,41 +353,19 @@ private fun CreateOrderDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Name
-                OutlinedTextField(
+                DialogFormTextField(
                     value = formState.name,
                     onValueChange = onNameChanged,
-                    label = { Text("Name", color = textTertiary) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = textPrimary,
-                        unfocusedTextColor = textPrimary,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = borderInput,
-                        cursorColor = accentPrimary,
-                        focusedContainerColor = bgSecondary,
-                        unfocusedContainerColor = bgSecondary
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    singleLine = true
+                    label = "Name",
+                    placeholder = "Customer name"
                 )
 
                 // Street Address
-                OutlinedTextField(
+                DialogFormTextField(
                     value = formState.streetAddress,
                     onValueChange = onStreetAddressChanged,
-                    label = { Text("Street Address", color = textTertiary) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = textPrimary,
-                        unfocusedTextColor = textPrimary,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = accentPrimary,
-                        focusedContainerColor = bgSecondary,
-                        unfocusedContainerColor = bgSecondary
-                    ),
-                    shape = RoundedCornerShape(8.dp),
-                    singleLine = true
+                    label = "Street Address",
+                    placeholder = "123 Main St"
                 )
 
                 // City, State, Zipcode row
@@ -360,60 +374,53 @@ private fun CreateOrderDialog(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // City
-                    OutlinedTextField(
+                    DialogFormTextField(
                         value = formState.city,
                         onValueChange = onCityChanged,
-                        label = { Text("City", color = textTertiary) },
-                        modifier = Modifier.weight(1f),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = textPrimary,
-                            unfocusedTextColor = textPrimary,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = accentPrimary,
-                            focusedContainerColor = bgSecondary,
-                            unfocusedContainerColor = bgSecondary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        label = "City",
+                        placeholder = "City",
+                        modifier = Modifier.weight(1f)
                     )
 
                     // State
-                    OutlinedTextField(
+                    DialogFormTextField(
                         value = formState.state,
                         onValueChange = onStateChanged,
-                        label = { Text("State", color = textTertiary) },
-                        modifier = Modifier.width(80.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = textPrimary,
-                            unfocusedTextColor = textPrimary,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = accentPrimary,
-                            focusedContainerColor = bgSecondary,
-                            unfocusedContainerColor = bgSecondary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        label = "State",
+                        placeholder = "CA",
+                        modifier = Modifier.width(80.dp)
                     )
 
                     // Zipcode
-                    OutlinedTextField(
+                    DialogFormTextField(
                         value = formState.zipcode,
                         onValueChange = onZipcodeChanged,
-                        label = { Text("Zip", color = textTertiary) },
-                        modifier = Modifier.width(100.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = textPrimary,
-                            unfocusedTextColor = textPrimary,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = accentPrimary,
-                            focusedContainerColor = bgSecondary,
-                            unfocusedContainerColor = bgSecondary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        singleLine = true
+                        label = "Zip",
+                        placeholder = "12345",
+                        modifier = Modifier.width(100.dp)
+                    )
+                }
+
+                // Package type and Shipping price row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Package type dropdown
+                    ShippingTypeDropdown(
+                        selectedType = formState.shippingType,
+                        onTypeSelected = onShippingTypeChanged,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Shipping price
+                    DialogFormTextField(
+                        value = formState.shippingPrice,
+                        onValueChange = onShippingPriceChanged,
+                        label = "Shipping Price",
+                        placeholder = "0.00",
+                        prefix = "$",
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -444,6 +451,105 @@ private fun CreateOrderDialog(
         containerColor = bgSurface,
         shape = RoundedCornerShape(12.dp)
     )
+}
+
+@Composable
+private fun DialogFormTextField(
+    modifier: Modifier = Modifier,
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    prefix: String? = null
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textPrimary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = textTertiary
+                )
+            },
+            prefix = if (prefix != null) {
+                { Text(prefix, color = textPrimary) }
+            } else null,
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = textPrimary,
+                unfocusedTextColor = textPrimary,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                cursorColor = accentPrimary,
+                focusedContainerColor = bgSecondary,
+                unfocusedContainerColor = bgSecondary
+            ),
+            shape = RoundedCornerShape(8.dp)
+        )
+    }
+}
+
+@Composable
+private fun ShippingTypeDropdown(
+    selectedType: String,
+    onTypeSelected: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        Text(
+            text = "Package Type",
+            style = MaterialTheme.typography.bodyMedium,
+            color = textPrimary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(bgSecondary)
+                    .clickable { expanded = true }
+                    .padding(horizontal = 16.dp, vertical = 16.dp)
+            ) {
+                Text(
+                    text = selectedType,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textPrimary
+                )
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(bgSecondary)
+            ) {
+                shippingTypeOptions.forEach { option ->
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = option,
+                                color = if (option == selectedType) accentPrimary else textPrimary
+                            )
+                        },
+                        onClick = {
+                            onTypeSelected(option)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -536,6 +642,9 @@ private fun CardSelectionContent(
     onSearchChanged: (String) -> Unit,
     onToggleCardSelection: (String) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier.fillMaxWidth().height(500.dp)
     ) {
@@ -564,18 +673,29 @@ private fun CardSelectionContent(
             ),
             shape = RoundedCornerShape(8.dp)
         )
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         // Cards list
         val filteredCards = if (searchQuery.isBlank()) {
             availableCards
         } else {
             availableCards.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
-        
+
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        coroutineScope.launch {
+                            listState.scrollBy(-dragAmount.y)
+                        }
+                    }
+                },
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(
@@ -617,12 +737,26 @@ private fun PriceConfirmationContent(
     cardPrices: Map<String, String>,
     onCardPriceChanged: (String, String) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     Column(
         modifier = Modifier.fillMaxWidth().height(500.dp)
     ) {
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        coroutineScope.launch {
+                            listState.scrollBy(-dragAmount.y)
+                        }
+                    }
+                },
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(
                 items = selectedCards,
@@ -633,7 +767,7 @@ private fun PriceConfirmationContent(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(4.dp))
                         .background(bgPrimary)
-                        .padding(8.dp),
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -667,8 +801,7 @@ private fun PriceConfirmationContent(
                             focusedContainerColor = bgSecondary,
                             unfocusedContainerColor = bgSecondary
                         ),
-                        shape = RoundedCornerShape(8.dp),
-                        textStyle = MaterialTheme.typography.bodyMedium
+                        shape = RoundedCornerShape(8.dp)
                     )
                 }
             }

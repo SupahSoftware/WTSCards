@@ -5,6 +5,8 @@ CREATE TABLE OrderEntity (
     city TEXT NOT NULL,
     state TEXT NOT NULL,
     zipcode TEXT NOT NULL,
+    shippingType TEXT,
+    shippingCost INTEGER NOT NULL DEFAULT 0,
     createdAt INTEGER NOT NULL
 );
 
@@ -31,8 +33,8 @@ INNER JOIN OrderCardEntity oc ON c.id = oc.cardId
 WHERE oc.orderId = ?;
 
 insert:
-INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, createdAt)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrderCard:
 INSERT INTO OrderCardEntity (orderId, cardId)

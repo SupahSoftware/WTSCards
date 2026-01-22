@@ -1,0 +1,19 @@
+1. Add a way to Edit Order so you can reselect the shipping type or correct any typos in shipping info
+2. Add a warning on orders based on shipping type and number of cards
+    - need to find a reasonable number of cards that can fit in PWE
+    - need to find a reasonable number of top-loaded cards that can fit in a bubble mailer
+    - based on the number of cards in the order and the current shipping type (and considering it's reasonable capacity) we should suggest what type of shipping to upgrade to, or maybe the warning comes with a 'Split order into multiple bubble mailers' warning color ribbon across the bottom with dark text color heavy font to make it look clickable with a material warning icon at the start
+    - when splitting an order into multiples we would need to figure out the new order split, ie how many orders we will need total and split the cards up evenly. Upon clicking split order button, we show a confirmation dialog "This will split your 1 order with X cards into Y total orders" and a short message that the buyer and shippig info will automatically be duplicated and they will have the original order creation time (but obviously new order ids)
+3. We should add a column for order status in the db. So we need to upgrade the schema version to wipe data. This will be a string or text type whatever sql likes.
+    - newly created orders will have 'new' as the default status
+    - row items in the orders screen will have a drop down below the 'ADD CARDS' button that shows the current status, with all of the other possible options to select. All options include new, Label created, shipped
+4. Update the orders screen to have a search bar and a few filter checkboxes
+    - The search bar on every text change will filter on orders for name, address, city, state, zipcode, and all card names in order
+    - Search bar hint will be Search by purchaser info or included card names
+    - filter checkboxes will include one for each order status posible, with all checked by default but we only include orders that have order status that match the checked boxes. So if you uncheck 'shipped' it will not show shipped orders
+5. On the orders screen update the "+" FAB in the bottom to be a menu fab that when clicked expands smaller FAB option buttons with an icon and text each.
+    - One for "+ Create Order" that starts the create order flow
+    - One for "<material icon for label maybe a barcode> Create shipping labels"
+    - when create labels is clicked, show a confirmation dialog that 'n' number of shipping label rows will be created in a .csv file that Pirate Ship will accept as an import. On confirm we will need to create a .csv file that can be uploaded to pirate ship. Give the user a file browser and ask where they would like to save 'shipping-labels-<yyyy-mm-dd>.csv' to and save it in the format that pirate ship likes for importing. We only want to include orders with 'new' status in this .csv export
+    - After the export, give a success or error toast
+    - After the export, update all orders that were just included in the export to have statuses label created and refresh the list

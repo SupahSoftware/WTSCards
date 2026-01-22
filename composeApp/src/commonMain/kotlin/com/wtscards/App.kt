@@ -99,6 +99,8 @@ fun MainScreen(
                     onCityChanged = orderViewModel::onCityChanged,
                     onStateChanged = orderViewModel::onStateChanged,
                     onZipcodeChanged = orderViewModel::onZipcodeChanged,
+                    onShippingTypeChanged = orderViewModel::onShippingTypeChanged,
+                    onShippingPriceChanged = orderViewModel::onShippingPriceChanged,
                     onCreateOrder = orderViewModel::onCreateOrder,
                     onShowAddCardsDialog = orderViewModel::onShowAddCardsDialog,
                     onDismissAddCardsDialog = orderViewModel::onDismissAddCardsDialog,
