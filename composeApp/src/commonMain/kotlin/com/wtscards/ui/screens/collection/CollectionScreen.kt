@@ -34,7 +34,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -116,6 +115,7 @@ fun CollectionScreen(
                 else -> {
                     CardList(
                         cards = uiState.displayedCards,
+                        searchQuery = uiState.searchQuery,
                         sortOption = uiState.sortOption
                     )
                 }
@@ -224,13 +224,15 @@ private fun SortDropdown(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = option.displayName(),
-                                color = if (option == selectedOption) accentPrimary else textPrimary
+                                color = if (option == selectedOption) accentPrimary else textPrimary,
+                                style = MaterialTheme.typography.bodyLarge
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(
                                 imageVector = if (option.isAscending()) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
                                 contentDescription = null,
-                                tint = if (option == selectedOption) accentPrimary else textSecondary
+                                tint = if (option == selectedOption) accentPrimary else textSecondary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     },
@@ -252,58 +254,101 @@ private fun SortOption.displayName(): String = when (this) {
 }
 
 private fun SortOption.isAscending(): Boolean = when (this) {
-    SortOption.NAME_ASC, SortOption.PRICE_ASC -> true
-    SortOption.NAME_DESC, SortOption.PRICE_DESC -> false
+    SortOption.NAME_ASC -> false // A->Z shows down arrow
+    SortOption.NAME_DESC -> true // Z->A shows up arrow
+    SortOption.PRICE_ASC -> true
+    SortOption.PRICE_DESC -> false
 }
 
 @Composable
 private fun CardList(
     cards: List<Card>,
+    searchQuery: String,
     sortOption: SortOption
 ) {
-    val listState = rememberLazyListState()
+    // Key the list state to filters so it resets when they change
+    val listState = remember(searchQuery, sortOption) {
+        androidx.compose.foundation.lazy.LazyListState()
+    }
     val coroutineScope = rememberCoroutineScope()
 
-    // Reset scroll position when sort option changes
-    LaunchedEffect(sortOption) {
-        listState.scrollToItem(0)
-    }
-
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                var lastY = 0f
-                awaitPointerEventScope {
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        when (event.type) {
-                            PointerEventType.Press -> {
-                                lastY = event.changes.first().position.y
-                            }
-                            PointerEventType.Move -> {
-                                if (event.changes.first().pressed) {
-                                    val currentY = event.changes.first().position.y
-                                    val delta = lastY - currentY
-                                    lastY = currentY
-                                    coroutineScope.launch {
-                                        listState.scrollBy(delta)
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = 24.dp) // Add padding for scrollbar
+                .pointerInput(listState) {
+                    var lastY = 0f
+                    var velocity = 0f
+                    var lastTime = System.currentTimeMillis()
+                    
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            when (event.type) {
+                                PointerEventType.Press -> {
+                                    lastY = event.changes.first().position.y
+                                    velocity = 0f
+                                    lastTime = System.currentTimeMillis()
+                                }
+                                PointerEventType.Move -> {
+                                    if (event.changes.first().pressed) {
+                                        val currentY = event.changes.first().position.y
+                                        val currentTime = System.currentTimeMillis()
+                                        val delta = lastY - currentY
+                                        val timeDelta = (currentTime - lastTime).coerceAtLeast(1)
+                                        
+                                        velocity = delta / timeDelta * 2000 // pixels per second
+                                        lastY = currentY
+                                        lastTime = currentTime
+                                        
+                                        coroutineScope.launch {
+                                            listState.scrollBy(delta)
+                                        }
+                                    }
+                                }
+                                PointerEventType.Release -> {
+                                    // Apply fling with calculated velocity
+                                    if (kotlin.math.abs(velocity) > 100) {
+                                        coroutineScope.launch {
+                                            listState.scroll {
+                                                var remainingVelocity = velocity * 0.5f
+                                                val decay = 0.95f
+                                                while (kotlin.math.abs(remainingVelocity) > 1f) {
+                                                    scrollBy(remainingVelocity / 60f) // 60fps approximation
+                                                    remainingVelocity *= decay
+                                                    kotlinx.coroutines.delay(16) // ~60fps
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            },
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(
-            items = cards,
-            key = { it.sportsCardProId }
-        ) { card ->
-            CardRow(card = card)
+                },
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                items = cards,
+                key = { it.sportsCardProId }
+            ) { card ->
+                CardRow(card = card)
+            }
         }
+        
+        androidx.compose.foundation.VerticalScrollbar(
+            adapter = androidx.compose.foundation.rememberScrollbarAdapter(listState),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight()
+                .padding(end = 4.dp),
+            style = androidx.compose.foundation.defaultScrollbarStyle().copy(
+                unhoverColor = accentPrimary.copy(alpha = 0.4f),
+                hoverColor = accentPrimary.copy(alpha = 0.7f)
+            )
+        )
     }
 }
 

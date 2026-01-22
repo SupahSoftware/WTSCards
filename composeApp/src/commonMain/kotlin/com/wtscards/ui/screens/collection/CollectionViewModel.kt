@@ -6,7 +6,6 @@ import androidx.compose.runtime.setValue
 import com.wtscards.data.model.Card
 import com.wtscards.domain.usecase.CardUseCase
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -50,21 +49,8 @@ class CollectionViewModel(
     }
 
     fun onSortOptionChanged(sortOption: SortOption) {
-        coroutineScope.launch {
-            // Clear list and show loading
-            uiState = uiState.copy(
-                sortOption = sortOption,
-                displayedCards = emptyList(),
-                isLoading = true
-            )
-
-            // Brief delay to prevent flickering
-            delay(400)
-
-            // Update with sorted list
-            uiState = uiState.copy(isLoading = false)
-            updateDisplayedCards()
-        }
+        uiState = uiState.copy(sortOption = sortOption)
+        updateDisplayedCards()
     }
 
     private fun updateDisplayedCards() {
