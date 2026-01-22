@@ -10,32 +10,44 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.wtscards.data.repository.CollectionRepositoryImpl
+import com.wtscards.ui.components.ImportConflictDialog
 import com.wtscards.ui.navigation.BottomNavBar
 import com.wtscards.ui.navigation.NavigationItem
 import com.wtscards.ui.screens.collection.CollectionScreen
 import com.wtscards.ui.screens.collection.CollectionViewModel
+import com.wtscards.ui.screens.import.ImportScreen
+import com.wtscards.ui.screens.import.ImportState
+import com.wtscards.ui.screens.import.ImportViewModel
 import com.wtscards.ui.theme.WTSCardsTheme
 import com.wtscards.ui.theme.bgPrimary
 
 @Composable
-fun App() {
+fun App(
+    dependencies: AppDependencies,
+    importViewModel: ImportViewModel
+) {
     WTSCardsTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = bgPrimary
         ) {
-            MainScreen()
+            MainScreen(
+                dependencies = dependencies,
+                importViewModel = importViewModel
+            )
         }
     }
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    dependencies: AppDependencies,
+    importViewModel: ImportViewModel
+) {
     var currentRoute by remember { mutableStateOf(NavigationItem.Collection.route) }
 
     val collectionViewModel = remember {
-        CollectionViewModel(CollectionRepositoryImpl())
+        CollectionViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
     }
 
     Scaffold(
@@ -55,6 +67,27 @@ fun MainScreen() {
                     modifier = Modifier.padding(paddingValues)
                 )
             }
+            NavigationItem.Import.route -> {
+                ImportScreen(
+                    uiState = importViewModel.uiState,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+
+        // Show conflict dialog when needed
+        val importState = importViewModel.uiState.importState
+        if (importState is ImportState.ConflictDetected) {
+            ImportConflictDialog(
+                collisionCount = importState.collisions.size,
+                totalCount = importState.cards.size,
+                onStrategySelected = { strategy ->
+                    importViewModel.onImportStrategySelected(strategy)
+                },
+                onDismiss = {
+                    importViewModel.onConflictDialogDismissed()
+                }
+            )
         }
     }
 }

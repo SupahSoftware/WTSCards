@@ -1,6 +1,7 @@
 package com.wtscards.ui.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -13,5 +14,10 @@ enum class NavigationItem(
         label = "Collection",
         icon = Icons.Default.GridView,
         route = "collection"
+    ),
+    Import(
+        label = "Import",
+        icon = Icons.Default.FileUpload,
+        route = "import"
     )
 }

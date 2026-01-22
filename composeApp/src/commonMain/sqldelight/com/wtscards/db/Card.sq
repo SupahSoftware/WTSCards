@@ -1,0 +1,37 @@
+CREATE TABLE CardEntity (
+    sportsCardProId TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    setName TEXT NOT NULL,
+    priceInPennies INTEGER NOT NULL,
+    gradedString TEXT NOT NULL,
+    quantity INTEGER NOT NULL
+);
+
+selectAll:
+SELECT * FROM CardEntity;
+
+selectById:
+SELECT * FROM CardEntity WHERE sportsCardProId = ?;
+
+selectByIds:
+SELECT * FROM CardEntity WHERE sportsCardProId IN ?;
+
+insert:
+INSERT INTO CardEntity (sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
+VALUES (?, ?, ?, ?, ?, ?);
+
+insertOrReplace:
+INSERT OR REPLACE INTO CardEntity (sportsCardProId, name, setName, priceInPennies, gradedString, quantity)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updatePrice:
+UPDATE CardEntity SET priceInPennies = ? WHERE sportsCardProId = ?;
+
+deleteAll:
+DELETE FROM CardEntity;
+
+deleteById:
+DELETE FROM CardEntity WHERE sportsCardProId = ?;
+
+count:
+SELECT COUNT(*) FROM CardEntity;

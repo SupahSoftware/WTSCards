@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -19,10 +20,22 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
+            implementation(libs.kotlinx.coroutines.core)
         }
 
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutines.swing)
+            implementation(libs.sqldelight.driver.jvm)
+            implementation(libs.sqldelight.coroutines)
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("WTSCardsDatabase") {
+            packageName.set("com.wtscards.db")
         }
     }
 }
