@@ -2,6 +2,7 @@ package com.wtscards.ui.screens.collection
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +38,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -52,6 +52,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Card
 import com.wtscards.ui.theme.accentPrimary
+import com.wtscards.ui.theme.bgDropdown
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
@@ -284,14 +287,21 @@ private fun SortDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var dropdownWidth by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
 
     Box(modifier = modifier) {
-        OutlinedButton(
-            onClick = { expanded = true },
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(),
-            shape = RoundedCornerShape(8.dp)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(8.dp))
+                .background(bgDropdown)
+                .clickable { expanded = true }
+                .onGloballyPositioned { coordinates ->
+                    dropdownWidth = coordinates.size.width
+                },
+            contentAlignment = Alignment.Center
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -299,6 +309,7 @@ private fun SortDropdown(
             ) {
                 Text(
                     text = selectedOption.displayName(),
+                    style = MaterialTheme.typography.bodyLarge,
                     color = textPrimary
                 )
                 Spacer(modifier = Modifier.width(4.dp))
@@ -313,7 +324,15 @@ private fun SortDropdown(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(bgSecondary)
+            modifier = Modifier
+                .background(bgDropdown)
+                .then(
+                    if (dropdownWidth > 0) {
+                        Modifier.width(with(density) { dropdownWidth.toDp() })
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
             SortOption.entries.forEach { option ->
                 DropdownMenuItem(

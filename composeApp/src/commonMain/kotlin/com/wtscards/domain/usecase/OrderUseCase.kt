@@ -9,6 +9,7 @@ interface OrderUseCase {
     suspend fun getOrderById(id: String): Order?
     suspend fun createOrder(order: Order)
     suspend fun updateOrder(order: Order)
+    suspend fun updateStatus(orderId: String, status: String)
     suspend fun deleteOrder(id: String)
     suspend fun addCardsToOrder(orderId: String, cardPrices: Map<String, Long>)
 }

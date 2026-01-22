@@ -294,20 +294,35 @@ class OrderViewModel(
 
                     uiState = uiState.copy(
                         addCardsDialogState = null,
-                        toastMessage = "Cards added to order successfully"
+                        toast = ToastState("Cards added to order successfully", isError = false)
                     )
                 } catch (e: Exception) {
                     uiState = uiState.copy(
                         addCardsDialogState = dialogState.copy(isSaving = false),
-                        toastMessage = e.message ?: "Failed to add cards to order"
+                        toast = ToastState(e.message ?: "Failed to add cards to order", isError = true)
                     )
                 }
             }
         }
     }
 
+    fun onStatusChanged(orderId: String, newStatus: String) {
+        coroutineScope.launch {
+            try {
+                orderUseCase.updateStatus(orderId, newStatus)
+                uiState = uiState.copy(
+                    toast = ToastState("Order updated to $newStatus", isError = false)
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    toast = ToastState(e.message ?: "Failed to update order status", isError = true)
+                )
+            }
+        }
+    }
+
     fun clearToast() {
-        uiState = uiState.copy(toastMessage = null)
+        uiState = uiState.copy(toast = null)
     }
 
     private fun String.toTitleCase(): String {

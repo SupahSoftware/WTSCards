@@ -17,26 +17,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.wtscards.ui.components.AppDropdown
 import com.wtscards.ui.theme.accentPrimary
-import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
 import com.wtscards.ui.theme.errorColor
@@ -229,8 +222,6 @@ private fun GradeDropdown(
     selectedGrade: String,
     onGradeSelected: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Column(modifier = modifier) {
         Text(
             text = "Grade",
@@ -238,40 +229,11 @@ private fun GradeDropdown(
             color = textPrimary
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Box {
-            OutlinedButton(
-                onClick = { expanded = true },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = selectedGrade,
-                    color = textPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(bgSecondary)
-            ) {
-                gradeOptions.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = option,
-                                color = if (option == selectedGrade) accentPrimary else textPrimary
-                            )
-                        },
-                        onClick = {
-                            onGradeSelected(option)
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
+        AppDropdown(
+            selectedValue = selectedGrade,
+            options = gradeOptions,
+            onOptionSelected = onGradeSelected
+        )
     }
 }
 

@@ -10,6 +10,7 @@ val bgPrimary = Color(0xFF121212)
 val bgSecondary = Color(0xFF1E1E1E)
 val bgSurface = Color(0xFF242424)
 val bgHover = Color(0xFF2A2A2A)
+val bgDropdown = Color(0xFF1A1A1A)
 
 // --- Text Colors ---
 val textPrimary = Color(0xFFE0E0E0)

@@ -7,6 +7,7 @@ CREATE TABLE OrderEntity (
     zipcode TEXT NOT NULL,
     shippingType TEXT,
     shippingCost INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'New',
     createdAt INTEGER NOT NULL
 );
 
@@ -33,8 +34,8 @@ INNER JOIN OrderCardEntity oc ON c.id = oc.cardId
 WHERE oc.orderId = ?;
 
 insert:
-INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, createdAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, status, createdAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrderCard:
 INSERT INTO OrderCardEntity (orderId, cardId)
@@ -43,6 +44,11 @@ VALUES (?, ?);
 updateOrder:
 UPDATE OrderEntity
 SET name = ?, streetAddress = ?, city = ?, state = ?, zipcode = ?, shippingType = ?, shippingCost = ?
+WHERE id = ?;
+
+updateStatus:
+UPDATE OrderEntity
+SET status = ?
 WHERE id = ?;
 
 deleteById:

@@ -9,6 +9,15 @@ data class Order(
     val zipcode: String,
     val shippingType: String? = null,
     val shippingCost: Long = 0,
+    val status: String = "New",
     val createdAt: Long,
     val cards: List<Card> = emptyList()
 )
+
+object OrderStatus {
+    const val NEW = "New"
+    const val LABEL_CREATED = "Label created"
+    const val SHIPPED = "Shipped"
+
+    val allStatuses = listOf(NEW, LABEL_CREATED, SHIPPED)
+}

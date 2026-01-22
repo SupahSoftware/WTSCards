@@ -30,6 +30,10 @@ class OrderUseCaseImpl(
         orderLocalDataSource.updateOrder(order)
     }
 
+    override suspend fun updateStatus(orderId: String, status: String) {
+        orderLocalDataSource.updateStatus(orderId, status)
+    }
+
     override suspend fun deleteOrder(id: String) {
         orderLocalDataSource.deleteOrder(id)
     }

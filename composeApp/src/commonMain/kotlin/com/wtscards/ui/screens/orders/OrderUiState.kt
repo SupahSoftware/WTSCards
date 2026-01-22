@@ -12,7 +12,12 @@ data class OrderUiState(
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
     val addCardsDialogState: AddCardsDialogState? = null,
     val availableCards: List<Card> = emptyList(),
-    val toastMessage: String? = null
+    val toast: ToastState? = null
+)
+
+data class ToastState(
+    val message: String,
+    val isError: Boolean = false
 )
 
 data class CreateOrderFormState(

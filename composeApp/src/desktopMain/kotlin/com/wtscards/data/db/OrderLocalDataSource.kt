@@ -55,6 +55,7 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
                 zipcode = order.zipcode,
                 shippingType = order.shippingType,
                 shippingCost = order.shippingCost,
+                status = order.status,
                 createdAt = order.createdAt
             )
 
@@ -79,6 +80,10 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             shippingCost = order.shippingCost,
             id = order.id
         )
+    }
+
+    suspend fun updateStatus(orderId: String, status: String) = withContext(Dispatchers.IO) {
+        orderQueries.updateStatus(status = status, id = orderId)
     }
 
     suspend fun deleteOrder(id: String) = withContext(Dispatchers.IO) {
@@ -119,6 +124,7 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             zipcode = zipcode,
             shippingType = shippingType,
             shippingCost = shippingCost,
+            status = status,
             createdAt = createdAt,
             cards = cards
         )

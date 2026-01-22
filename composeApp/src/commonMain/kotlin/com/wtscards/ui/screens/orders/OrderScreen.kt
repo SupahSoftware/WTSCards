@@ -49,14 +49,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Order
+import com.wtscards.data.model.OrderStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.fillMaxHeight
+import com.wtscards.ui.components.AppDropdown
+import androidx.compose.foundation.layout.PaddingValues
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgPrimary
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
+import com.wtscards.ui.theme.errorColor
 import com.wtscards.ui.theme.successColor
+import com.wtscards.ui.theme.warningColor
 import com.wtscards.ui.theme.textOnAccent
 import com.wtscards.ui.theme.textPrimary
 import com.wtscards.ui.theme.textSecondary
@@ -76,6 +82,7 @@ fun OrderScreen(
     onShippingPriceChanged: (String) -> Unit,
     onCreateOrUpdateOrder: () -> Unit,
     onEditOrder: (Order) -> Unit,
+    onStatusChanged: (String, String) -> Unit,
     onShowAddCardsDialog: (String) -> Unit,
     onDismissAddCardsDialog: () -> Unit,
     onAddCardsSearchChanged: (String) -> Unit,
@@ -87,8 +94,8 @@ fun OrderScreen(
     modifier: Modifier = Modifier
 ) {
     // Auto-clear toast after 3 seconds
-    LaunchedEffect(uiState.toastMessage) {
-        if (uiState.toastMessage != null) {
+    LaunchedEffect(uiState.toast) {
+        if (uiState.toast != null) {
             delay(3000)
             onClearToast()
         }
@@ -132,7 +139,8 @@ fun OrderScreen(
                         OrderList(
                             orders = uiState.orders,
                             onShowAddCardsDialog = onShowAddCardsDialog,
-                            onEditOrder = onEditOrder
+                            onEditOrder = onEditOrder,
+                            onStatusChanged = onStatusChanged
                         )
                     }
                 }
@@ -186,17 +194,18 @@ fun OrderScreen(
         }
 
         // Toast message
-        uiState.toastMessage?.let { message ->
+        uiState.toast?.let { toast ->
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(accentPrimary)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .background(if (toast.isError) errorColor else successColor)
+                    .padding(16.dp)
             ) {
                 Text(
-                    text = message,
+                    text = toast.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = textOnAccent
                 )
@@ -209,7 +218,8 @@ fun OrderScreen(
 private fun OrderList(
     orders: List<Order>,
     onShowAddCardsDialog: (String) -> Unit,
-    onEditOrder: (Order) -> Unit
+    onEditOrder: (Order) -> Unit,
+    onStatusChanged: (String, String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -222,7 +232,8 @@ private fun OrderList(
             OrderCard(
                 order = order,
                 onShowAddCardsDialog = onShowAddCardsDialog,
-                onEditOrder = onEditOrder
+                onEditOrder = onEditOrder,
+                onStatusChanged = onStatusChanged
             )
         }
     }
@@ -232,98 +243,131 @@ private fun OrderList(
 private fun OrderCard(
     order: Order,
     onShowAddCardsDialog: (String) -> Unit,
-    onEditOrder: (Order) -> Unit
+    onEditOrder: (Order) -> Unit,
+    onStatusChanged: (String, String) -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(bgSurface)
             .padding(16.dp)
     ) {
-        // Left side: main content
-        Column(
-            modifier = Modifier.weight(1f)
+        // Top row: purchaser info and price/actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = order.name,
-                style = MaterialTheme.typography.titleLarge,
-                color = textPrimary
-            )
-            
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = order.streetAddress,
-                style = MaterialTheme.typography.bodyMedium,
-                color = textSecondary
-            )
-            Text(
-                text = "${order.city}, ${order.state} ${order.zipcode}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = textSecondary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = formatOrderDate(order.createdAt),
-                style = MaterialTheme.typography.bodySmall,
-                color = textTertiary
-            )
-            
-            // Display shipping and cards if present
-            if (order.shippingType != null || order.cards.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Shipping line item first
-                if (order.shippingType != null) {
+            // Left side: purchaser info
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                // Name row with status dropdown
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Shipping: ${order.shippingType}    ${formatPrice(order.shippingCost)}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = order.name,
+                        style = MaterialTheme.typography.titleLarge,
                         color = textPrimary
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Spacer(modifier = Modifier.width(24.dp))
+
+                    AppDropdown(
+                        modifier = Modifier.width(200.dp),
+                        padding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        selectedValue = order.status,
+                        options = OrderStatus.allStatuses,
+                        onOptionSelected = { newStatus ->
+                            if (newStatus != order.status) {
+                                onStatusChanged(order.id, newStatus)
+                            }
+                        },
+                        backgroundColor = when (order.status.trim()) {
+                            OrderStatus.NEW -> errorColor
+                            OrderStatus.LABEL_CREATED -> warningColor
+                            OrderStatus.SHIPPED -> successColor
+                            else -> bgPrimary
+                        },
+                        textColor = textOnAccent
+                    )
                 }
 
-                // Cards
-                order.cards.forEach { card ->
-                    Text(
-                        text = "${card.name}    ${formatPrice(card.priceSold ?: 0)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textPrimary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = order.streetAddress,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary
+                )
+                Text(
+                    text = "${order.city}, ${order.state} ${order.zipcode}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = formatOrderDate(order.createdAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textTertiary
+                )
+            }
+
+            // Right side: total price and buttons
+            Column(
+                modifier = Modifier,
+                horizontalAlignment = Alignment.End
+            ) {
+                val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
+                val total = cardsTotal + order.shippingCost
+                Text(
+                    text = formatPrice(total),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    color = successColor
+                )
+
+                Text(
+                    text = "ADD CARDS",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = accentPrimary,
+                    modifier = Modifier.clickable { onShowAddCardsDialog(order.id) }
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "EDIT ORDER",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = accentPrimary,
+                    modifier = Modifier.clickable { onEditOrder(order) }
+                )
             }
         }
 
-        // Right side: total price and add cards button
-        Column(
-            modifier = Modifier.align(Alignment.CenterVertically),
-            horizontalAlignment = Alignment.End
-        ) {
-            val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
-            val total = cardsTotal + order.shippingCost
-            Text(
-                text = formatPrice(total),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                color = successColor
-            )
-            
-            Text(
-                text = "ADD CARDS",
-                style = MaterialTheme.typography.bodyLarge,
-                color = accentPrimary,
-                modifier = Modifier.clickable { onShowAddCardsDialog(order.id) }
-            )
+        // Display shipping and cards if present
+        if (order.shippingType != null || order.cards.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(4.dp))
+            // Shipping line item first
+            if (order.shippingType != null) {
+                Text(
+                    text = "Shipping: ${order.shippingType}    ${formatPrice(order.shippingCost)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textPrimary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
 
-            Text(
-                text = "EDIT ORDER",
-                style = MaterialTheme.typography.bodyLarge,
-                color = accentPrimary,
-                modifier = Modifier.clickable { onEditOrder(order) }
-            )
+            // Cards
+            order.cards.forEach { card ->
+                Text(
+                    text = "${card.name}    ${formatPrice(card.priceSold ?: 0)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textPrimary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
         }
     }
 }
@@ -514,8 +558,6 @@ private fun ShippingTypeDropdown(
     onTypeSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Column(modifier = modifier) {
         Text(
             text = "Package Type",
@@ -523,43 +565,11 @@ private fun ShippingTypeDropdown(
             color = textPrimary
         )
         Spacer(modifier = Modifier.height(4.dp))
-        Box {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(bgSecondary)
-                    .clickable { expanded = true }
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-            ) {
-                Text(
-                    text = selectedType,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = textPrimary
-                )
-            }
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(bgSecondary)
-            ) {
-                shippingTypeOptions.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = option,
-                                color = if (option == selectedType) accentPrimary else textPrimary
-                            )
-                        },
-                        onClick = {
-                            onTypeSelected(option)
-                            expanded = false
-                        }
-                    )
-                }
-            }
-        }
+        AppDropdown(
+            selectedValue = selectedType,
+            options = shippingTypeOptions,
+            onOptionSelected = onTypeSelected
+        )
     }
 }
 
