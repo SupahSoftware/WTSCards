@@ -9,6 +9,25 @@ enum class SortOption {
     PRICE_DESC
 }
 
+data class ToastMessage(
+    val message: String,
+    val isError: Boolean
+)
+
+data class EditCardFormState(
+    val cardId: String = "",
+    val name: String = "",
+    val cardNumber: String = "",
+    val setName: String = "",
+    val parallelName: String = "",
+    val gradeOption: String = "Ungraded",
+    val priceText: String = "",
+    val nameSuggestions: List<String> = emptyList(),
+    val setNameSuggestions: List<String> = emptyList(),
+    val parallelNameSuggestions: List<String> = emptyList(),
+    val isSaving: Boolean = false
+)
+
 data class CollectionUiState(
     val isLoading: Boolean = false,
     val allCards: List<Card> = emptyList(),
@@ -18,5 +37,9 @@ data class CollectionUiState(
     val error: String? = null,
     val isEditMode: Boolean = false,
     val selectedCardIds: Set<String> = emptySet(),
-    val showDeleteConfirmDialog: Boolean = false
+    val showDeleteConfirmDialog: Boolean = false,
+    // Edit card dialog state
+    val showEditCardDialog: Boolean = false,
+    val editCardForm: EditCardFormState = EditCardFormState(),
+    val toastMessage: ToastMessage? = null
 )

@@ -58,7 +58,7 @@ fun MainScreen(
     var currentRoute by remember { mutableStateOf(NavigationItem.Collection.route) }
 
     val collectionViewModel = remember {
-        CollectionViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
+        CollectionViewModel(dependencies.cardUseCase, dependencies.autocompleteUseCase, dependencies.coroutineScope)
     }
 
     val orderViewModel = remember {
@@ -90,6 +90,17 @@ fun MainScreen(
                     onDeleteClick = collectionViewModel::showDeleteConfirmation,
                     onDeleteConfirm = collectionViewModel::confirmDelete,
                     onDeleteCancel = collectionViewModel::dismissDeleteConfirmation,
+                    onEditCard = collectionViewModel::onEditCard,
+                    onDismissEditCardDialog = collectionViewModel::onDismissEditCardDialog,
+                    onEditNameChanged = collectionViewModel::onEditNameChanged,
+                    onEditCardNumberChanged = collectionViewModel::onEditCardNumberChanged,
+                    onEditSetNameChanged = collectionViewModel::onEditSetNameChanged,
+                    onEditParallelNameChanged = collectionViewModel::onEditParallelNameChanged,
+                    onEditGradeOptionChanged = collectionViewModel::onEditGradeOptionChanged,
+                    onEditPriceChanged = collectionViewModel::onEditPriceChanged,
+                    onSaveEditCard = collectionViewModel::onSaveEditCard,
+                    canSaveEditCard = collectionViewModel.canSaveEditCard(),
+                    onClearToast = collectionViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )
             }

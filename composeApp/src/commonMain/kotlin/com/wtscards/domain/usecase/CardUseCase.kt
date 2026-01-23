@@ -11,4 +11,5 @@ interface CardUseCase {
     suspend fun deleteCards(cardIds: List<String>)
     suspend fun addCard(card: Card)
     suspend fun addCards(cards: List<Card>)
+    suspend fun updateCard(card: Card)
 }

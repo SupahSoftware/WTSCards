@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +46,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import com.wtscards.ui.components.CardFormFields
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,6 +98,17 @@ fun CollectionScreen(
     onDeleteClick: () -> Unit,
     onDeleteConfirm: () -> Unit,
     onDeleteCancel: () -> Unit,
+    onEditCard: (Card) -> Unit,
+    onDismissEditCardDialog: () -> Unit,
+    onEditNameChanged: (String) -> Unit,
+    onEditCardNumberChanged: (String) -> Unit,
+    onEditSetNameChanged: (String) -> Unit,
+    onEditParallelNameChanged: (String) -> Unit,
+    onEditGradeOptionChanged: (String) -> Unit,
+    onEditPriceChanged: (String) -> Unit,
+    onSaveEditCard: () -> Unit,
+    canSaveEditCard: Boolean,
+    onClearToast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -108,7 +124,8 @@ fun CollectionScreen(
             Spacer(modifier = Modifier.height(16.dp))
             ContentArea(
                 uiState = uiState,
-                onToggleCardSelection = onToggleCardSelection
+                onToggleCardSelection = onToggleCardSelection,
+                onEditCard = onEditCard
             )
         }
 
@@ -123,13 +140,39 @@ fun CollectionScreen(
                 onDismiss = onDeleteCancel
             )
         }
+
+        if (uiState.showEditCardDialog) {
+            EditCardDialog(
+                formState = uiState.editCardForm,
+                onDismiss = onDismissEditCardDialog,
+                onNameChanged = onEditNameChanged,
+                onCardNumberChanged = onEditCardNumberChanged,
+                onSetNameChanged = onEditSetNameChanged,
+                onParallelNameChanged = onEditParallelNameChanged,
+                onGradeOptionChanged = onEditGradeOptionChanged,
+                onPriceChanged = onEditPriceChanged,
+                onSave = onSaveEditCard,
+                canSave = canSaveEditCard
+            )
+        }
+
+        // Toast message
+        uiState.toastMessage?.let { toast ->
+            ToastMessage(
+                message = toast.message,
+                isError = toast.isError,
+                onDismiss = onClearToast,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 
 @Composable
 private fun ContentArea(
     uiState: CollectionUiState,
-    onToggleCardSelection: (String) -> Unit
+    onToggleCardSelection: (String) -> Unit,
+    onEditCard: (Card) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -164,7 +207,8 @@ private fun ContentArea(
                     sortOption = uiState.sortOption,
                     isEditMode = uiState.isEditMode,
                     selectedCardIds = uiState.selectedCardIds,
-                    onToggleCardSelection = onToggleCardSelection
+                    onToggleCardSelection = onToggleCardSelection,
+                    onEditCard = onEditCard
                 )
             }
         }
@@ -405,7 +449,8 @@ private fun CardList(
     sortOption: SortOption,
     isEditMode: Boolean,
     selectedCardIds: Set<String>,
-    onToggleCardSelection: (String) -> Unit
+    onToggleCardSelection: (String) -> Unit,
+    onEditCard: (Card) -> Unit
 ) {
     // Key the list state to filters so it resets when they change
     val listState = remember(searchQuery, sortOption) {
@@ -479,7 +524,8 @@ private fun CardList(
                     card = card,
                     isEditMode = isEditMode,
                     isSelected = card.id in selectedCardIds,
-                    onToggleSelection = { onToggleCardSelection(card.id) }
+                    onToggleSelection = { onToggleCardSelection(card.id) },
+                    onEditClick = { onEditCard(card) }
                 )
             }
         }
@@ -503,7 +549,8 @@ private fun CardRow(
     card: Card,
     isEditMode: Boolean,
     isSelected: Boolean,
-    onToggleSelection: () -> Unit
+    onToggleSelection: () -> Unit,
+    onEditClick: () -> Unit
 ) {
     val showGradeBadge = card.gradedString.isNotBlank() && card.gradedString.lowercase() != "ungraded"
 
@@ -544,7 +591,7 @@ private fun CardRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox (shown in edit mode)
+            // Checkbox and Edit button (shown in edit mode)
             if (isEditMode) {
                 Checkbox(
                     checked = isSelected,
@@ -556,7 +603,19 @@ private fun CardRow(
                         checkmarkColor = bgSurface
                     )
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = onEditClick,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit card",
+                        tint = accentPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             // Card Info (takes remaining space)
@@ -610,4 +669,98 @@ private fun CardRow(
 private fun formatPrice(priceInPennies: Long): String {
     val dollars = priceInPennies / 100.0
     return "$${String.format("%.2f", dollars)}"
+}
+
+@Composable
+private fun EditCardDialog(
+    formState: EditCardFormState,
+    onDismiss: () -> Unit,
+    onNameChanged: (String) -> Unit,
+    onCardNumberChanged: (String) -> Unit,
+    onSetNameChanged: (String) -> Unit,
+    onParallelNameChanged: (String) -> Unit,
+    onGradeOptionChanged: (String) -> Unit,
+    onPriceChanged: (String) -> Unit,
+    onSave: () -> Unit,
+    canSave: Boolean
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Edit Card",
+                style = MaterialTheme.typography.headlineSmall,
+                color = textPrimary
+            )
+        },
+        text = {
+            CardFormFields(
+                name = formState.name,
+                onNameChanged = onNameChanged,
+                nameSuggestions = formState.nameSuggestions,
+                cardNumber = formState.cardNumber,
+                onCardNumberChanged = onCardNumberChanged,
+                setName = formState.setName,
+                onSetNameChanged = onSetNameChanged,
+                setNameSuggestions = formState.setNameSuggestions,
+                parallelName = formState.parallelName,
+                onParallelNameChanged = onParallelNameChanged,
+                parallelNameSuggestions = formState.parallelNameSuggestions,
+                gradeOption = formState.gradeOption,
+                onGradeOptionChanged = onGradeOptionChanged,
+                priceText = formState.priceText,
+                onPriceChanged = onPriceChanged
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onSave,
+                enabled = canSave,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accentPrimary,
+                    contentColor = textOnAccent,
+                    disabledContainerColor = bgSurface,
+                    disabledContentColor = textTertiary
+                )
+            ) {
+                Text(if (formState.isSaving) "Saving..." else "Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSecondary
+    )
+}
+
+@Composable
+private fun ToastMessage(
+    message: String,
+    isError: Boolean,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LaunchedEffect(message) {
+        delay(3000)
+        onDismiss()
+    }
+
+    Box(
+        modifier = modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .background(
+                color = if (isError) errorColor else successColor,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(16.dp)
+    ) {
+        Text(
+            text = message,
+            color = textOnAccent,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
 }

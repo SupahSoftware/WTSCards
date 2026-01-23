@@ -64,4 +64,8 @@ class CardUseCaseImpl(
     override suspend fun addCards(cards: List<Card>) {
         cards.forEach { localDataSource.insertCard(it) }
     }
+
+    override suspend fun updateCard(card: Card) {
+        localDataSource.insertOrReplaceCard(card)
+    }
 }
