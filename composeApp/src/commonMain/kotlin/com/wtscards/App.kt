@@ -132,6 +132,10 @@ fun MainScreen(
                     onShowSplitOrderDialog = orderViewModel::onShowSplitOrderDialog,
                     onDismissSplitOrderDialog = orderViewModel::onDismissSplitOrderDialog,
                     onConfirmSplitOrder = orderViewModel::onConfirmSplitOrder,
+                    onShowTrackingNumberDialog = orderViewModel::onShowTrackingNumberDialog,
+                    onDismissTrackingNumberDialog = orderViewModel::onDismissTrackingNumberDialog,
+                    onTrackingNumberChanged = orderViewModel::onTrackingNumberChanged,
+                    onConfirmTrackingNumber = orderViewModel::onConfirmTrackingNumber,
                     onClearToast = orderViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )

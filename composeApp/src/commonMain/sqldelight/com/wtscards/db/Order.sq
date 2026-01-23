@@ -8,7 +8,8 @@ CREATE TABLE OrderEntity (
     shippingType TEXT,
     shippingCost INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'New',
-    createdAt INTEGER NOT NULL
+    createdAt INTEGER NOT NULL,
+    trackingNumber TEXT
 );
 
 CREATE TABLE OrderCardEntity (
@@ -34,8 +35,8 @@ INNER JOIN OrderCardEntity oc ON c.id = oc.cardId
 WHERE oc.orderId = ?;
 
 insert:
-INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, status, createdAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, status, createdAt, trackingNumber)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrderCard:
 INSERT INTO OrderCardEntity (orderId, cardId)
@@ -66,4 +67,9 @@ SELECT COUNT(*) FROM OrderEntity;
 updateShippingType:
 UPDATE OrderEntity
 SET shippingType = ?, shippingCost = ?
+WHERE id = ?;
+
+updateTrackingNumber:
+UPDATE OrderEntity
+SET trackingNumber = ?
 WHERE id = ?;

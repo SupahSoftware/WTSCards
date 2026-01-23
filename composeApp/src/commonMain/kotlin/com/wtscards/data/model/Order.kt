@@ -11,6 +11,7 @@ data class Order(
     val shippingCost: Long = 0,
     val status: String = "New",
     val createdAt: Long,
+    val trackingNumber: String? = null,
     val cards: List<Card> = emptyList()
 )
 

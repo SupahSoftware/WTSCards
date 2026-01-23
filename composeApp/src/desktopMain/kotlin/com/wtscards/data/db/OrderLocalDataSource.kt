@@ -56,7 +56,8 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
                 shippingType = order.shippingType,
                 shippingCost = order.shippingCost,
                 status = order.status,
-                createdAt = order.createdAt
+                createdAt = order.createdAt,
+                trackingNumber = order.trackingNumber
             )
 
             // Insert order-card relationships
@@ -116,6 +117,13 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
         )
     }
 
+    suspend fun updateTrackingNumber(orderId: String, trackingNumber: String?) = withContext(Dispatchers.IO) {
+        orderQueries.updateTrackingNumber(
+            trackingNumber = trackingNumber,
+            id = orderId
+        )
+    }
+
     suspend fun replaceOrderCards(orderId: String, cardIds: List<String>) = withContext(Dispatchers.IO) {
         database.transaction {
             orderQueries.deleteOrderCardsByOrderId(orderId)
@@ -147,6 +155,7 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             shippingCost = shippingCost,
             status = status,
             createdAt = createdAt,
+            trackingNumber = trackingNumber,
             cards = cards
         )
     }

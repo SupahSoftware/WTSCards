@@ -27,6 +27,7 @@ data class OrderUiState(
     val removeCardDialogState: RemoveCardDialogState? = null,
     val upgradeShippingDialogState: UpgradeShippingDialogState? = null,
     val splitOrderDialogState: SplitOrderDialogState? = null,
+    val trackingNumberDialogState: TrackingNumberDialogState? = null,
     val availableCards: List<Card> = emptyList(),
     val toast: ToastState? = null
 ) {
@@ -127,4 +128,10 @@ data class SplitOrderDialogState(
     val cardCount: Int,
     val splitCount: Int,
     val isProcessing: Boolean = false
+)
+
+data class TrackingNumberDialogState(
+    val orderId: String,
+    val trackingNumber: String = "",
+    val isSaving: Boolean = false
 )

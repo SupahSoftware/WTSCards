@@ -55,6 +55,10 @@ class OrderUseCaseImpl(
         orderLocalDataSource.updateShippingType(orderId, shippingType, shippingCost)
     }
 
+    override suspend fun updateTrackingNumber(orderId: String, trackingNumber: String?) {
+        orderLocalDataSource.updateTrackingNumber(orderId, trackingNumber)
+    }
+
     override suspend fun splitOrder(orderId: String, splitCount: Int) {
         val originalOrder = orderLocalDataSource.getOrderById(orderId)
             ?: throw IllegalArgumentException("Order not found")

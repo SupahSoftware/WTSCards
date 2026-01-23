@@ -501,6 +501,52 @@ class OrderViewModel(
         }
     }
 
+    // Tracking Number Dialog
+    fun onShowTrackingNumberDialog(orderId: String, currentTrackingNumber: String?) {
+        uiState = uiState.copy(
+            trackingNumberDialogState = TrackingNumberDialogState(
+                orderId = orderId,
+                trackingNumber = currentTrackingNumber ?: ""
+            )
+        )
+    }
+
+    fun onDismissTrackingNumberDialog() {
+        uiState = uiState.copy(trackingNumberDialogState = null)
+    }
+
+    fun onTrackingNumberChanged(trackingNumber: String) {
+        uiState.trackingNumberDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                trackingNumberDialogState = dialogState.copy(trackingNumber = trackingNumber)
+            )
+        }
+    }
+
+    fun onConfirmTrackingNumber() {
+        uiState.trackingNumberDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                trackingNumberDialogState = dialogState.copy(isSaving = true)
+            )
+
+            coroutineScope.launch {
+                try {
+                    val trackingNumber = dialogState.trackingNumber.trim().ifBlank { null }
+                    orderUseCase.updateTrackingNumber(dialogState.orderId, trackingNumber)
+                    uiState = uiState.copy(
+                        trackingNumberDialogState = null,
+                        toast = ToastState("Tracking number updated", isError = false)
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                        trackingNumberDialogState = dialogState.copy(isSaving = false),
+                        toast = ToastState(e.message ?: "Failed to update tracking number", isError = true)
+                    )
+                }
+            }
+        }
+    }
+
     private fun String.toTitleCase(): String {
         return split(" ").joinToString(" ") { word ->
             word.lowercase().replaceFirstChar { it.uppercase() }

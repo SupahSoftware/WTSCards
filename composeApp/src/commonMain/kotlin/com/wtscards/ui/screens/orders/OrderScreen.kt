@@ -134,6 +134,10 @@ fun OrderScreen(
     onShowSplitOrderDialog: (String, Int) -> Unit,
     onDismissSplitOrderDialog: () -> Unit,
     onConfirmSplitOrder: () -> Unit,
+    onShowTrackingNumberDialog: (String, String?) -> Unit,
+    onDismissTrackingNumberDialog: () -> Unit,
+    onTrackingNumberChanged: (String) -> Unit,
+    onConfirmTrackingNumber: () -> Unit,
     onClearToast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -160,7 +164,8 @@ fun OrderScreen(
                 onStatusChanged = onStatusChanged,
                 onShowRemoveCardDialog = onShowRemoveCardDialog,
                 onUpgradeShipping = onShowUpgradeShippingDialog,
-                onSplitOrder = onShowSplitOrderDialog
+                onSplitOrder = onShowSplitOrderDialog,
+                onShowTrackingNumberDialog = onShowTrackingNumberDialog
             )
         }
 
@@ -197,7 +202,10 @@ fun OrderScreen(
             onDismissSplitOrderDialog = onDismissSplitOrderDialog,
             onConfirmSplitOrder = onConfirmSplitOrder,
             onDismissShippingLabelsDialog = onDismissShippingLabelsDialog,
-            onExportShippingLabels = onExportShippingLabels
+            onExportShippingLabels = onExportShippingLabels,
+            onDismissTrackingNumberDialog = onDismissTrackingNumberDialog,
+            onTrackingNumberChanged = onTrackingNumberChanged,
+            onConfirmTrackingNumber = onConfirmTrackingNumber
         )
 
         OrderToast(toast = uiState.toast)
@@ -323,7 +331,8 @@ private fun ContentArea(
     onStatusChanged: (String, String) -> Unit,
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onUpgradeShipping: (String, Int) -> Unit,
-    onSplitOrder: (String, Int) -> Unit
+    onSplitOrder: (String, Int) -> Unit,
+    onShowTrackingNumberDialog: (String, String?) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -361,7 +370,8 @@ private fun ContentArea(
                     onStatusChanged = onStatusChanged,
                     onShowRemoveCardDialog = onShowRemoveCardDialog,
                     onUpgradeShipping = onUpgradeShipping,
-                    onSplitOrder = onSplitOrder
+                    onSplitOrder = onSplitOrder,
+                    onShowTrackingNumberDialog = onShowTrackingNumberDialog
                 )
             }
         }
@@ -494,7 +504,10 @@ private fun OrderDialogs(
     onDismissSplitOrderDialog: () -> Unit,
     onConfirmSplitOrder: () -> Unit,
     onDismissShippingLabelsDialog: () -> Unit,
-    onExportShippingLabels: (List<Order>) -> Unit
+    onExportShippingLabels: (List<Order>) -> Unit,
+    onDismissTrackingNumberDialog: () -> Unit,
+    onTrackingNumberChanged: (String) -> Unit,
+    onConfirmTrackingNumber: () -> Unit
 ) {
     if (uiState.showCreateDialog) {
         CreateOrderDialog(
@@ -556,6 +569,79 @@ private fun OrderDialogs(
             onExport = onExportShippingLabels
         )
     }
+
+    uiState.trackingNumberDialogState?.let { dialogState ->
+        TrackingNumberDialog(
+            dialogState = dialogState,
+            onDismiss = onDismissTrackingNumberDialog,
+            onTrackingNumberChanged = onTrackingNumberChanged,
+            onConfirm = onConfirmTrackingNumber
+        )
+    }
+}
+
+@Composable
+private fun TrackingNumberDialog(
+    dialogState: TrackingNumberDialogState,
+    onDismiss: () -> Unit,
+    onTrackingNumberChanged: (String) -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!dialogState.isSaving) onDismiss() },
+        title = {
+            Text(
+                text = "Tracking Number",
+                style = MaterialTheme.typography.titleLarge,
+                color = textPrimary
+            )
+        },
+        text = {
+            OutlinedTextField(
+                value = dialogState.trackingNumber,
+                onValueChange = onTrackingNumberChanged,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Enter tracking number", color = textTertiary) },
+                singleLine = true,
+                enabled = !dialogState.isSaving,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = textPrimary,
+                    unfocusedTextColor = textPrimary,
+                    focusedBorderColor = accentPrimary,
+                    unfocusedBorderColor = borderInput,
+                    cursorColor = accentPrimary,
+                    focusedContainerColor = bgSecondary,
+                    unfocusedContainerColor = bgSecondary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !dialogState.isSaving,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accentPrimary,
+                    contentColor = textOnAccent,
+                    disabledContainerColor = bgSecondary,
+                    disabledContentColor = textTertiary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(if (dialogState.isSaving) "Saving..." else "Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !dialogState.isSaving
+            ) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSurface,
+        shape = RoundedCornerShape(12.dp)
+    )
 }
 
 @Composable
@@ -808,7 +894,8 @@ private fun OrderList(
     onStatusChanged: (String, String) -> Unit,
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onUpgradeShipping: (String, Int) -> Unit,
-    onSplitOrder: (String, Int) -> Unit
+    onSplitOrder: (String, Int) -> Unit,
+    onShowTrackingNumberDialog: (String, String?) -> Unit
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -879,7 +966,8 @@ private fun OrderList(
                 onStatusChanged = onStatusChanged,
                 onShowRemoveCardDialog = onShowRemoveCardDialog,
                 onUpgradeShipping = onUpgradeShipping,
-                onSplitOrder = onSplitOrder
+                onSplitOrder = onSplitOrder,
+                onShowTrackingNumberDialog = onShowTrackingNumberDialog
             )
         }
     }
@@ -893,7 +981,8 @@ private fun OrderCard(
     onStatusChanged: (String, String) -> Unit,
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onUpgradeShipping: (String, Int) -> Unit,
-    onSplitOrder: (String, Int) -> Unit
+    onSplitOrder: (String, Int) -> Unit,
+    onShowTrackingNumberDialog: (String, String?) -> Unit
 ) {
     var showOverflowMenu by remember { mutableStateOf(false) }
     var isEditingCards by remember { mutableStateOf(false) }
@@ -929,6 +1018,30 @@ private fun OrderCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(bgDropdown)
+                        .clickable { onShowTrackingNumberDialog(order.id, order.trackingNumber) }
+                        .padding(vertical = 8.dp, horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit tracking number",
+                            tint = textPrimary,
+                            modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                            text = order.trackingNumber ?: "Tracking number",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (order.trackingNumber != null) textPrimary else textTertiary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(8.dp))
+
                 AppDropdown(
                     modifier = Modifier.width(200.dp),
                     padding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
