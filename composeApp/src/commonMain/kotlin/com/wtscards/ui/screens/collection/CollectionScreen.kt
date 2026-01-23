@@ -559,7 +559,8 @@ private fun CardRow(
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .clip(RoundedCornerShape(8.dp))
-            .background(bgSurface),
+            .background(bgSurface)
+            .clickable { onEditClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Grade badge (rotated 90 degrees)
@@ -657,7 +658,7 @@ private fun CardRow(
                 )
             } else {
                 Text(
-                    text = "No sales",
+                    text = "\$0.00",
                     style = MaterialTheme.typography.bodyLarge,
                     color = warningColor
                 )
