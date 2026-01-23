@@ -160,23 +160,32 @@ jobs:
         run: ./gradlew composeApp:packageReleaseDistributionForCurrentOS -Papp.version="${{ needs.prepare.outputs.version }}"
         shell: bash
 
+      - name: Debug - List build output
+        shell: bash
+        run: |
+          echo "Listing build directory structure:"
+          ls -R composeApp/build/compose/ || echo "compose directory not found"
+          echo "Looking for distribution files:"
+          find composeApp/build -name "*.deb" -o -name "*.msi" -o -name "*.dmg" || echo "No distribution files found"
+
       - name: Find artifact
         id: artifact
         shell: bash
         run: |
           if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
             ARTIFACT_NAME="WTSCards-linux"
-            ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/deb -name "*.deb" | head -1)
+            ARTIFACT_PATH=$(find composeApp/build -name "*.deb" | head -1)
           elif [ "${{ matrix.os }}" == "windows-latest" ]; then
             ARTIFACT_NAME="WTSCards-windows"
-            ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/msi -name "*.msi" | head -1)
+            ARTIFACT_PATH=$(find composeApp/build -name "*.msi" | head -1)
           else
             ARTIFACT_NAME="WTSCards-macos"
-            ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/dmg -name "*.dmg" | head -1)
+            ARTIFACT_PATH=$(find composeApp/build -name "*.dmg" | head -1)
           fi
           
           if [ -z "$ARTIFACT_PATH" ]; then
             echo "Error: Artifact not found!"
+            echo "Searched in composeApp/build for distribution files"
             exit 1
           fi
           
