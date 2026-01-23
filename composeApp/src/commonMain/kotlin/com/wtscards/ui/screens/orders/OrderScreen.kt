@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -246,6 +248,8 @@ private fun OrderCard(
     onEditOrder: (Order) -> Unit,
     onStatusChanged: (String, String) -> Unit
 ) {
+    var showOverflowMenu by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -253,97 +257,116 @@ private fun OrderCard(
             .background(bgSurface)
             .padding(16.dp)
     ) {
-        // Top row: purchaser info and price/actions
+        // Top row: purchaser name on left, status dropdown and overflow menu on right
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left side: purchaser info
-            Column(
-                modifier = Modifier.weight(1f)
+            // Left side: purchaser name
+            Text(
+                text = order.name,
+                style = MaterialTheme.typography.titleLarge,
+                color = textPrimary
+            )
+
+            // Right side: status dropdown and overflow menu
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Name row with status dropdown
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = order.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = textPrimary
+                AppDropdown(
+                    modifier = Modifier.width(200.dp),
+                    padding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    selectedValue = order.status,
+                    options = OrderStatus.allStatuses,
+                    onOptionSelected = { newStatus ->
+                        if (newStatus != order.status) {
+                            onStatusChanged(order.id, newStatus)
+                        }
+                    },
+                    backgroundColor = when (order.status.trim()) {
+                        OrderStatus.NEW -> errorColor
+                        OrderStatus.LABEL_CREATED -> warningColor
+                        OrderStatus.SHIPPED -> successColor
+                        else -> bgPrimary
+                    },
+                    textColor = textOnAccent
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Overflow menu
+                Box {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More options",
+                        tint = textSecondary,
+                        modifier = Modifier
+                            .clickable { showOverflowMenu = true }
+                            .padding(4.dp)
                     )
 
-                    Spacer(modifier = Modifier.width(24.dp))
-
-                    AppDropdown(
-                        modifier = Modifier.width(200.dp),
-                        padding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                        selectedValue = order.status,
-                        options = OrderStatus.allStatuses,
-                        onOptionSelected = { newStatus ->
-                            if (newStatus != order.status) {
-                                onStatusChanged(order.id, newStatus)
+                    DropdownMenu(
+                        expanded = showOverflowMenu,
+                        onDismissRequest = { showOverflowMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = textPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Add cards", color = textPrimary)
+                                }
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onShowAddCardsDialog(order.id)
                             }
-                        },
-                        backgroundColor = when (order.status.trim()) {
-                            OrderStatus.NEW -> errorColor
-                            OrderStatus.LABEL_CREATED -> warningColor
-                            OrderStatus.SHIPPED -> successColor
-                            else -> bgPrimary
-                        },
-                        textColor = textOnAccent
-                    )
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = null,
+                                        tint = textPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Edit order", color = textPrimary)
+                                }
+                            },
+                            onClick = {
+                                showOverflowMenu = false
+                                onEditOrder(order)
+                            }
+                        )
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = order.streetAddress,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textSecondary
-                )
-                Text(
-                    text = "${order.city}, ${order.state} ${order.zipcode}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textSecondary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = formatOrderDate(order.createdAt),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textTertiary
-                )
-            }
-
-            // Right side: total price and buttons
-            Column(
-                modifier = Modifier,
-                horizontalAlignment = Alignment.End
-            ) {
-                val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
-                val total = cardsTotal + order.shippingCost
-                Text(
-                    text = formatPrice(total),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    color = successColor
-                )
-
-                Text(
-                    text = "ADD CARDS",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = accentPrimary,
-                    modifier = Modifier.clickable { onShowAddCardsDialog(order.id) }
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "EDIT ORDER",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = accentPrimary,
-                    modifier = Modifier.clickable { onEditOrder(order) }
-                )
             }
         }
+
+        // Address info
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = order.streetAddress,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textSecondary
+        )
+        Text(
+            text = "${order.city}, ${order.state} ${order.zipcode}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = textSecondary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = formatOrderDate(order.createdAt),
+            style = MaterialTheme.typography.bodySmall,
+            color = textTertiary
+        )
 
         // Display shipping and cards if present
         if (order.shippingType != null || order.cards.isNotEmpty()) {
@@ -369,6 +392,17 @@ private fun OrderCard(
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
+
+        // Total at the bottom
+        Spacer(modifier = Modifier.height(8.dp))
+        val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
+        val total = cardsTotal + order.shippingCost
+        Text(
+            text = "Total ${formatPrice(total)}",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            color = successColor
+        )
     }
 }
 
