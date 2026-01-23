@@ -3,6 +3,7 @@ package com.wtscards.domain.usecase
 import com.wtscards.data.db.CardLocalDataSource
 import com.wtscards.data.db.OrderLocalDataSource
 import com.wtscards.data.model.Order
+import com.wtscards.data.model.OrderStatus
 import kotlinx.coroutines.flow.Flow
 
 class OrderUseCaseImpl(
@@ -62,11 +63,12 @@ class OrderUseCaseImpl(
         val cardsPerOrder = kotlin.math.ceil(cards.size / splitCount.toDouble()).toInt()
         val cardChunks = cards.chunked(cardsPerOrder)
 
-        // Update original order with first chunk of cards
+        // Update original order with first chunk of cards and reset to NEW status
         val firstChunk = cardChunks.first()
         orderLocalDataSource.replaceOrderCards(orderId, firstChunk.map { it.id })
+        orderLocalDataSource.updateStatus(orderId, OrderStatus.NEW)
 
-        // Create new orders for remaining chunks
+        // Create new orders for remaining chunks with NEW status
         cardChunks.drop(1).forEach { cardChunk ->
             val newOrder = Order(
                 id = java.util.UUID.randomUUID().toString(),
@@ -77,7 +79,7 @@ class OrderUseCaseImpl(
                 zipcode = originalOrder.zipcode,
                 shippingType = originalOrder.shippingType,
                 shippingCost = originalOrder.shippingCost,
-                status = originalOrder.status,
+                status = OrderStatus.NEW,
                 createdAt = originalOrder.createdAt,
                 cards = cardChunk
             )

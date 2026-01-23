@@ -1129,146 +1129,69 @@ private fun OrderWarningBanner(
     val isEnvelope = order.shippingType?.equals("Envelope", ignoreCase = true) == true
     val isBubbleMailer = order.shippingType?.equals("Bubble mailer", ignoreCase = true) == true
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // Envelope: warn at 2+, upgrade button at 4+
-        if (isEnvelope && cardCount >= 2) {
-            Spacer(modifier = Modifier.height(8.dp))
-            EnvelopeWarning(
-                orderId = order.id,
-                cardCount = cardCount,
-                onUpgradeShipping = onUpgradeShipping
-            )
-        }
+    // Envelope: warn at 2+, upgrade button at 4+
+    if (isEnvelope && cardCount >= 2) {
+        Spacer(modifier = Modifier.height(8.dp))
+        WarningBanner(
+            message = "2 or more toploaders may require extra postage and incur a non machineable upcharge.",
+            buttonText = "Upgrade to bubble mailer",
+            onButtonClick = { onUpgradeShipping(order.id, cardCount) }
+        )
+    }
 
-        // Bubble mailer: warn and split button at 15+
-        if (isBubbleMailer && cardCount > 15) {
-            Spacer(modifier = Modifier.height(8.dp))
-            BubbleMailerWarning(
-                orderId = order.id,
-                cardCount = cardCount,
-                onSplitOrder = onSplitOrder
-            )
-        }
+    // Bubble mailer: warn and split button at 15+
+    if (isBubbleMailer && cardCount >= 15) {
+        val splitCount = ceil(cardCount / 15.0).toInt()
+        Spacer(modifier = Modifier.height(8.dp))
+        WarningBanner(
+            message = "Each bubble mailer can hold up to around 15 toploaders",
+            buttonText = "Split into $splitCount orders",
+            onButtonClick = { onSplitOrder(order.id, cardCount) }
+        )
     }
 }
 
 @Composable
-private fun EnvelopeWarning(
-    orderId: String,
-    cardCount: Int,
-    onUpgradeShipping: (String, Int) -> Unit
+private fun WarningBanner(
+    message: String,
+    buttonText: String? = null,
+    onButtonClick: (() -> Unit)? = null
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(warningColor.copy(alpha = 0.15f))
-            .padding(12.dp)
+            .background(warningColor)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = "Warning",
-                tint = warningColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Non-machineable upcharge may apply for 2+ toploaders in a plain envelope. A single stamp SHOULD cover 2 toploaders but may require extra postage.",
-                style = MaterialTheme.typography.bodySmall,
-                color = warningColor
-            )
-        }
-
-        // Show upgrade button for 4+ cards
-        if (cardCount >= 4) {
-            Spacer(modifier = Modifier.height(8.dp))
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = "Warning",
+            tint = textOnAccent,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        if (buttonText != null && onButtonClick != null) {
             TextButton(
-                onClick = { onUpgradeShipping(orderId, cardCount) },
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = textOnAccent
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(warningColor)
+                onClick = onButtonClick,
+                colors = ButtonDefaults.textButtonColors(contentColor = textOnAccent),
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "UPGRADE TO BUBBLE MAILER",
+                    text = buttonText,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.labelMedium
+                    textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun BubbleMailerWarning(
-    orderId: String,
-    cardCount: Int,
-    onSplitOrder: (String, Int) -> Unit
-) {
-    val splitCount = ceil(cardCount / 15.0).toInt()
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(warningColor.copy(alpha = 0.15f))
-            .padding(12.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = Icons.Default.Warning,
-                contentDescription = "Warning",
-                tint = warningColor,
-                modifier = Modifier.size(20.dp)
-            )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "$cardCount toploaders may not fit safely in a single bubble mailer. Consider splitting into $splitCount separate shipments.",
-                style = MaterialTheme.typography.bodySmall,
-                color = warningColor
-            )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        TextButton(
-            onClick = { onSplitOrder(orderId, cardCount) },
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = textOnAccent
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
-                .background(warningColor)
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.CallSplit,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "SPLIT ORDER",
-                fontWeight = FontWeight.Bold,
-                style = MaterialTheme.typography.labelMedium
-            )
-        }
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = textOnAccent
+        )
     }
 }
 
