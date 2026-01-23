@@ -51,6 +51,10 @@ compose.desktop {
     application {
         mainClass = "com.wtscards.MainKt"
 
+        buildTypes.release.proguard {
+            isEnabled.set(false)
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
 
