@@ -49,4 +49,39 @@ class OrderUseCaseImpl(
         orderLocalDataSource.removeCardFromOrder(orderId, cardId)
         cardLocalDataSource.clearPriceSold(cardId)
     }
+
+    override suspend fun updateShippingType(orderId: String, shippingType: String, shippingCost: Long) {
+        orderLocalDataSource.updateShippingType(orderId, shippingType, shippingCost)
+    }
+
+    override suspend fun splitOrder(orderId: String, splitCount: Int) {
+        val originalOrder = orderLocalDataSource.getOrderById(orderId)
+            ?: throw IllegalArgumentException("Order not found")
+
+        val cards = originalOrder.cards
+        val cardsPerOrder = kotlin.math.ceil(cards.size / splitCount.toDouble()).toInt()
+        val cardChunks = cards.chunked(cardsPerOrder)
+
+        // Update original order with first chunk of cards
+        val firstChunk = cardChunks.first()
+        orderLocalDataSource.replaceOrderCards(orderId, firstChunk.map { it.id })
+
+        // Create new orders for remaining chunks
+        cardChunks.drop(1).forEach { cardChunk ->
+            val newOrder = Order(
+                id = java.util.UUID.randomUUID().toString(),
+                name = originalOrder.name,
+                streetAddress = originalOrder.streetAddress,
+                city = originalOrder.city,
+                state = originalOrder.state,
+                zipcode = originalOrder.zipcode,
+                shippingType = originalOrder.shippingType,
+                shippingCost = originalOrder.shippingCost,
+                status = originalOrder.status,
+                createdAt = originalOrder.createdAt,
+                cards = cardChunk
+            )
+            orderLocalDataSource.insertOrder(newOrder)
+        }
+    }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -95,10 +96,7 @@ fun CollectionScreen(
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp)
-        ) {
-            // Search and Sort Row
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             SearchAndSortRow(
                 searchQuery = uiState.searchQuery,
                 sortOption = uiState.sortOption,
@@ -107,97 +105,121 @@ fun CollectionScreen(
                 onSortOptionChanged = onSortOptionChanged,
                 onToggleEditMode = onToggleEditMode
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Content
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(color = accentPrimary)
-                    }
-                    uiState.error != null -> {
-                        Text(
-                            text = uiState.error,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    uiState.displayedCards.isEmpty() -> {
-                        val message = if (uiState.searchQuery.isNotBlank()) {
-                            "No cards match your search"
-                        } else {
-                            "Your collection is empty"
-                        }
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = textSecondary
-                        )
-                    }
-                    else -> {
-                        CardList(
-                            cards = uiState.displayedCards,
-                            searchQuery = uiState.searchQuery,
-                            sortOption = uiState.sortOption,
-                            isEditMode = uiState.isEditMode,
-                            selectedCardIds = uiState.selectedCardIds,
-                            onToggleCardSelection = onToggleCardSelection
-                        )
-                    }
-                }
-            }
+            ContentArea(
+                uiState = uiState,
+                onToggleCardSelection = onToggleCardSelection
+            )
         }
 
-        // Delete FAB - shown in edit mode
         if (uiState.isEditMode) {
-            FloatingActionButton(
-                onClick = onDeleteClick,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(24.dp),
-                containerColor = errorColor
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete selected",
-                    tint = textOnAccent
-                )
-            }
+            DeleteFab(onClick = onDeleteClick)
         }
 
-        // Delete confirmation dialog
         if (uiState.showDeleteConfirmDialog) {
-            AlertDialog(
-                onDismissRequest = onDeleteCancel,
-                title = {
-                    Text(
-                        text = "Delete Cards",
-                        color = textPrimary
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Are you sure you want to delete ${uiState.selectedCardIds.size} item${if (uiState.selectedCardIds.size != 1) "s" else ""}?",
-                        color = textSecondary
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = onDeleteConfirm) {
-                        Text("Delete", color = errorColor)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = onDeleteCancel) {
-                        Text("Cancel", color = textSecondary)
-                    }
-                },
-                containerColor = bgSurface
+            DeleteConfirmDialog(
+                selectedCount = uiState.selectedCardIds.size,
+                onConfirm = onDeleteConfirm,
+                onDismiss = onDeleteCancel
             )
         }
     }
+}
+
+@Composable
+private fun ContentArea(
+    uiState: CollectionUiState,
+    onToggleCardSelection: (String) -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(color = accentPrimary)
+            }
+            uiState.error != null -> {
+                Text(
+                    text = uiState.error,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            uiState.displayedCards.isEmpty() -> {
+                val message = if (uiState.searchQuery.isNotBlank()) {
+                    "No cards match your search"
+                } else {
+                    "Your collection is empty"
+                }
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textSecondary
+                )
+            }
+            else -> {
+                CardList(
+                    cards = uiState.displayedCards,
+                    searchQuery = uiState.searchQuery,
+                    sortOption = uiState.sortOption,
+                    isEditMode = uiState.isEditMode,
+                    selectedCardIds = uiState.selectedCardIds,
+                    onToggleCardSelection = onToggleCardSelection
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.DeleteFab(onClick: () -> Unit) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(24.dp),
+        containerColor = errorColor
+    ) {
+        Icon(
+            imageVector = Icons.Default.Delete,
+            contentDescription = "Delete selected",
+            tint = textOnAccent
+        )
+    }
+}
+
+@Composable
+private fun DeleteConfirmDialog(
+    selectedCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Delete Cards",
+                color = textPrimary
+            )
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to delete $selectedCount item${if (selectedCount != 1) "s" else ""}?",
+                color = textSecondary
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Delete", color = errorColor)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSurface
+    )
 }
 
 @Composable

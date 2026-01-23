@@ -421,6 +421,86 @@ class OrderViewModel(
         }
     }
 
+    // Upgrade Shipping Dialog
+    fun onShowUpgradeShippingDialog(orderId: String, cardCount: Int) {
+        uiState = uiState.copy(
+            upgradeShippingDialogState = UpgradeShippingDialogState(
+                orderId = orderId,
+                cardCount = cardCount
+            )
+        )
+    }
+
+    fun onDismissUpgradeShippingDialog() {
+        uiState = uiState.copy(upgradeShippingDialogState = null)
+    }
+
+    fun onConfirmUpgradeShipping() {
+        uiState.upgradeShippingDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                upgradeShippingDialogState = dialogState.copy(isProcessing = true)
+            )
+
+            coroutineScope.launch {
+                try {
+                    orderUseCase.updateShippingType(
+                        orderId = dialogState.orderId,
+                        shippingType = "Bubble mailer",
+                        shippingCost = 500L
+                    )
+                    uiState = uiState.copy(
+                        upgradeShippingDialogState = null,
+                        toast = ToastState("Upgraded to bubble mailer", isError = false)
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                        upgradeShippingDialogState = dialogState.copy(isProcessing = false),
+                        toast = ToastState(e.message ?: "Failed to upgrade shipping", isError = true)
+                    )
+                }
+            }
+        }
+    }
+
+    // Split Order Dialog
+    fun onShowSplitOrderDialog(orderId: String, cardCount: Int) {
+        val splitCount = kotlin.math.ceil(cardCount / 15.0).toInt()
+        uiState = uiState.copy(
+            splitOrderDialogState = SplitOrderDialogState(
+                orderId = orderId,
+                cardCount = cardCount,
+                splitCount = splitCount
+            )
+        )
+    }
+
+    fun onDismissSplitOrderDialog() {
+        uiState = uiState.copy(splitOrderDialogState = null)
+    }
+
+    fun onConfirmSplitOrder() {
+        uiState.splitOrderDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                splitOrderDialogState = dialogState.copy(isProcessing = true)
+            )
+
+            coroutineScope.launch {
+                try {
+                    orderUseCase.splitOrder(dialogState.orderId, dialogState.splitCount)
+                    uiState = uiState.copy(
+                        splitOrderDialogState = null,
+                        toast = ToastState("Order split into ${dialogState.splitCount} orders", isError = false)
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                        splitOrderDialogState = dialogState.copy(isProcessing = false),
+                        toast = ToastState(e.message ?: "Failed to split order", isError = true)
+                    )
+                }
+            }
+        }
+    }
+
     private fun String.toTitleCase(): String {
         return split(" ").joinToString(" ") { word ->
             word.lowercase().replaceFirstChar { it.uppercase() }

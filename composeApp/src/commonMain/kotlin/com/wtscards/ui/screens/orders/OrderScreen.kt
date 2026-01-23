@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +37,10 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.automirrored.filled.CallSplit
+import androidx.compose.ui.text.font.FontWeight
+import kotlin.math.ceil
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -66,6 +71,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Order
@@ -122,411 +128,674 @@ fun OrderScreen(
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onDismissRemoveCardDialog: () -> Unit,
     onConfirmRemoveCard: () -> Unit,
+    onShowUpgradeShippingDialog: (String, Int) -> Unit,
+    onDismissUpgradeShippingDialog: () -> Unit,
+    onConfirmUpgradeShipping: () -> Unit,
+    onShowSplitOrderDialog: (String, Int) -> Unit,
+    onDismissSplitOrderDialog: () -> Unit,
+    onConfirmSplitOrder: () -> Unit,
     onClearToast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Auto-clear toast after 3 seconds
-    LaunchedEffect(uiState.toast) {
-        if (uiState.toast != null) {
+    ToastAutoCloseEffect(toast = uiState.toast, onClearToast = onClearToast)
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            HeaderRow(
+                statusFilters = uiState.statusFilters,
+                onStatusFilterToggled = onStatusFilterToggled
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            SearchAndSortRow(
+                searchQuery = uiState.searchQuery,
+                sortOption = uiState.sortOption,
+                onSearchQueryChanged = onSearchQueryChanged,
+                onSortOptionChanged = onSortOptionChanged
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            ContentArea(
+                uiState = uiState,
+                onShowAddCardsDialog = onShowAddCardsDialog,
+                onEditOrder = onEditOrder,
+                onStatusChanged = onStatusChanged,
+                onShowRemoveCardDialog = onShowRemoveCardDialog,
+                onUpgradeShipping = onShowUpgradeShippingDialog,
+                onSplitOrder = onShowSplitOrderDialog
+            )
+        }
+
+        FabScrim(visible = uiState.isFabExpanded, onDismiss = onCollapseFab)
+
+        FabMenu(
+            isExpanded = uiState.isFabExpanded,
+            onToggle = onToggleFabExpanded,
+            onCreateOrder = onShowCreateDialog,
+            onCreateShippingLabels = onShowShippingLabelsDialog
+        )
+
+        OrderDialogs(
+            uiState = uiState,
+            onDismissCreateDialog = onDismissCreateDialog,
+            onNameChanged = onNameChanged,
+            onStreetAddressChanged = onStreetAddressChanged,
+            onCityChanged = onCityChanged,
+            onStateChanged = onStateChanged,
+            onZipcodeChanged = onZipcodeChanged,
+            onShippingTypeChanged = onShippingTypeChanged,
+            onShippingPriceChanged = onShippingPriceChanged,
+            onCreateOrUpdateOrder = onCreateOrUpdateOrder,
+            onDismissAddCardsDialog = onDismissAddCardsDialog,
+            onAddCardsSearchChanged = onAddCardsSearchChanged,
+            onToggleCardSelection = onToggleCardSelection,
+            onProceedToPriceConfirmation = onProceedToPriceConfirmation,
+            onCardPriceChanged = onCardPriceChanged,
+            onConfirmAddCards = onConfirmAddCards,
+            onDismissRemoveCardDialog = onDismissRemoveCardDialog,
+            onConfirmRemoveCard = onConfirmRemoveCard,
+            onDismissUpgradeShippingDialog = onDismissUpgradeShippingDialog,
+            onConfirmUpgradeShipping = onConfirmUpgradeShipping,
+            onDismissSplitOrderDialog = onDismissSplitOrderDialog,
+            onConfirmSplitOrder = onConfirmSplitOrder,
+            onDismissShippingLabelsDialog = onDismissShippingLabelsDialog,
+            onExportShippingLabels = onExportShippingLabels
+        )
+
+        OrderToast(toast = uiState.toast)
+    }
+}
+
+@Composable
+private fun ToastAutoCloseEffect(toast: ToastState?, onClearToast: () -> Unit) {
+    LaunchedEffect(toast) {
+        if (toast != null) {
             delay(3000)
             onClearToast()
         }
     }
+}
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(
+@Composable
+private fun HeaderRow(
+    statusFilters: Set<String>,
+    onStatusFilterToggled: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Orders",
+            style = MaterialTheme.typography.headlineMedium,
+            color = textPrimary
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OrderStatus.allStatuses.forEach { status ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { onStatusFilterToggled(status) }
+                        .padding(end = 16.dp)
+                ) {
+                    Checkbox(
+                        modifier = Modifier.padding(0.dp),
+                        checked = status in statusFilters,
+                        onCheckedChange = { onStatusFilterToggled(status) },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = when (status) {
+                                OrderStatus.NEW -> errorColor
+                                OrderStatus.LABEL_CREATED -> warningColor
+                                OrderStatus.SHIPPED -> successColor
+                                else -> accentPrimary
+                            },
+                            uncheckedColor = textTertiary,
+                            checkmarkColor = textOnAccent
+                        )
+                    )
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchAndSortRow(
+    searchQuery: String,
+    sortOption: OrderSortOption,
+    onSearchQueryChanged: (String) -> Unit,
+    onSortOptionChanged: (OrderSortOption) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChanged,
+            modifier = Modifier.weight(3f).fillMaxHeight(),
+            placeholder = {
+                Text(
+                    text = "Search by purchaser info or included card names",
+                    color = textTertiary
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = textTertiary
+                )
+            },
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = textPrimary,
+                unfocusedTextColor = textPrimary,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                cursorColor = accentPrimary,
+                focusedContainerColor = bgSurface,
+                unfocusedContainerColor = bgSurface
+            ),
+            shape = RoundedCornerShape(8.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        OrderSortDropdown(
+            selectedOption = sortOption,
+            onOptionSelected = onSortOptionChanged,
+            modifier = Modifier.weight(1f).fillMaxHeight()
+        )
+    }
+}
+
+@Composable
+private fun ContentArea(
+    uiState: OrderUiState,
+    onShowAddCardsDialog: (String) -> Unit,
+    onEditOrder: (Order) -> Unit,
+    onStatusChanged: (String, String) -> Unit,
+    onShowRemoveCardDialog: (String, String, String) -> Unit,
+    onUpgradeShipping: (String, Int) -> Unit,
+    onSplitOrder: (String, Int) -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            uiState.isLoading -> {
+                CircularProgressIndicator(color = accentPrimary)
+            }
+            uiState.error != null -> {
+                Text(
+                    text = uiState.error,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            uiState.orders.isEmpty() -> {
+                Text(
+                    text = "No orders yet",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textSecondary
+                )
+            }
+            uiState.filteredOrders.isEmpty() -> {
+                Text(
+                    text = "No orders match your search",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textSecondary
+                )
+            }
+            else -> {
+                OrderList(
+                    orders = uiState.filteredOrders,
+                    onShowAddCardsDialog = onShowAddCardsDialog,
+                    onEditOrder = onEditOrder,
+                    onStatusChanged = onStatusChanged,
+                    onShowRemoveCardDialog = onShowRemoveCardDialog,
+                    onUpgradeShipping = onUpgradeShipping,
+                    onSplitOrder = onSplitOrder
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FabScrim(visible: Boolean, onDismiss: () -> Unit) {
+    if (visible) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.3f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    onClick = onDismiss
+                )
+        )
+    }
+}
+
+@Composable
+private fun BoxScope.FabMenu(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    onCreateOrder: () -> Unit,
+    onCreateShippingLabels: () -> Unit
+) {
+    Column(
+        modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp),
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it }
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Create shipping labels",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textPrimary,
+                    modifier = Modifier
+                        .background(bgSurface, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+                SmallFloatingActionButton(
+                    onClick = onCreateShippingLabels,
+                    containerColor = accentPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocalShipping,
+                        contentDescription = "Create shipping labels",
+                        tint = textOnAccent
+                    )
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = fadeIn() + slideInVertically { it },
+            exit = fadeOut() + slideOutVertically { it }
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Create order",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textPrimary,
+                    modifier = Modifier
+                        .background(bgSurface, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+                SmallFloatingActionButton(
+                    onClick = onCreateOrder,
+                    containerColor = accentPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Create order",
+                        tint = textOnAccent
+                    )
+                }
+            }
+        }
+
+        FloatingActionButton(
+            onClick = onToggle,
+            containerColor = accentPrimary
+        ) {
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
+                contentDescription = if (isExpanded) "Close menu" else "Open menu",
+                tint = textOnAccent
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrderDialogs(
+    uiState: OrderUiState,
+    onDismissCreateDialog: () -> Unit,
+    onNameChanged: (String) -> Unit,
+    onStreetAddressChanged: (String) -> Unit,
+    onCityChanged: (String) -> Unit,
+    onStateChanged: (String) -> Unit,
+    onZipcodeChanged: (String) -> Unit,
+    onShippingTypeChanged: (String) -> Unit,
+    onShippingPriceChanged: (String) -> Unit,
+    onCreateOrUpdateOrder: () -> Unit,
+    onDismissAddCardsDialog: () -> Unit,
+    onAddCardsSearchChanged: (String) -> Unit,
+    onToggleCardSelection: (String) -> Unit,
+    onProceedToPriceConfirmation: () -> Unit,
+    onCardPriceChanged: (String, String) -> Unit,
+    onConfirmAddCards: () -> Unit,
+    onDismissRemoveCardDialog: () -> Unit,
+    onConfirmRemoveCard: () -> Unit,
+    onDismissUpgradeShippingDialog: () -> Unit,
+    onConfirmUpgradeShipping: () -> Unit,
+    onDismissSplitOrderDialog: () -> Unit,
+    onConfirmSplitOrder: () -> Unit,
+    onDismissShippingLabelsDialog: () -> Unit,
+    onExportShippingLabels: (List<Order>) -> Unit
+) {
+    if (uiState.showCreateDialog) {
+        CreateOrderDialog(
+            formState = uiState.createFormState,
+            isEditMode = uiState.editingOrderId != null,
+            onDismiss = onDismissCreateDialog,
+            onNameChanged = onNameChanged,
+            onStreetAddressChanged = onStreetAddressChanged,
+            onCityChanged = onCityChanged,
+            onStateChanged = onStateChanged,
+            onZipcodeChanged = onZipcodeChanged,
+            onShippingTypeChanged = onShippingTypeChanged,
+            onShippingPriceChanged = onShippingPriceChanged,
+            onConfirm = onCreateOrUpdateOrder
+        )
+    }
+
+    uiState.addCardsDialogState?.let { dialogState ->
+        AddCardsDialog(
+            dialogState = dialogState,
+            availableCards = uiState.availableCards,
+            onDismiss = onDismissAddCardsDialog,
+            onSearchChanged = onAddCardsSearchChanged,
+            onToggleCardSelection = onToggleCardSelection,
+            onProceedToPriceConfirmation = onProceedToPriceConfirmation,
+            onCardPriceChanged = onCardPriceChanged,
+            onConfirmAddCards = onConfirmAddCards
+        )
+    }
+
+    uiState.removeCardDialogState?.let { dialogState ->
+        RemoveCardConfirmDialog(
+            dialogState = dialogState,
+            onDismiss = onDismissRemoveCardDialog,
+            onConfirm = onConfirmRemoveCard
+        )
+    }
+
+    uiState.upgradeShippingDialogState?.let { dialogState ->
+        UpgradeShippingConfirmDialog(
+            dialogState = dialogState,
+            onDismiss = onDismissUpgradeShippingDialog,
+            onConfirm = onConfirmUpgradeShipping
+        )
+    }
+
+    uiState.splitOrderDialogState?.let { dialogState ->
+        SplitOrderConfirmDialog(
+            dialogState = dialogState,
+            onDismiss = onDismissSplitOrderDialog,
+            onConfirm = onConfirmSplitOrder
+        )
+    }
+
+    if (uiState.showShippingLabelsDialog) {
+        ShippingLabelsConfirmDialog(
+            newOrders = uiState.newStatusOrders,
+            onDismiss = onDismissShippingLabelsDialog,
+            onExport = onExportShippingLabels
+        )
+    }
+}
+
+@Composable
+private fun RemoveCardConfirmDialog(
+    dialogState: RemoveCardDialogState,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!dialogState.isRemoving) onDismiss() },
+        title = {
+            Text(
+                text = "Remove ${dialogState.cardName} from order?",
+                style = MaterialTheme.typography.titleLarge,
+                color = textPrimary
+            )
+        },
+        text = {
+            Text(
+                text = "Removing this card from the order will place it back in your collection and it will no longer have a sold record.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !dialogState.isRemoving,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = errorColor,
+                    contentColor = textOnAccent,
+                    disabledContainerColor = bgSecondary,
+                    disabledContentColor = textTertiary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(if (dialogState.isRemoving) "Removing..." else "Remove")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !dialogState.isRemoving
+            ) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSurface,
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun UpgradeShippingConfirmDialog(
+    dialogState: UpgradeShippingDialogState,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!dialogState.isProcessing) onDismiss() },
+        title = {
+            Text(
+                text = "Upgrade to Bubble Mailer?",
+                style = MaterialTheme.typography.titleLarge,
+                color = textPrimary
+            )
+        },
+        text = {
+            Text(
+                text = "This will change shipping from Envelope (\$1.00) to Bubble Mailer (\$5.00). The order has ${dialogState.cardCount} cards which may not ship safely in an envelope.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !dialogState.isProcessing,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = warningColor,
+                    contentColor = textOnAccent,
+                    disabledContainerColor = bgSecondary,
+                    disabledContentColor = textTertiary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(if (dialogState.isProcessing) "Upgrading..." else "Upgrade")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !dialogState.isProcessing
+            ) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSurface,
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun SplitOrderConfirmDialog(
+    dialogState: SplitOrderDialogState,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    val cardsPerOrder = ceil(dialogState.cardCount / dialogState.splitCount.toDouble()).toInt()
+    AlertDialog(
+        onDismissRequest = { if (!dialogState.isProcessing) onDismiss() },
+        title = {
+            Text(
+                text = "Split into ${dialogState.splitCount} bubble mailers?",
+                style = MaterialTheme.typography.titleLarge,
+                color = textPrimary
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "This will distribute ${dialogState.cardCount} cards evenly across ${dialogState.splitCount} orders (~$cardsPerOrder cards each).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Each new order will have:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "\u2022 Same purchaser information\n\u2022 Same creation date\n\u2022 Separate order ID\n\u2022 Requires separate shipping label",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textTertiary
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !dialogState.isProcessing,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = warningColor,
+                    contentColor = textOnAccent,
+                    disabledContainerColor = bgSecondary,
+                    disabledContentColor = textTertiary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(if (dialogState.isProcessing) "Splitting..." else "Split Order")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !dialogState.isProcessing
+            ) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSurface,
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun ShippingLabelsConfirmDialog(
+    newOrders: List<Order>,
+    onDismiss: () -> Unit,
+    onExport: (List<Order>) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Create Shipping Labels",
+                style = MaterialTheme.typography.titleLarge,
+                color = textPrimary
+            )
+        },
+        text = {
+            if (newOrders.isEmpty()) {
+                Text(
+                    text = "No orders with 'New' status to export.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary
+                )
+            } else {
+                Text(
+                    text = "${newOrders.size} shipping label row${if (newOrders.size > 1) "s" else ""} will be created in a CSV file that Pirate Ship will accept as an import.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onExport(newOrders) },
+                enabled = newOrders.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accentPrimary,
+                    contentColor = textOnAccent,
+                    disabledContainerColor = bgSecondary,
+                    disabledContentColor = textTertiary
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Export")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = textSecondary)
+            }
+        },
+        containerColor = bgSurface,
+        shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun BoxScope.OrderToast(toast: ToastState?) {
+    toast?.let {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(if (it.isError) errorColor else successColor)
                 .padding(16.dp)
         ) {
-            // Header row with title and status filters
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Orders",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = textPrimary
-                )
-
-                // Status filter checkboxes
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OrderStatus.allStatuses.forEach { status ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { onStatusFilterToggled(status) }
-                                .padding(end = 16.dp)
-                        ) {
-                            Checkbox(
-                                modifier = Modifier.padding(0.dp),
-                                checked = status in uiState.statusFilters,
-                                onCheckedChange = { onStatusFilterToggled(status) },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = when (status) {
-                                        OrderStatus.NEW -> errorColor
-                                        OrderStatus.LABEL_CREATED -> warningColor
-                                        OrderStatus.SHIPPED -> successColor
-                                        else -> accentPrimary
-                                    },
-                                    uncheckedColor = textTertiary,
-                                    checkmarkColor = textOnAccent
-                                )
-                            )
-                            Text(
-                                text = status,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = textPrimary
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Search and Sort Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Search bar (weight 3)
-                OutlinedTextField(
-                    value = uiState.searchQuery,
-                    onValueChange = onSearchQueryChanged,
-                    modifier = Modifier
-                        .weight(3f)
-                        .fillMaxHeight(),
-                    placeholder = {
-                        Text(
-                            text = "Search by purchaser info or included card names",
-                            color = textTertiary
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = textTertiary
-                        )
-                    },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = textPrimary,
-                        unfocusedTextColor = textPrimary,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = accentPrimary,
-                        focusedContainerColor = bgSurface,
-                        unfocusedContainerColor = bgSurface
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Sort Dropdown (weight 1)
-                OrderSortDropdown(
-                    selectedOption = uiState.sortOption,
-                    onOptionSelected = onSortOptionChanged,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Content
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                when {
-                    uiState.isLoading -> {
-                        CircularProgressIndicator(color = accentPrimary)
-                    }
-                    uiState.error != null -> {
-                        Text(
-                            text = uiState.error,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                    uiState.orders.isEmpty() -> {
-                        Text(
-                            text = "No orders yet",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = textSecondary
-                        )
-                    }
-                    uiState.filteredOrders.isEmpty() -> {
-                        Text(
-                            text = "No orders match your search",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = textSecondary
-                        )
-                    }
-                    else -> {
-                        OrderList(
-                            orders = uiState.filteredOrders,
-                            onShowAddCardsDialog = onShowAddCardsDialog,
-                            onEditOrder = onEditOrder,
-                            onStatusChanged = onStatusChanged,
-                            onShowRemoveCardDialog = onShowRemoveCardDialog
-                        )
-                    }
-                }
-            }
-        }
-
-        // Scrim when FAB is expanded (must be before FAB menu so it's behind it)
-        if (uiState.isFabExpanded) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                        onClick = onCollapseFab
-                    )
+            Text(
+                text = it.message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textOnAccent
             )
-        }
-
-        // Expandable FAB Menu
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.End,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Create Shipping Labels option
-            AnimatedVisibility(
-                visible = uiState.isFabExpanded,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Create shipping labels",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textPrimary,
-                        modifier = Modifier
-                            .background(bgSurface, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                    SmallFloatingActionButton(
-                        onClick = onShowShippingLabelsDialog,
-                        containerColor = accentPrimary
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocalShipping,
-                            contentDescription = "Create shipping labels",
-                            tint = textOnAccent
-                        )
-                    }
-                }
-            }
-
-            // Create Order option
-            AnimatedVisibility(
-                visible = uiState.isFabExpanded,
-                enter = fadeIn() + slideInVertically { it },
-                exit = fadeOut() + slideOutVertically { it }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Create order",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textPrimary,
-                        modifier = Modifier
-                            .background(bgSurface, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                    SmallFloatingActionButton(
-                        onClick = onShowCreateDialog,
-                        containerColor = accentPrimary
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Create order",
-                            tint = textOnAccent
-                        )
-                    }
-                }
-            }
-
-            // Main FAB (toggle)
-            FloatingActionButton(
-                onClick = onToggleFabExpanded,
-                containerColor = accentPrimary
-            ) {
-                Icon(
-                    imageVector = if (uiState.isFabExpanded) Icons.Default.Close else Icons.Default.Add,
-                    contentDescription = if (uiState.isFabExpanded) "Close menu" else "Open menu",
-                    tint = textOnAccent
-                )
-            }
-        }
-
-        // Create/Edit Order Dialog
-        if (uiState.showCreateDialog) {
-            CreateOrderDialog(
-                formState = uiState.createFormState,
-                isEditMode = uiState.editingOrderId != null,
-                onDismiss = onDismissCreateDialog,
-                onNameChanged = onNameChanged,
-                onStreetAddressChanged = onStreetAddressChanged,
-                onCityChanged = onCityChanged,
-                onStateChanged = onStateChanged,
-                onZipcodeChanged = onZipcodeChanged,
-                onShippingTypeChanged = onShippingTypeChanged,
-                onShippingPriceChanged = onShippingPriceChanged,
-                onConfirm = onCreateOrUpdateOrder
-            )
-        }
-        
-        // Add Cards Dialog
-        uiState.addCardsDialogState?.let { dialogState ->
-            AddCardsDialog(
-                dialogState = dialogState,
-                availableCards = uiState.availableCards,
-                onDismiss = onDismissAddCardsDialog,
-                onSearchChanged = onAddCardsSearchChanged,
-                onToggleCardSelection = onToggleCardSelection,
-                onProceedToPriceConfirmation = onProceedToPriceConfirmation,
-                onCardPriceChanged = onCardPriceChanged,
-                onConfirmAddCards = onConfirmAddCards
-            )
-        }
-
-        // Remove Card Confirmation Dialog
-        uiState.removeCardDialogState?.let { dialogState ->
-            AlertDialog(
-                onDismissRequest = { if (!dialogState.isRemoving) onDismissRemoveCardDialog() },
-                title = {
-                    Text(
-                        text = "Remove ${dialogState.cardName} from order?",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = textPrimary
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Removing this card from the order will place it back in your collection and it will no longer have a sold record.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textSecondary
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = onConfirmRemoveCard,
-                        enabled = !dialogState.isRemoving,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = errorColor,
-                            contentColor = textOnAccent,
-                            disabledContainerColor = bgSecondary,
-                            disabledContentColor = textTertiary
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(if (dialogState.isRemoving) "Removing..." else "Remove")
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = onDismissRemoveCardDialog,
-                        enabled = !dialogState.isRemoving
-                    ) {
-                        Text("Cancel", color = textSecondary)
-                    }
-                },
-                containerColor = bgSurface,
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-
-        // Shipping Labels Confirmation Dialog
-        if (uiState.showShippingLabelsDialog) {
-            val newOrders = uiState.newStatusOrders
-            AlertDialog(
-                onDismissRequest = onDismissShippingLabelsDialog,
-                title = {
-                    Text(
-                        text = "Create Shipping Labels",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = textPrimary
-                    )
-                },
-                text = {
-                    if (newOrders.isEmpty()) {
-                        Text(
-                            text = "No orders with 'New' status to export.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = textSecondary
-                        )
-                    } else {
-                        Text(
-                            text = "${newOrders.size} shipping label row${if (newOrders.size > 1) "s" else ""} will be created in a CSV file that Pirate Ship will accept as an import.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = textSecondary
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = { onExportShippingLabels(newOrders) },
-                        enabled = newOrders.isNotEmpty(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = accentPrimary,
-                            contentColor = textOnAccent,
-                            disabledContainerColor = bgSecondary,
-                            disabledContentColor = textTertiary
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Export")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = onDismissShippingLabelsDialog) {
-                        Text("Cancel", color = textSecondary)
-                    }
-                },
-                containerColor = bgSurface,
-                shape = RoundedCornerShape(12.dp)
-            )
-        }
-
-        // Toast message
-        uiState.toast?.let { toast ->
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (toast.isError) errorColor else successColor)
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = toast.message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textOnAccent
-                )
-            }
         }
     }
 }
@@ -537,10 +806,66 @@ private fun OrderList(
     onShowAddCardsDialog: (String) -> Unit,
     onEditOrder: (Order) -> Unit,
     onStatusChanged: (String, String) -> Unit,
-    onShowRemoveCardDialog: (String, String, String) -> Unit
+    onShowRemoveCardDialog: (String, String, String) -> Unit,
+    onUpgradeShipping: (String, Int) -> Unit,
+    onSplitOrder: (String, Int) -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        state = listState,
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(listState) {
+                var lastY = 0f
+                var velocity = 0f
+                var lastTime = System.currentTimeMillis()
+
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        when (event.type) {
+                            PointerEventType.Press -> {
+                                lastY = event.changes.first().position.y
+                                velocity = 0f
+                                lastTime = System.currentTimeMillis()
+                            }
+                            PointerEventType.Move -> {
+                                if (event.changes.first().pressed) {
+                                    val currentY = event.changes.first().position.y
+                                    val currentTime = System.currentTimeMillis()
+                                    val delta = lastY - currentY
+                                    val timeDelta = (currentTime - lastTime).coerceAtLeast(1)
+
+                                    velocity = delta / timeDelta * 2000
+                                    lastY = currentY
+                                    lastTime = currentTime
+
+                                    coroutineScope.launch {
+                                        listState.scrollBy(delta)
+                                    }
+                                }
+                            }
+                            PointerEventType.Release -> {
+                                if (kotlin.math.abs(velocity) > 100) {
+                                    coroutineScope.launch {
+                                        listState.scroll {
+                                            var remainingVelocity = velocity * 0.5f
+                                            val decay = 0.95f
+                                            while (kotlin.math.abs(remainingVelocity) > 1f) {
+                                                scrollBy(remainingVelocity / 60f)
+                                                remainingVelocity *= decay
+                                                kotlinx.coroutines.delay(16)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(
@@ -552,7 +877,9 @@ private fun OrderList(
                 onShowAddCardsDialog = onShowAddCardsDialog,
                 onEditOrder = onEditOrder,
                 onStatusChanged = onStatusChanged,
-                onShowRemoveCardDialog = onShowRemoveCardDialog
+                onShowRemoveCardDialog = onShowRemoveCardDialog,
+                onUpgradeShipping = onUpgradeShipping,
+                onSplitOrder = onSplitOrder
             )
         }
     }
@@ -564,7 +891,9 @@ private fun OrderCard(
     onShowAddCardsDialog: (String) -> Unit,
     onEditOrder: (Order) -> Unit,
     onStatusChanged: (String, String) -> Unit,
-    onShowRemoveCardDialog: (String, String, String) -> Unit
+    onShowRemoveCardDialog: (String, String, String) -> Unit,
+    onUpgradeShipping: (String, Int) -> Unit,
+    onSplitOrder: (String, Int) -> Unit
 ) {
     var showOverflowMenu by remember { mutableStateOf(false) }
     var isEditingCards by remember { mutableStateOf(false) }
@@ -767,6 +1096,13 @@ private fun OrderCard(
             }
         }
 
+        // Warning banner for shipping type issues
+        OrderWarningBanner(
+            order = order,
+            onUpgradeShipping = onUpgradeShipping,
+            onSplitOrder = onSplitOrder
+        )
+
         // Total at the bottom
         Spacer(modifier = Modifier.height(8.dp))
         val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
@@ -777,6 +1113,162 @@ private fun OrderCard(
             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
             color = successColor
         )
+    }
+}
+
+@Composable
+private fun OrderWarningBanner(
+    order: Order,
+    onUpgradeShipping: (String, Int) -> Unit,
+    onSplitOrder: (String, Int) -> Unit
+) {
+    val cardCount = order.cards.size
+    val showWarnings = order.status == OrderStatus.NEW || order.status == OrderStatus.LABEL_CREATED
+    if (!showWarnings || cardCount == 0) return
+
+    val isEnvelope = order.shippingType?.equals("Envelope", ignoreCase = true) == true
+    val isBubbleMailer = order.shippingType?.equals("Bubble mailer", ignoreCase = true) == true
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Envelope: warn at 2+, upgrade button at 4+
+        if (isEnvelope && cardCount >= 2) {
+            Spacer(modifier = Modifier.height(8.dp))
+            EnvelopeWarning(
+                orderId = order.id,
+                cardCount = cardCount,
+                onUpgradeShipping = onUpgradeShipping
+            )
+        }
+
+        // Bubble mailer: warn and split button at 15+
+        if (isBubbleMailer && cardCount > 15) {
+            Spacer(modifier = Modifier.height(8.dp))
+            BubbleMailerWarning(
+                orderId = order.id,
+                cardCount = cardCount,
+                onSplitOrder = onSplitOrder
+            )
+        }
+    }
+}
+
+@Composable
+private fun EnvelopeWarning(
+    orderId: String,
+    cardCount: Int,
+    onUpgradeShipping: (String, Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(warningColor.copy(alpha = 0.15f))
+            .padding(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Warning",
+                tint = warningColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Non-machineable upcharge may apply for 2+ toploaders in a plain envelope. A single stamp SHOULD cover 2 toploaders but may require extra postage.",
+                style = MaterialTheme.typography.bodySmall,
+                color = warningColor
+            )
+        }
+
+        // Show upgrade button for 4+ cards
+        if (cardCount >= 4) {
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = { onUpgradeShipping(orderId, cardCount) },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = textOnAccent
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(warningColor)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "UPGRADE TO BUBBLE MAILER",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BubbleMailerWarning(
+    orderId: String,
+    cardCount: Int,
+    onSplitOrder: (String, Int) -> Unit
+) {
+    val splitCount = ceil(cardCount / 15.0).toInt()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(warningColor.copy(alpha = 0.15f))
+            .padding(12.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = "Warning",
+                tint = warningColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "$cardCount toploaders may not fit safely in a single bubble mailer. Consider splitting into $splitCount separate shipments.",
+                style = MaterialTheme.typography.bodySmall,
+                color = warningColor
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(
+            onClick = { onSplitOrder(orderId, cardCount) },
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = textOnAccent
+            ),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(warningColor)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.CallSplit,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "SPLIT ORDER",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
     }
 }
 

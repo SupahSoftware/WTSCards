@@ -13,4 +13,6 @@ interface OrderUseCase {
     suspend fun deleteOrder(id: String)
     suspend fun addCardsToOrder(orderId: String, cardPrices: Map<String, Long>)
     suspend fun removeCardFromOrder(orderId: String, cardId: String)
+    suspend fun updateShippingType(orderId: String, shippingType: String, shippingCost: Long)
+    suspend fun splitOrder(orderId: String, splitCount: Int)
 }

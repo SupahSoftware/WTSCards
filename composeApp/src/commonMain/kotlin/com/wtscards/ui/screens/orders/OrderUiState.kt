@@ -25,6 +25,8 @@ data class OrderUiState(
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
     val addCardsDialogState: AddCardsDialogState? = null,
     val removeCardDialogState: RemoveCardDialogState? = null,
+    val upgradeShippingDialogState: UpgradeShippingDialogState? = null,
+    val splitOrderDialogState: SplitOrderDialogState? = null,
     val availableCards: List<Card> = emptyList(),
     val toast: ToastState? = null
 ) {
@@ -112,4 +114,17 @@ data class RemoveCardDialogState(
     val cardId: String,
     val cardName: String,
     val isRemoving: Boolean = false
+)
+
+data class UpgradeShippingDialogState(
+    val orderId: String,
+    val cardCount: Int,
+    val isProcessing: Boolean = false
+)
+
+data class SplitOrderDialogState(
+    val orderId: String,
+    val cardCount: Int,
+    val splitCount: Int,
+    val isProcessing: Boolean = false
 )

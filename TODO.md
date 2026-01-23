@@ -1,9 +1,3 @@
-3. Add a warning on orders based on shipping type and number of cards. Warnings should not show on shipped orders just new and label created
-    - Envelope, no more than 2 toploaders. Show warning there may be an 'non machineable upcharge' for 2 or more toploaders in a single plain white envelop. A single stamp SHOULD cover 2 toploaders but may require extra postage. Warning should suggest to upgrade to bubble mailer for 4+ cards. 
-    - need to find a reasonable number of top-loaded cards that can fit in a bubble mailer
-    - based on the number of cards in the order and the current shipping type (and considering it's reasonable capacity) we should suggest what type of shipping to upgrade to, or maybe the warning comes with a 'Split order into multiple bubble mailers' warning color ribbon across the bottom with dark text color heavy font to make it look clickable with a material warning icon at the start
-    - when splitting an order into multiples we would need to figure out the new order split, ie how many orders we will need total and split the cards up evenly. Upon clicking split order button, we show a confirmation dialog "This will split your 1 order with X cards into Y total orders" and a short message that the buyer and shippig info will automatically be duplicated and they will have the original order creation time (but obviously new order ids)
-
 5. On the orders screen update the "+" FAB in the bottom to be a menu fab that when clicked expands smaller FAB option buttons with an icon and text each.
     - One for "+ Create Order" that starts the create order flow
     - One for "<material icon for label maybe a barcode> Create shipping labels"

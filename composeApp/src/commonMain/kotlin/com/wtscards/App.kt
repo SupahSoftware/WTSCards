@@ -126,6 +126,12 @@ fun MainScreen(
                     onShowRemoveCardDialog = orderViewModel::onShowRemoveCardDialog,
                     onDismissRemoveCardDialog = orderViewModel::onDismissRemoveCardDialog,
                     onConfirmRemoveCard = orderViewModel::onConfirmRemoveCard,
+                    onShowUpgradeShippingDialog = orderViewModel::onShowUpgradeShippingDialog,
+                    onDismissUpgradeShippingDialog = orderViewModel::onDismissUpgradeShippingDialog,
+                    onConfirmUpgradeShipping = orderViewModel::onConfirmUpgradeShipping,
+                    onShowSplitOrderDialog = orderViewModel::onShowSplitOrderDialog,
+                    onDismissSplitOrderDialog = orderViewModel::onDismissSplitOrderDialog,
+                    onConfirmSplitOrder = orderViewModel::onConfirmSplitOrder,
                     onClearToast = orderViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )

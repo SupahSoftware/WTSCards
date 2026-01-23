@@ -62,3 +62,8 @@ DELETE FROM OrderCardEntity WHERE orderId = ? AND cardId = ?;
 
 count:
 SELECT COUNT(*) FROM OrderEntity;
+
+updateShippingType:
+UPDATE OrderEntity
+SET shippingType = ?, shippingCost = ?
+WHERE id = ?;
