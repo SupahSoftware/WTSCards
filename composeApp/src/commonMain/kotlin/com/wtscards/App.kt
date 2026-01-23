@@ -66,7 +66,7 @@ fun MainScreen(
     }
 
     val addCardViewModel = remember {
-        AddCardViewModel(dependencies.cardUseCase, dependencies.coroutineScope)
+        AddCardViewModel(dependencies.cardUseCase, dependencies.autocompleteUseCase, dependencies.coroutineScope)
     }
 
     Scaffold(

@@ -1,0 +1,53 @@
+-- Table for player names extracted from card.name
+CREATE TABLE PlayerNameEntity (
+    name TEXT NOT NULL PRIMARY KEY
+);
+
+-- Table for set names from card.setName
+CREATE TABLE SetNameEntity (
+    name TEXT NOT NULL PRIMARY KEY
+);
+
+-- Table for parallel names extracted from card.name (stored WITHOUT brackets)
+CREATE TABLE ParallelNameEntity (
+    name TEXT NOT NULL PRIMARY KEY
+);
+
+-- PlayerName queries
+selectAllPlayerNames:
+SELECT * FROM PlayerNameEntity ORDER BY name ASC;
+
+selectPlayerNamesByPrefix:
+SELECT * FROM PlayerNameEntity WHERE name LIKE ? || '%' COLLATE NOCASE ORDER BY name ASC LIMIT 5;
+
+insertPlayerName:
+INSERT OR IGNORE INTO PlayerNameEntity (name) VALUES (?);
+
+deleteAllPlayerNames:
+DELETE FROM PlayerNameEntity;
+
+-- SetName queries
+selectAllSetNames:
+SELECT * FROM SetNameEntity ORDER BY name ASC;
+
+selectSetNamesByPrefix:
+SELECT * FROM SetNameEntity WHERE name LIKE ? || '%' COLLATE NOCASE ORDER BY name ASC LIMIT 5;
+
+insertSetName:
+INSERT OR IGNORE INTO SetNameEntity (name) VALUES (?);
+
+deleteAllSetNames:
+DELETE FROM SetNameEntity;
+
+-- ParallelName queries
+selectAllParallelNames:
+SELECT * FROM ParallelNameEntity ORDER BY name ASC;
+
+selectParallelNamesByPrefix:
+SELECT * FROM ParallelNameEntity WHERE name LIKE ? || '%' COLLATE NOCASE ORDER BY name ASC LIMIT 5;
+
+insertParallelName:
+INSERT OR IGNORE INTO ParallelNameEntity (name) VALUES (?);
+
+deleteAllParallelNames:
+DELETE FROM ParallelNameEntity;

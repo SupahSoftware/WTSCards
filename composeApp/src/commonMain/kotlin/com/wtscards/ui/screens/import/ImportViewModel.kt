@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.wtscards.data.model.Card
+import com.wtscards.data.parser.CardNameParser
+import com.wtscards.domain.usecase.AutocompleteUseCase
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.ImportStrategy
 import kotlinx.coroutines.CoroutineScope
@@ -11,6 +13,7 @@ import kotlinx.coroutines.launch
 
 class ImportViewModel(
     private val cardUseCase: CardUseCase,
+    private val autocompleteUseCase: AutocompleteUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(ImportUiState())
@@ -77,6 +80,17 @@ class ImportViewModel(
         uiState = uiState.copy(importState = ImportState.Importing)
         try {
             cardUseCase.importCards(cards, strategy)
+
+            // Add autocomplete entries for imported cards
+            cards.forEach { card ->
+                val parsed = CardNameParser.parse(card.name)
+                parsed.playerName?.let { autocompleteUseCase.addPlayerName(it) }
+                parsed.parallelName?.let { autocompleteUseCase.addParallelName(it) }
+                if (card.setName.isNotBlank()) {
+                    autocompleteUseCase.addSetName(card.setName)
+                }
+            }
+
             uiState = uiState.copy(importState = ImportState.Success(cards.size))
         } catch (e: Exception) {
             uiState = uiState.copy(

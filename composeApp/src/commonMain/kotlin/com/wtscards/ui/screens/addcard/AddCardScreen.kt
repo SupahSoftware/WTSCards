@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.wtscards.ui.components.AppDropdown
+import com.wtscards.ui.components.AutocompleteTextField
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
@@ -71,12 +72,13 @@ fun AddCardScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Name input
-            FormTextField(
+            // Name input with autocomplete
+            AutocompleteTextField(
                 value = uiState.name,
                 onValueChange = onNameChanged,
                 label = "Name",
-                placeholder = "Player name"
+                placeholder = "Player name",
+                suggestions = uiState.nameSuggestions
             )
 
             // Card number input
@@ -87,22 +89,24 @@ fun AddCardScreen(
                 placeholder = "e.g., 123 or FT-3"
             )
 
-            // Set name input (optional)
-            FormTextField(
+            // Set name input (optional) with autocomplete
+            AutocompleteTextField(
                 value = uiState.setName,
                 onValueChange = onSetNameChanged,
                 label = "Set Name",
                 secondaryLabel = "Optional",
-                placeholder = "e.g., 2023 Topps Chrome"
+                placeholder = "e.g., 2023 Topps Chrome",
+                suggestions = uiState.setNameSuggestions
             )
 
-            // Parallel name input (optional)
-            FormTextField(
+            // Parallel name input (optional) with autocomplete
+            AutocompleteTextField(
                 value = uiState.parallelName,
                 onValueChange = onParallelNameChanged,
                 label = "Parallel Name",
                 secondaryLabel = "Optional",
-                placeholder = "e.g., Red Raywave or Image Variation or Image Variation Red"
+                placeholder = "e.g., Red Raywave or Image Variation or Image Variation Red",
+                suggestions = uiState.parallelNameSuggestions
             )
 
             // wrap grade dropdown, quantity, and price input in a row

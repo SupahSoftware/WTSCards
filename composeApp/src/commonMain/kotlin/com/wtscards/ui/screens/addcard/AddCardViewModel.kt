@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.wtscards.data.model.Card
+import com.wtscards.domain.usecase.AutocompleteUseCase
 import com.wtscards.domain.usecase.CardUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -11,6 +12,7 @@ import java.util.UUID
 
 class AddCardViewModel(
     private val cardUseCase: CardUseCase,
+    private val autocompleteUseCase: AutocompleteUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     private val defaultState = AddCardUiState()
@@ -20,6 +22,14 @@ class AddCardViewModel(
 
     fun onNameChanged(name: String) {
         uiState = uiState.copy(name = name)
+        fetchNameSuggestions(name)
+    }
+
+    private fun fetchNameSuggestions(query: String) {
+        coroutineScope.launch {
+            val suggestions = autocompleteUseCase.getPlayerNameSuggestions(query)
+            uiState = uiState.copy(nameSuggestions = suggestions)
+        }
     }
 
     fun onCardNumberChanged(cardNumber: String) {
@@ -28,10 +38,26 @@ class AddCardViewModel(
 
     fun onSetNameChanged(setName: String) {
         uiState = uiState.copy(setName = setName)
+        fetchSetNameSuggestions(setName)
+    }
+
+    private fun fetchSetNameSuggestions(query: String) {
+        coroutineScope.launch {
+            val suggestions = autocompleteUseCase.getSetNameSuggestions(query)
+            uiState = uiState.copy(setNameSuggestions = suggestions)
+        }
     }
 
     fun onParallelNameChanged(parallelName: String) {
         uiState = uiState.copy(parallelName = parallelName)
+        fetchParallelNameSuggestions(parallelName)
+    }
+
+    private fun fetchParallelNameSuggestions(query: String) {
+        coroutineScope.launch {
+            val suggestions = autocompleteUseCase.getParallelNameSuggestions(query)
+            uiState = uiState.copy(parallelNameSuggestions = suggestions)
+        }
     }
 
     fun onGradeOptionChanged(gradeOption: String) {
@@ -93,6 +119,15 @@ class AddCardViewModel(
                 }
 
                 cardUseCase.addCards(cards)
+
+                // Add new names to autocomplete tables for future use
+                autocompleteUseCase.addPlayerName(uiState.name.toTitleCase())
+                if (uiState.setName.isNotBlank()) {
+                    autocompleteUseCase.addSetName(uiState.setName.toTitleCase())
+                }
+                if (uiState.parallelName.isNotBlank()) {
+                    autocompleteUseCase.addParallelName(uiState.parallelName.toTitleCase())
+                }
 
                 val successMessage = if (quantity == 1) {
                     "Card added successfully"

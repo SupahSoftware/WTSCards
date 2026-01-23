@@ -9,7 +9,11 @@ data class AddCardUiState(
     val quantityText: String = "1",
     val priceText: String = "",
     val isSaving: Boolean = false,
-    val toastMessage: ToastMessage? = null
+    val toastMessage: ToastMessage? = null,
+    // Autocomplete suggestions
+    val nameSuggestions: List<String> = emptyList(),
+    val setNameSuggestions: List<String> = emptyList(),
+    val parallelNameSuggestions: List<String> = emptyList()
 )
 
 data class ToastMessage(

@@ -15,11 +15,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import com.wtscards.data.db.AutocompleteLocalDataSource
 import com.wtscards.data.db.CardLocalDataSource
 import com.wtscards.data.db.DatabaseDriverFactory
 import com.wtscards.data.db.OrderLocalDataSource
 import com.wtscards.data.parser.CsvParser
 import com.wtscards.db.WTSCardsDatabase
+import com.wtscards.domain.usecase.AutocompleteUseCaseImpl
 import com.wtscards.domain.usecase.CardUseCaseImpl
 import com.wtscards.domain.usecase.OrderUseCaseImpl
 import com.wtscards.ui.screens.import.ImportViewModel
@@ -57,18 +59,21 @@ fun main() = application {
             val database = WTSCardsDatabase(driver)
             val cardLocalDataSource = CardLocalDataSource(database)
             val orderLocalDataSource = OrderLocalDataSource(database)
+            val autocompleteLocalDataSource = AutocompleteLocalDataSource(database)
             val cardUseCase = CardUseCaseImpl(cardLocalDataSource)
             val orderUseCase = OrderUseCaseImpl(orderLocalDataSource, cardLocalDataSource)
+            val autocompleteUseCase = AutocompleteUseCaseImpl(autocompleteLocalDataSource)
 
             AppDependencies(
                 cardUseCase = cardUseCase,
                 orderUseCase = orderUseCase,
+                autocompleteUseCase = autocompleteUseCase,
                 coroutineScope = coroutineScope
             )
         }
 
         val importViewModel = remember {
-            ImportViewModel(dependencies.cardUseCase, coroutineScope)
+            ImportViewModel(dependencies.cardUseCase, dependencies.autocompleteUseCase, coroutineScope)
         }
 
         val dragAndDropTarget = remember {
