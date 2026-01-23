@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'VERSION'
   workflow_dispatch:
 
 jobs:
@@ -14,13 +16,58 @@ jobs:
       version: ${{ steps.version.outputs.new_version }}
       full_version: ${{ steps.version.outputs.full_version }}
       git_hash: ${{ steps.version.outputs.git_hash }}
+      should_build: ${{ steps.check.outputs.should_build }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Need full history for git rev-parse
+          fetch-depth: 2  # Need at least 2 commits to compare
+
+      - name: Check if version changed
+        id: check
+        run: |
+          # For workflow_dispatch, always build
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger, will build"
+            exit 0
+          fi
+          
+          # For push events, check if VERSION actually changed
+          if [ ! -f VERSION ]; then
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "VERSION file not found, skipping build"
+            exit 0
+          fi
+          
+          CURRENT_VERSION=$(cat VERSION)
+          
+          # Get previous version from parent commit
+          PREVIOUS_VERSION=$(git show HEAD~1:VERSION 2>/dev/null || echo "")
+          
+          if [ -z "$PREVIOUS_VERSION" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "VERSION file is new, will build"
+            exit 0
+          fi
+          
+          # Compare versions - only build if patch number changed
+          IFS='.' read -ra CURRENT_PARTS <<< "$CURRENT_VERSION"
+          IFS='.' read -ra PREVIOUS_PARTS <<< "$PREVIOUS_VERSION"
+          
+          CURRENT_PATCH=${CURRENT_PARTS[2]:-0}
+          PREVIOUS_PATCH=${PREVIOUS_PARTS[2]:-0}
+          
+          if [ "$CURRENT_PATCH" != "$PREVIOUS_PATCH" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "Patch version changed from $PREVIOUS_PATCH to $CURRENT_PATCH, will build"
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "Patch version unchanged ($CURRENT_VERSION), skipping build"
+          fi
 
       - name: Read and increment version
+        if: steps.check.outputs.should_build == 'true'
         id: version
         run: |
           if [ -f VERSION ]; then
@@ -39,7 +86,8 @@ jobs:
           NEW_PATCH=$((PATCH + 1))
           NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
           
-          # Get git short hash
+          # Get git short hash (need full history)
+          git fetch --unshallow || true
           GIT_HASH=$(git rev-parse --short HEAD)
           
           # Full version with hash
@@ -55,6 +103,7 @@ jobs:
 
   build:
     needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -84,14 +133,29 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: chmod +x ./gradlew
 
+      - name: Get git hash
+        id: git_hash
+        run: |
+          git rev-parse --short HEAD > git_hash.txt
+          GIT_HASH=$(cat git_hash.txt)
+          echo "hash=$GIT_HASH" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create version properties file
+        run: |
+          mkdir -p composeApp/src/commonMain/resources
+          echo "app.version=${{ needs.prepare.outputs.version }}" > composeApp/src/commonMain/resources/version.properties
+          echo "app.gitHash=$(cat git_hash.txt)" >> composeApp/src/commonMain/resources/version.properties
+        shell: bash
+
       - name: Build application (Windows)
         if: matrix.os == 'windows-latest'
-        run: gradlew.bat composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.full_version }}"
+        run: gradlew.bat composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.version }}"
         shell: cmd
 
       - name: Build application (Unix)
         if: matrix.os != 'windows-latest'
-        run: ./gradlew composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.full_version }}"
+        run: ./gradlew composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.version }}"
         shell: bash
 
       - name: Find artifact
@@ -121,13 +185,15 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.artifact.outputs.name }}-${{ needs.prepare.outputs.full_version }}
+          name: ${{ steps.artifact.outputs.name }}-${{ needs.prepare.outputs.version }}-${{ steps.git_hash.outputs.hash }}
           path: ${{ steps.artifact.outputs.path }}
 
   update-version:
     needs: [prepare, build]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: |
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      needs.prepare.outputs.should_build == 'true'
     
     steps:
       - name: Checkout code

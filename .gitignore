@@ -67,3 +67,6 @@ kotlin-js-store/
 
 # Distribution directories
 /distributions/
+
+# Generated version file
+composeApp/src/commonMain/resources/version.properties
