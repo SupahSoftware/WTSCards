@@ -4,12 +4,20 @@ import com.wtscards.data.model.Card
 import com.wtscards.data.model.Order
 import com.wtscards.data.model.OrderStatus
 
+enum class OrderSortOption {
+    DATE_DESC,  // Newest first (default)
+    DATE_ASC,   // Oldest first
+    TOTAL_DESC, // Most expensive first
+    TOTAL_ASC   // Cheapest first
+}
+
 data class OrderUiState(
     val isLoading: Boolean = false,
     val orders: List<Order> = emptyList(),
     val error: String? = null,
     val searchQuery: String = "",
     val statusFilters: Set<String> = OrderStatus.allStatuses.toSet(),
+    val sortOption: OrderSortOption = OrderSortOption.DATE_DESC,
     val showCreateDialog: Boolean = false,
     val editingOrderId: String? = null,
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
@@ -35,6 +43,18 @@ data class OrderUiState(
                     order.state.lowercase().contains(query) ||
                     order.zipcode.lowercase().contains(query) ||
                     order.cards.any { card -> card.name.lowercase().contains(query) }
+                }
+            }
+
+            // Sort
+            result = when (sortOption) {
+                OrderSortOption.DATE_DESC -> result.sortedByDescending { it.createdAt }
+                OrderSortOption.DATE_ASC -> result.sortedBy { it.createdAt }
+                OrderSortOption.TOTAL_DESC -> result.sortedByDescending { order ->
+                    order.cards.sumOf { it.priceSold ?: 0 } + order.shippingCost
+                }
+                OrderSortOption.TOTAL_ASC -> result.sortedBy { order ->
+                    order.cards.sumOf { it.priceSold ?: 0 } + order.shippingCost
                 }
             }
 

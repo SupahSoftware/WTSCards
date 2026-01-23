@@ -19,13 +19,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,6 +68,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import com.wtscards.ui.components.AppDropdown
 import androidx.compose.foundation.layout.PaddingValues
 import com.wtscards.ui.theme.accentPrimary
+import com.wtscards.ui.theme.bgDropdown
 import com.wtscards.ui.theme.bgPrimary
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
@@ -82,6 +88,7 @@ fun OrderScreen(
     onDismissCreateDialog: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onStatusFilterToggled: (String) -> Unit,
+    onSortOptionChanged: (OrderSortOption) -> Unit,
     onNameChanged: (String) -> Unit,
     onStreetAddressChanged: (String) -> Unit,
     onCityChanged: (String) -> Unit,
@@ -168,36 +175,57 @@ fun OrderScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Search bar
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = onSearchQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(
-                        text = "Search by purchaser info or included card names",
-                        color = textTertiary
-                    )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = textTertiary
-                    )
-                },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = textPrimary,
-                    unfocusedTextColor = textPrimary,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = accentPrimary,
-                    focusedContainerColor = bgSurface,
-                    unfocusedContainerColor = bgSurface
-                ),
-                shape = RoundedCornerShape(8.dp)
-            )
+            // Search and Sort Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Search bar (weight 3)
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = onSearchQueryChanged,
+                    modifier = Modifier
+                        .weight(3f)
+                        .fillMaxHeight(),
+                    placeholder = {
+                        Text(
+                            text = "Search by purchaser info or included card names",
+                            color = textTertiary
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = textTertiary
+                        )
+                    },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = textPrimary,
+                        unfocusedTextColor = textPrimary,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = accentPrimary,
+                        focusedContainerColor = bgSurface,
+                        unfocusedContainerColor = bgSurface
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Sort Dropdown (weight 1)
+                OrderSortDropdown(
+                    selectedOption = uiState.sortOption,
+                    onOptionSelected = onSortOptionChanged,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -603,6 +631,102 @@ private fun OrderCard(
             color = successColor
         )
     }
+}
+
+@Composable
+private fun OrderSortDropdown(
+    selectedOption: OrderSortOption,
+    onOptionSelected: (OrderSortOption) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var dropdownWidth by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+
+    Box(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(8.dp))
+                .background(bgDropdown)
+                .clickable { expanded = true }
+                .onGloballyPositioned { coordinates ->
+                    dropdownWidth = coordinates.size.width
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = selectedOption.displayName(),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textPrimary
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (selectedOption.isAscending()) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                    contentDescription = null,
+                    tint = accentPrimary
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .background(bgDropdown)
+                .then(
+                    if (dropdownWidth > 0) {
+                        Modifier.width(with(density) { dropdownWidth.toDp() })
+                    } else {
+                        Modifier
+                    }
+                )
+        ) {
+            OrderSortOption.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = option.displayName(),
+                                color = if (option == selectedOption) accentPrimary else textPrimary,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = if (option.isAscending()) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                contentDescription = null,
+                                tint = if (option == selectedOption) accentPrimary else textSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    },
+                    onClick = {
+                        onOptionSelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun OrderSortOption.displayName(): String = when (this) {
+    OrderSortOption.DATE_DESC -> "Date"
+    OrderSortOption.DATE_ASC -> "Date"
+    OrderSortOption.TOTAL_DESC -> "Order total"
+    OrderSortOption.TOTAL_ASC -> "Order total"
+}
+
+private fun OrderSortOption.isAscending(): Boolean = when (this) {
+    OrderSortOption.DATE_DESC -> false  // Newest first shows down arrow
+    OrderSortOption.DATE_ASC -> true    // Oldest first shows up arrow
+    OrderSortOption.TOTAL_DESC -> false // Most expensive first shows down arrow
+    OrderSortOption.TOTAL_ASC -> true   // Cheapest first shows up arrow
 }
 
 private fun formatPrice(priceInPennies: Long): String {

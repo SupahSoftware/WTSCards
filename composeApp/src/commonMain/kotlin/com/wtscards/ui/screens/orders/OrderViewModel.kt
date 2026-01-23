@@ -75,6 +75,10 @@ class OrderViewModel(
         uiState = uiState.copy(statusFilters = newFilters)
     }
 
+    fun onSortOptionChanged(sortOption: OrderSortOption) {
+        uiState = uiState.copy(sortOption = sortOption)
+    }
+
     fun onEditOrder(order: Order) {
         val shippingPriceStr = (order.shippingCost / 100.0).let {
             if (it == it.toLong().toDouble()) {
