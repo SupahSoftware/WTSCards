@@ -44,6 +44,18 @@ class AddCardViewModel(
         uiState = uiState.copy(quantityText = filtered)
     }
 
+    fun onPriceChanged(priceText: String) {
+        // Allow digits and at most one decimal point
+        val filtered = priceText.filter { it.isDigit() || it == '.' }
+        val parts = filtered.split(".")
+        val result = if (parts.size > 2) {
+            parts[0] + "." + parts.drop(1).joinToString("")
+        } else {
+            filtered
+        }
+        uiState = uiState.copy(priceText = result)
+    }
+
     fun canSave(): Boolean {
         val hasName = uiState.name.isNotBlank()
         val hasCardNumber = uiState.cardNumber.isNotBlank()
@@ -60,6 +72,13 @@ class AddCardViewModel(
             try {
                 val quantity = uiState.quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
                 
+                // Convert price to pennies if provided
+                val priceInPennies = if (uiState.priceText.isNotBlank()) {
+                    ((uiState.priceText.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                } else {
+                    0L
+                }
+
                 // Create separate card instances for each quantity
                 val cards = List(quantity) {
                     Card(
@@ -67,7 +86,7 @@ class AddCardViewModel(
                         sportsCardProId = null,
                         name = buildCardName(),
                         setName = uiState.setName.toTitleCase(),
-                        priceInPennies = 0L,
+                        priceInPennies = priceInPennies,
                         gradedString = uiState.gradeOption,
                         priceSold = null
                     )

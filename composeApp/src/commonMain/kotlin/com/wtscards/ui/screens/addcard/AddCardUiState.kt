@@ -7,6 +7,7 @@ data class AddCardUiState(
     val parallelName: String = "",
     val gradeOption: String = "Ungraded",
     val quantityText: String = "1",
+    val priceText: String = "",
     val isSaving: Boolean = false,
     val toastMessage: ToastMessage? = null
 )

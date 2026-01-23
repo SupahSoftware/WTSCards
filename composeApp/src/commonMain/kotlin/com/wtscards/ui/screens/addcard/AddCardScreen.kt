@@ -49,6 +49,7 @@ fun AddCardScreen(
     onParallelNameChanged: (String) -> Unit,
     onGradeOptionChanged: (String) -> Unit,
     onQuantityChanged: (String) -> Unit,
+    onPriceChanged: (String) -> Unit,
     onSave: () -> Unit,
     canSave: Boolean,
     onClearToast: () -> Unit,
@@ -104,7 +105,7 @@ fun AddCardScreen(
                 placeholder = "e.g., Red Raywave or Image Variation or Image Variation Red"
             )
 
-            // wrap grade dropdown and quntity input in a row
+            // wrap grade dropdown, quantity, and price input in a row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -126,6 +127,19 @@ fun AddCardScreen(
                     label = "Quantity",
                     placeholder = "1",
                     keyboardType = KeyboardType.Number
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Price input (optional)
+                FormTextField(
+                    modifier = Modifier.weight(1f),
+                    value = uiState.priceText,
+                    onValueChange = onPriceChanged,
+                    label = "Price",
+                    secondaryLabel = "Optional",
+                    placeholder = "0.00",
+                    keyboardType = KeyboardType.Decimal
                 )
             }
 

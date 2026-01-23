@@ -150,6 +150,7 @@ fun MainScreen(
                     onParallelNameChanged = addCardViewModel::onParallelNameChanged,
                     onGradeOptionChanged = addCardViewModel::onGradeOptionChanged,
                     onQuantityChanged = addCardViewModel::onQuantityChanged,
+                    onPriceChanged = addCardViewModel::onPriceChanged,
                     onSave = addCardViewModel::onSave,
                     canSave = addCardViewModel.canSave(),
                     onClearToast = addCardViewModel::clearToast,
