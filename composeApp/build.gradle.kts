@@ -62,16 +62,13 @@ compose.desktop {
             windows {
                 menuGroup = "WTSCards"
                 upgradeUuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-                iconFile.set(project.file("icons/icon.ico"))
             }
 
             macOS {
                 bundleID = "com.wtscards"
-                iconFile.set(project.file("icons/icon.icns"))
             }
 
             linux {
-                iconFile.set(project.file("icons/icon.png"))
             }
         }
     }
