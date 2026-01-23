@@ -1096,13 +1096,6 @@ private fun OrderCard(
             }
         }
 
-        // Warning banner for shipping type issues
-        OrderWarningBanner(
-            order = order,
-            onUpgradeShipping = onUpgradeShipping,
-            onSplitOrder = onSplitOrder
-        )
-
         // Total at the bottom
         Spacer(modifier = Modifier.height(8.dp))
         val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
@@ -1112,6 +1105,13 @@ private fun OrderCard(
             style = MaterialTheme.typography.titleLarge,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
             color = successColor
+        )
+
+        // Warning banner for shipping type issues
+        OrderWarningBanner(
+            order = order,
+            onUpgradeShipping = onUpgradeShipping,
+            onSplitOrder = onSplitOrder
         )
     }
 }
