@@ -115,6 +115,7 @@ fun OrderScreen(
     onZipcodeChanged: (String) -> Unit,
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
+    onCreateOrderTrackingNumberChanged: (String) -> Unit,
     onCreateOrUpdateOrder: () -> Unit,
     onEditOrder: (Order) -> Unit,
     onStatusChanged: (String, String) -> Unit,
@@ -188,6 +189,7 @@ fun OrderScreen(
             onZipcodeChanged = onZipcodeChanged,
             onShippingTypeChanged = onShippingTypeChanged,
             onShippingPriceChanged = onShippingPriceChanged,
+            onCreateOrderTrackingNumberChanged = onCreateOrderTrackingNumberChanged,
             onCreateOrUpdateOrder = onCreateOrUpdateOrder,
             onDismissAddCardsDialog = onDismissAddCardsDialog,
             onAddCardsSearchChanged = onAddCardsSearchChanged,
@@ -490,6 +492,7 @@ private fun OrderDialogs(
     onZipcodeChanged: (String) -> Unit,
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
+    onCreateOrderTrackingNumberChanged: (String) -> Unit,
     onCreateOrUpdateOrder: () -> Unit,
     onDismissAddCardsDialog: () -> Unit,
     onAddCardsSearchChanged: (String) -> Unit,
@@ -521,6 +524,7 @@ private fun OrderDialogs(
             onZipcodeChanged = onZipcodeChanged,
             onShippingTypeChanged = onShippingTypeChanged,
             onShippingPriceChanged = onShippingPriceChanged,
+            onCreateOrderTrackingNumberChanged = onCreateOrderTrackingNumberChanged,
             onConfirm = onCreateOrUpdateOrder
         )
     }
@@ -1423,6 +1427,7 @@ private fun CreateOrderDialog(
     onZipcodeChanged: (String) -> Unit,
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
+    onCreateOrderTrackingNumberChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
@@ -1510,6 +1515,15 @@ private fun CreateOrderDialog(
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                // Tracking number (optional)
+                DialogFormTextField(
+                    value = formState.trackingNumber,
+                    onValueChange = onCreateOrderTrackingNumberChanged,
+                    label = "Tracking Number",
+                    placeholder = "1Z12345678901234567890",
+                    secondaryText = "Optional"
+                )
             }
         },
         confirmButton = {
@@ -1547,14 +1561,27 @@ private fun DialogFormTextField(
     onValueChange: (String) -> Unit,
     label: String,
     placeholder: String,
-    prefix: String? = null
+    prefix: String? = null,
+    secondaryText: String? = null
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textPrimary
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textPrimary
+            )
+            if (secondaryText != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = secondaryText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textTertiary
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = value,

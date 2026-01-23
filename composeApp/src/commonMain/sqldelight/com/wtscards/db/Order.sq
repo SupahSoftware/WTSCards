@@ -44,7 +44,7 @@ VALUES (?, ?);
 
 updateOrder:
 UPDATE OrderEntity
-SET name = ?, streetAddress = ?, city = ?, state = ?, zipcode = ?, shippingType = ?, shippingCost = ?
+SET name = ?, streetAddress = ?, city = ?, state = ?, zipcode = ?, shippingType = ?, shippingCost = ?, trackingNumber = ?
 WHERE id = ?;
 
 updateStatus:

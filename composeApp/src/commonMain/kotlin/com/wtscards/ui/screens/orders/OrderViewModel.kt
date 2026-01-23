@@ -138,7 +138,8 @@ class OrderViewModel(
                 state = order.state,
                 zipcode = order.zipcode,
                 shippingType = order.shippingType ?: "Bubble mailer",
-                shippingPrice = shippingPriceStr
+                shippingPrice = shippingPriceStr,
+                trackingNumber = order.trackingNumber ?: ""
             )
         )
     }
@@ -213,6 +214,12 @@ class OrderViewModel(
         }
     }
 
+    fun onCreateOrderTrackingNumberChanged(trackingNumber: String) {
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(trackingNumber = trackingNumber)
+        )
+    }
+
     fun onCreateOrUpdateOrder() {
         if (!uiState.createFormState.isValid()) return
 
@@ -227,6 +234,8 @@ class OrderViewModel(
                 val form = uiState.createFormState
                 val shippingCostInPennies = ((form.shippingPrice.toDoubleOrNull() ?: 0.0) * 100).toLong()
 
+                val trackingNumber = form.trackingNumber.trim().takeIf { it.isNotBlank() }
+                
                 if (isEditMode) {
                     // Find the existing order to preserve createdAt and cards
                     val existingOrder = uiState.orders.find { it.id == uiState.editingOrderId }
@@ -239,7 +248,9 @@ class OrderViewModel(
                         zipcode = form.zipcode,
                         shippingType = form.shippingType,
                         shippingCost = shippingCostInPennies,
+                        status = existingOrder?.status ?: OrderStatus.NEW,
                         createdAt = existingOrder?.createdAt ?: System.currentTimeMillis(),
+                        trackingNumber = trackingNumber,
                         cards = existingOrder?.cards ?: emptyList()
                     )
                     orderUseCase.updateOrder(order)
@@ -253,7 +264,9 @@ class OrderViewModel(
                         zipcode = form.zipcode,
                         shippingType = form.shippingType,
                         shippingCost = shippingCostInPennies,
+                        status = OrderStatus.NEW,
                         createdAt = System.currentTimeMillis(),
+                        trackingNumber = trackingNumber,
                         cards = emptyList()
                     )
                     orderUseCase.createOrder(order)

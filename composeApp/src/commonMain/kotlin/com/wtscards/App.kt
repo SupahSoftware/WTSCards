@@ -113,6 +113,7 @@ fun MainScreen(
                     onZipcodeChanged = orderViewModel::onZipcodeChanged,
                     onShippingTypeChanged = orderViewModel::onShippingTypeChanged,
                     onShippingPriceChanged = orderViewModel::onShippingPriceChanged,
+                    onCreateOrderTrackingNumberChanged = orderViewModel::onCreateOrderTrackingNumberChanged,
                     onCreateOrUpdateOrder = orderViewModel::onCreateOrUpdateOrder,
                     onEditOrder = orderViewModel::onEditOrder,
                     onStatusChanged = orderViewModel::onStatusChanged,

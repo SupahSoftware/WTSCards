@@ -83,6 +83,7 @@ data class CreateOrderFormState(
     val zipcode: String = "",
     val shippingType: String = "Bubble mailer",
     val shippingPrice: String = "5.00",
+    val trackingNumber: String = "",
     val isSaving: Boolean = false
 ) {
     fun isValid(): Boolean {

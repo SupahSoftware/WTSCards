@@ -79,6 +79,7 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             zipcode = order.zipcode,
             shippingType = order.shippingType,
             shippingCost = order.shippingCost,
+            trackingNumber = order.trackingNumber,
             id = order.id
         )
     }
