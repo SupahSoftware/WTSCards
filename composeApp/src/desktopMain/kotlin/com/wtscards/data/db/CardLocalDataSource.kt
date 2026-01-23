@@ -81,6 +81,10 @@ class CardLocalDataSource(private val database: WTSCardsDatabase) {
         queries.updatePriceSold(priceSold, id)
     }
 
+    suspend fun clearPriceSold(id: String) = withContext(Dispatchers.IO) {
+        queries.updatePriceSold(null, id)
+    }
+
     suspend fun deleteAllCards() = withContext(Dispatchers.IO) {
         queries.deleteAll()
     }

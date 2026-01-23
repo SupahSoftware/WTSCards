@@ -325,6 +325,43 @@ class OrderViewModel(
         uiState = uiState.copy(toast = null)
     }
 
+    fun onShowRemoveCardDialog(orderId: String, cardId: String, cardName: String) {
+        uiState = uiState.copy(
+            removeCardDialogState = RemoveCardDialogState(
+                orderId = orderId,
+                cardId = cardId,
+                cardName = cardName
+            )
+        )
+    }
+
+    fun onDismissRemoveCardDialog() {
+        uiState = uiState.copy(removeCardDialogState = null)
+    }
+
+    fun onConfirmRemoveCard() {
+        uiState.removeCardDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                removeCardDialogState = dialogState.copy(isRemoving = true)
+            )
+
+            coroutineScope.launch {
+                try {
+                    orderUseCase.removeCardFromOrder(dialogState.orderId, dialogState.cardId)
+                    uiState = uiState.copy(
+                        removeCardDialogState = null,
+                        toast = ToastState("Card removed from order", isError = false)
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                        removeCardDialogState = dialogState.copy(isRemoving = false),
+                        toast = ToastState(e.message ?: "Failed to remove card", isError = true)
+                    )
+                }
+            }
+        }
+    }
+
     private fun String.toTitleCase(): String {
         return split(" ").joinToString(" ") { word ->
             word.lowercase().replaceFirstChar { it.uppercase() }

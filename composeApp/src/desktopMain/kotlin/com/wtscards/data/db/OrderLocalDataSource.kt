@@ -104,6 +104,10 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
         }
     }
 
+    suspend fun removeCardFromOrder(orderId: String, cardId: String) = withContext(Dispatchers.IO) {
+        orderQueries.deleteOrderCard(orderId, cardId)
+    }
+
     suspend fun getCount(): Long = withContext(Dispatchers.IO) {
         orderQueries.count().executeAsOne()
     }

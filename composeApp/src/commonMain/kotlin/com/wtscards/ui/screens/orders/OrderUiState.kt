@@ -11,6 +11,7 @@ data class OrderUiState(
     val editingOrderId: String? = null,
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
     val addCardsDialogState: AddCardsDialogState? = null,
+    val removeCardDialogState: RemoveCardDialogState? = null,
     val availableCards: List<Card> = emptyList(),
     val toast: ToastState? = null
 )
@@ -54,3 +55,10 @@ enum class AddCardsStep {
     SELECT_CARDS,
     CONFIRM_PRICES
 }
+
+data class RemoveCardDialogState(
+    val orderId: String,
+    val cardId: String,
+    val cardName: String,
+    val isRemoving: Boolean = false
+)

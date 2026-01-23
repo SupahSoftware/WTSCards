@@ -111,6 +111,9 @@ fun MainScreen(
                     onProceedToPriceConfirmation = orderViewModel::onProceedToPriceConfirmation,
                     onCardPriceChanged = orderViewModel::onCardPriceChanged,
                     onConfirmAddCards = orderViewModel::onConfirmAddCards,
+                    onShowRemoveCardDialog = orderViewModel::onShowRemoveCardDialog,
+                    onDismissRemoveCardDialog = orderViewModel::onDismissRemoveCardDialog,
+                    onConfirmRemoveCard = orderViewModel::onConfirmRemoveCard,
                     onClearToast = orderViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )

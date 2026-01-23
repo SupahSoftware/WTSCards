@@ -18,8 +18,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -92,6 +95,9 @@ fun OrderScreen(
     onProceedToPriceConfirmation: () -> Unit,
     onCardPriceChanged: (String, String) -> Unit,
     onConfirmAddCards: () -> Unit,
+    onShowRemoveCardDialog: (String, String, String) -> Unit,
+    onDismissRemoveCardDialog: () -> Unit,
+    onConfirmRemoveCard: () -> Unit,
     onClearToast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -142,7 +148,8 @@ fun OrderScreen(
                             orders = uiState.orders,
                             onShowAddCardsDialog = onShowAddCardsDialog,
                             onEditOrder = onEditOrder,
-                            onStatusChanged = onStatusChanged
+                            onStatusChanged = onStatusChanged,
+                            onShowRemoveCardDialog = onShowRemoveCardDialog
                         )
                     }
                 }
@@ -195,6 +202,52 @@ fun OrderScreen(
             )
         }
 
+        // Remove Card Confirmation Dialog
+        uiState.removeCardDialogState?.let { dialogState ->
+            AlertDialog(
+                onDismissRequest = { if (!dialogState.isRemoving) onDismissRemoveCardDialog() },
+                title = {
+                    Text(
+                        text = "Remove ${dialogState.cardName} from order?",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Removing this card from the order will place it back in your collection and it will no longer have a sold record.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textSecondary
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = onConfirmRemoveCard,
+                        enabled = !dialogState.isRemoving,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = errorColor,
+                            contentColor = textOnAccent,
+                            disabledContainerColor = bgSecondary,
+                            disabledContentColor = textTertiary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(if (dialogState.isRemoving) "Removing..." else "Remove")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = onDismissRemoveCardDialog,
+                        enabled = !dialogState.isRemoving
+                    ) {
+                        Text("Cancel", color = textSecondary)
+                    }
+                },
+                containerColor = bgSurface,
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+
         // Toast message
         uiState.toast?.let { toast ->
             Box(
@@ -221,7 +274,8 @@ private fun OrderList(
     orders: List<Order>,
     onShowAddCardsDialog: (String) -> Unit,
     onEditOrder: (Order) -> Unit,
-    onStatusChanged: (String, String) -> Unit
+    onStatusChanged: (String, String) -> Unit,
+    onShowRemoveCardDialog: (String, String, String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -235,7 +289,8 @@ private fun OrderList(
                 order = order,
                 onShowAddCardsDialog = onShowAddCardsDialog,
                 onEditOrder = onEditOrder,
-                onStatusChanged = onStatusChanged
+                onStatusChanged = onStatusChanged,
+                onShowRemoveCardDialog = onShowRemoveCardDialog
             )
         }
     }
@@ -246,14 +301,23 @@ private fun OrderCard(
     order: Order,
     onShowAddCardsDialog: (String) -> Unit,
     onEditOrder: (Order) -> Unit,
-    onStatusChanged: (String, String) -> Unit
+    onStatusChanged: (String, String) -> Unit,
+    onShowRemoveCardDialog: (String, String, String) -> Unit
 ) {
     var showOverflowMenu by remember { mutableStateOf(false) }
+    var isEditingCards by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
+            .then(
+                if (isEditingCards) {
+                    Modifier.border(2.dp, errorColor, RoundedCornerShape(8.dp))
+                } else {
+                    Modifier
+                }
+            )
             .background(bgSurface)
             .padding(16.dp)
     ) {
@@ -270,7 +334,7 @@ private fun OrderCard(
                 color = textPrimary
             )
 
-            // Right side: status dropdown and overflow menu
+            // Right side: status dropdown and overflow menu (or back icon in edit mode)
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -295,55 +359,86 @@ private fun OrderCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Overflow menu
-                Box {
+                if (isEditingCards) {
+                    // Back icon to exit edit mode
                     Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More options",
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Exit edit mode",
                         tint = textSecondary,
                         modifier = Modifier
-                            .clickable { showOverflowMenu = true }
+                            .clickable { isEditingCards = false }
                             .padding(4.dp)
                     )
+                } else {
+                    // Overflow menu
+                    Box {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "More options",
+                            tint = textSecondary,
+                            modifier = Modifier
+                                .clickable { showOverflowMenu = true }
+                                .padding(4.dp)
+                        )
 
-                    DropdownMenu(
-                        expanded = showOverflowMenu,
-                        onDismissRequest = { showOverflowMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = null,
-                                        tint = textPrimary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Add cards", color = textPrimary)
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Add,
+                                            contentDescription = null,
+                                            tint = textPrimary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Add cards", color = textPrimary)
+                                    }
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    onShowAddCardsDialog(order.id)
                                 }
-                            },
-                            onClick = {
-                                showOverflowMenu = false
-                                onShowAddCardsDialog(order.id)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = null,
-                                        tint = textPrimary
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Edit order", color = textPrimary)
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            tint = textPrimary
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Edit order", color = textPrimary)
+                                    }
+                                },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    onEditOrder(order)
                                 }
-                            },
-                            onClick = {
-                                showOverflowMenu = false
-                                onEditOrder(order)
+                            )
+                            if (order.cards.isNotEmpty()) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = null,
+                                                tint = textPrimary
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Edit cards", color = textPrimary)
+                                        }
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        isEditingCards = true
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
                 }
             }
@@ -384,11 +479,28 @@ private fun OrderCard(
 
             // Cards
             order.cards.forEach { card ->
-                Text(
-                    text = "${card.name}    ${formatPrice(card.priceSold ?: 0)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textPrimary
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isEditingCards) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Remove card",
+                            tint = errorColor,
+                            modifier = Modifier
+                                .clickable {
+                                    onShowRemoveCardDialog(order.id, card.id, card.name)
+                                }
+                                .padding(end = 8.dp)
+                        )
+                    }
+                    Text(
+                        text = "${card.name}    ${formatPrice(card.priceSold ?: 0)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textPrimary
+                    )
+                }
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }

@@ -57,5 +57,8 @@ DELETE FROM OrderEntity WHERE id = ?;
 deleteOrderCardsByOrderId:
 DELETE FROM OrderCardEntity WHERE orderId = ?;
 
+deleteOrderCard:
+DELETE FROM OrderCardEntity WHERE orderId = ? AND cardId = ?;
+
 count:
 SELECT COUNT(*) FROM OrderEntity;

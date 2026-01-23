@@ -44,4 +44,9 @@ class OrderUseCaseImpl(
             cardLocalDataSource.updatePriceSold(cardId, priceSold)
         }
     }
+
+    override suspend fun removeCardFromOrder(orderId: String, cardId: String) {
+        orderLocalDataSource.removeCardFromOrder(orderId, cardId)
+        cardLocalDataSource.clearPriceSold(cardId)
+    }
 }
