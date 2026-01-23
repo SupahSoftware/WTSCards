@@ -150,12 +150,12 @@ jobs:
 
       - name: Build application (Windows)
         if: matrix.os == 'windows-latest'
-        run: gradlew.bat composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.version }}"
+        run: gradlew.bat composeApp:packageReleaseDistributionForCurrentOS -Papp.version="${{ needs.prepare.outputs.version }}"
         shell: cmd
 
       - name: Build application (Unix)
         if: matrix.os != 'windows-latest'
-        run: ./gradlew composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.version }}"
+        run: ./gradlew composeApp:packageReleaseDistributionForCurrentOS -Papp.version="${{ needs.prepare.outputs.version }}"
         shell: bash
 
       - name: Find artifact
