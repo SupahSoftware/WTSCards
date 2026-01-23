@@ -144,6 +144,8 @@ jobs:
       - name: Create version properties file
         run: |
           mkdir -p composeApp/src/commonMain/resources
+          # Remove any existing file to avoid duplicates
+          rm -f composeApp/src/commonMain/resources/version.properties
           echo "app.version=${{ needs.prepare.outputs.version }}" > composeApp/src/commonMain/resources/version.properties
           echo "app.gitHash=$(cat git_hash.txt)" >> composeApp/src/commonMain/resources/version.properties
         shell: bash

@@ -12,9 +12,6 @@ kotlin {
 
     sourceSets {
         val desktopMain by getting
-        val commonMain by getting {
-            resources.srcDirs("src/commonMain/resources")
-        }
 
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -42,6 +39,13 @@ sqldelight {
         }
     }
 }
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+}
+
 
 compose.desktop {
     application {
