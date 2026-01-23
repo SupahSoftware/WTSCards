@@ -94,47 +94,29 @@ jobs:
         run: ./gradlew composeApp:packageDistribution -Papp.version="${{ needs.prepare.outputs.full_version }}"
         shell: bash
 
-      - name: Find artifact (Linux)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Find artifact
         id: artifact
         shell: bash
         run: |
-          ARTIFACT_NAME="WTSCards-linux"
-          ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/deb -name "*.deb" | head -1)
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            ARTIFACT_NAME="WTSCards-linux"
+            ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/deb -name "*.deb" | head -1)
+          elif [ "${{ matrix.os }}" == "windows-latest" ]; then
+            ARTIFACT_NAME="WTSCards-windows"
+            ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/msi -name "*.msi" | head -1)
+          else
+            ARTIFACT_NAME="WTSCards-macos"
+            ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/dmg -name "*.dmg" | head -1)
+          fi
+          
           if [ -z "$ARTIFACT_PATH" ]; then
             echo "Error: Artifact not found!"
             exit 1
           fi
+          
           echo "name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "path=$ARTIFACT_PATH" >> $GITHUB_OUTPUT
-
-      - name: Find artifact (Windows)
-        if: matrix.os == 'windows-latest'
-        id: artifact
-        shell: bash
-        run: |
-          ARTIFACT_NAME="WTSCards-windows"
-          ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/msi -name "*.msi" | head -1)
-          if [ -z "$ARTIFACT_PATH" ]; then
-            echo "Error: Artifact not found!"
-            exit 1
-          fi
-          echo "name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-          echo "path=$ARTIFACT_PATH" >> $GITHUB_OUTPUT
-
-      - name: Find artifact (macOS)
-        if: matrix.os == 'macos-latest'
-        id: artifact
-        shell: bash
-        run: |
-          ARTIFACT_NAME="WTSCards-macos"
-          ARTIFACT_PATH=$(find composeApp/build/compose/binaries/main/app/dmg -name "*.dmg" | head -1)
-          if [ -z "$ARTIFACT_PATH" ]; then
-            echo "Error: Artifact not found!"
-            exit 1
-          fi
-          echo "name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-          echo "path=$ARTIFACT_PATH" >> $GITHUB_OUTPUT
+          echo "Found artifact: $ARTIFACT_NAME at $ARTIFACT_PATH"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
