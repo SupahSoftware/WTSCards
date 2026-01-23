@@ -634,7 +634,32 @@ private fun CardRow(
                 )
             }
 
-            // eBay Button (before price, with 16dp margin)
+            // SportsCardPro Button
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { UrlUtils.openSportsCardPro(card.name) }
+                    .padding(horizontal = 4.dp, vertical = 8.dp)
+            ) {
+                Row {
+                    Text(
+                        text = "SPORTSCARD",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E88E5) // Blue
+                    )
+                    Text(
+                        text = "PRO",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF43A047) // Green
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // eBay Button
             IconButton(
                 onClick = { UrlUtils.openEbaySoldListings(card.name) },
                 modifier = Modifier.size(40.dp)

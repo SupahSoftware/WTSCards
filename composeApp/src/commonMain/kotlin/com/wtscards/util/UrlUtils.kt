@@ -23,4 +23,13 @@ object UrlUtils {
     fun openEbaySoldListings(searchTerm: String) {
         openInBrowser(getEbaySoldListingsUrl(searchTerm))
     }
+
+    fun getSportsCardProUrl(searchTerm: String): String {
+        val encodedTerm = URLEncoder.encode(searchTerm, "UTF-8")
+        return "https://www.sportscardspro.com/search-products?type=prices&q=$encodedTerm&go=Go"
+    }
+
+    fun openSportsCardPro(searchTerm: String) {
+        openInBrowser(getSportsCardProUrl(searchTerm))
+    }
 }
