@@ -94,6 +94,8 @@ fun MainScreen(
                     uiState = orderViewModel.uiState,
                     onShowCreateDialog = orderViewModel::onShowCreateDialog,
                     onDismissCreateDialog = orderViewModel::onDismissCreateDialog,
+                    onSearchQueryChanged = orderViewModel::onSearchQueryChanged,
+                    onStatusFilterToggled = orderViewModel::onStatusFilterToggled,
                     onNameChanged = orderViewModel::onNameChanged,
                     onStreetAddressChanged = orderViewModel::onStreetAddressChanged,
                     onCityChanged = orderViewModel::onCityChanged,

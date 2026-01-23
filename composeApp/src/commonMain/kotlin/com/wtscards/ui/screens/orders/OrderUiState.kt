@@ -2,11 +2,14 @@ package com.wtscards.ui.screens.orders
 
 import com.wtscards.data.model.Card
 import com.wtscards.data.model.Order
+import com.wtscards.data.model.OrderStatus
 
 data class OrderUiState(
     val isLoading: Boolean = false,
     val orders: List<Order> = emptyList(),
     val error: String? = null,
+    val searchQuery: String = "",
+    val statusFilters: Set<String> = OrderStatus.allStatuses.toSet(),
     val showCreateDialog: Boolean = false,
     val editingOrderId: String? = null,
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
@@ -14,7 +17,30 @@ data class OrderUiState(
     val removeCardDialogState: RemoveCardDialogState? = null,
     val availableCards: List<Card> = emptyList(),
     val toast: ToastState? = null
-)
+) {
+    val filteredOrders: List<Order>
+        get() {
+            var result = orders
+
+            // Filter by status
+            result = result.filter { it.status in statusFilters }
+
+            // Filter by search query
+            if (searchQuery.isNotBlank()) {
+                val query = searchQuery.lowercase()
+                result = result.filter { order ->
+                    order.name.lowercase().contains(query) ||
+                    order.streetAddress.lowercase().contains(query) ||
+                    order.city.lowercase().contains(query) ||
+                    order.state.lowercase().contains(query) ||
+                    order.zipcode.lowercase().contains(query) ||
+                    order.cards.any { card -> card.name.lowercase().contains(query) }
+                }
+            }
+
+            return result
+        }
+}
 
 data class ToastState(
     val message: String,

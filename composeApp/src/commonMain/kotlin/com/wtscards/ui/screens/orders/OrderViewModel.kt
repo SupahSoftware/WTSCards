@@ -61,6 +61,20 @@ class OrderViewModel(
         uiState = uiState.copy(showCreateDialog = true)
     }
 
+    fun onSearchQueryChanged(query: String) {
+        uiState = uiState.copy(searchQuery = query)
+    }
+
+    fun onStatusFilterToggled(status: String) {
+        val currentFilters = uiState.statusFilters
+        val newFilters = if (status in currentFilters) {
+            currentFilters - status
+        } else {
+            currentFilters + status
+        }
+        uiState = uiState.copy(statusFilters = newFilters)
+    }
+
     fun onEditOrder(order: Order) {
         val shippingPriceStr = (order.shippingCost / 100.0).let {
             if (it == it.toLong().toDouble()) {

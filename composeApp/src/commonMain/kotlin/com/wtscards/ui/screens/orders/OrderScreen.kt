@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -78,6 +80,8 @@ fun OrderScreen(
     uiState: OrderUiState,
     onShowCreateDialog: () -> Unit,
     onDismissCreateDialog: () -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    onStatusFilterToggled: (String) -> Unit,
     onNameChanged: (String) -> Unit,
     onStreetAddressChanged: (String) -> Unit,
     onCityChanged: (String) -> Unit,
@@ -111,15 +115,91 @@ fun OrderScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            // Header
-            Text(
-                text = "Orders",
-                style = MaterialTheme.typography.headlineMedium,
-                color = textPrimary,
-                modifier = Modifier.padding(bottom = 16.dp)
+            // Header row with title and status filters
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Orders",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = textPrimary
+                )
+
+                // Status filter checkboxes
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OrderStatus.allStatuses.forEach { status ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { onStatusFilterToggled(status) }
+                                .padding(end = 16.dp)
+                        ) {
+                            Checkbox(
+                                modifier = Modifier.padding(0.dp),
+                                checked = status in uiState.statusFilters,
+                                onCheckedChange = { onStatusFilterToggled(status) },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = when (status) {
+                                        OrderStatus.NEW -> errorColor
+                                        OrderStatus.LABEL_CREATED -> warningColor
+                                        OrderStatus.SHIPPED -> successColor
+                                        else -> accentPrimary
+                                    },
+                                    uncheckedColor = textTertiary,
+                                    checkmarkColor = textOnAccent
+                                )
+                            )
+                            Text(
+                                text = status,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = textPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Search bar
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = onSearchQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = "Search by purchaser info or included card names",
+                        color = textTertiary
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = textTertiary
+                    )
+                },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = textPrimary,
+                    unfocusedTextColor = textPrimary,
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = accentPrimary,
+                    focusedContainerColor = bgSurface,
+                    unfocusedContainerColor = bgSurface
+                ),
+                shape = RoundedCornerShape(8.dp)
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Content
             Box(
@@ -143,9 +223,16 @@ fun OrderScreen(
                             color = textSecondary
                         )
                     }
+                    uiState.filteredOrders.isEmpty() -> {
+                        Text(
+                            text = "No orders match your search",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = textSecondary
+                        )
+                    }
                     else -> {
                         OrderList(
-                            orders = uiState.orders,
+                            orders = uiState.filteredOrders,
                             onShowAddCardsDialog = onShowAddCardsDialog,
                             onEditOrder = onEditOrder,
                             onStatusChanged = onStatusChanged,
