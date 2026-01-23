@@ -48,7 +48,7 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
 
             packageName = "WTSCards"
-            packageVersion = "1.0.0"
+            packageVersion = project.findProperty("app.version") as String? ?: "1.0.0"
             description = "WTS Cards Application"
             vendor = "WTSCards"
 

@@ -7,7 +7,7 @@ For Licensing information, please refer to LICENSE.md for more details on redist
 TLDR: Don't try to profit from the work I did that I intentionally chose to be free and open source
 
 ## Terms and Conditions (Boring)
-For Terms and Conditions, please rerfer to TERMS_AND_CONDITIONS.md for (quite frankly) some generic information
+For Terms and Conditions, please refer to TERMS_OF_SERVICE.md for (quite frankly) some generic information
 that absolves me of any responsibilities because you are using this (free and open source) tool yourself.
 
 TLDR1: You're using this software, not me. I'm not responsible if you share the output.
