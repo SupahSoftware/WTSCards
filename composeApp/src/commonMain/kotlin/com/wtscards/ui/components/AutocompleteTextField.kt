@@ -2,8 +2,10 @@ package com.wtscards.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,6 +60,7 @@ fun AutocompleteTextField(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     var dismissedValue by remember { mutableStateOf<String?>(null) }
+    var isManuallyDismissed by remember { mutableStateOf(false) }
     var textFieldWidth by remember { mutableStateOf(0) }
     var textFieldHeight by remember { mutableStateOf(0) }
     val density = LocalDensity.current
@@ -72,8 +75,8 @@ fun AutocompleteTextField(
         }
     }
 
-    // Show dropdown when focused, have suggestions, and not dismissed for current value
-    val showDropdown = isFocused && suggestions.isNotEmpty() && value.isNotBlank() && value != dismissedValue
+    // Show dropdown when focused, have suggestions, not dismissed, and not manually dismissed
+    val showDropdown = isFocused && suggestions.isNotEmpty() && value.isNotBlank() && value != dismissedValue && !isManuallyDismissed
 
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.Bottom) {
@@ -98,10 +101,11 @@ fun AutocompleteTextField(
                 value = textFieldValue,
                 onValueChange = { newValue ->
                     textFieldValue = newValue
-                    // Reset dismissed state when user types something different
+                    // Reset dismissed states when user types something different
                     if (newValue.text != dismissedValue) {
                         dismissedValue = null
                     }
+                    isManuallyDismissed = false
                     onValueChange(newValue.text)
                 },
                 modifier = Modifier
@@ -161,6 +165,24 @@ fun AutocompleteTextField(
 
             // Popup for suggestions (non-focusable so it doesn't steal focus from text field)
             if (showDropdown) {
+                // Invisible scrim to detect clicks outside the dropdown
+                Popup(
+                    alignment = Alignment.TopStart,
+                    properties = PopupProperties(focusable = false)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                isManuallyDismissed = true
+                            }
+                    )
+                }
+
+                // Suggestions dropdown
                 Popup(
                     alignment = Alignment.TopStart,
                     offset = IntOffset(0, textFieldHeight),
