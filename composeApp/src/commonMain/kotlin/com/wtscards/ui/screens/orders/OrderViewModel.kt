@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.wtscards.data.model.Order
+import com.wtscards.data.model.OrderStatus
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.OrderUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -57,8 +58,48 @@ class OrderViewModel(
             .launchIn(coroutineScope)
     }
 
+    fun onToggleFabExpanded() {
+        uiState = uiState.copy(isFabExpanded = !uiState.isFabExpanded)
+    }
+
+    fun onCollapseFab() {
+        uiState = uiState.copy(isFabExpanded = false)
+    }
+
     fun onShowCreateDialog() {
-        uiState = uiState.copy(showCreateDialog = true)
+        uiState = uiState.copy(showCreateDialog = true, isFabExpanded = false)
+    }
+
+    fun onShowShippingLabelsDialog() {
+        uiState = uiState.copy(showShippingLabelsDialog = true, isFabExpanded = false)
+    }
+
+    fun onDismissShippingLabelsDialog() {
+        uiState = uiState.copy(showShippingLabelsDialog = false)
+    }
+
+    fun onShippingLabelsExported(orderIds: List<String>) {
+        coroutineScope.launch {
+            try {
+                orderIds.forEach { orderId ->
+                    orderUseCase.updateStatus(orderId, OrderStatus.LABEL_CREATED)
+                }
+                uiState = uiState.copy(
+                    showShippingLabelsDialog = false,
+                    toast = ToastState("Exported ${orderIds.size} shipping labels", isError = false)
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    toast = ToastState(e.message ?: "Failed to update order statuses", isError = true)
+                )
+            }
+        }
+    }
+
+    fun onShippingLabelsExportError(message: String) {
+        uiState = uiState.copy(
+            toast = ToastState(message, isError = true)
+        )
     }
 
     fun onSearchQueryChanged(query: String) {

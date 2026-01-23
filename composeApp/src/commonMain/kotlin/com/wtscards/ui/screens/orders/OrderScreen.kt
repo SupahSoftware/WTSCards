@@ -1,5 +1,10 @@
 package com.wtscards.ui.screens.orders
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -25,10 +30,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material3.AlertDialog
@@ -84,8 +92,13 @@ import com.wtscards.ui.theme.textTertiary
 @Composable
 fun OrderScreen(
     uiState: OrderUiState,
+    onToggleFabExpanded: () -> Unit,
+    onCollapseFab: () -> Unit,
     onShowCreateDialog: () -> Unit,
     onDismissCreateDialog: () -> Unit,
+    onShowShippingLabelsDialog: () -> Unit,
+    onDismissShippingLabelsDialog: () -> Unit,
+    onExportShippingLabels: (List<Order>) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
     onStatusFilterToggled: (String) -> Unit,
     onSortOptionChanged: (OrderSortOption) -> Unit,
@@ -271,19 +284,101 @@ fun OrderScreen(
             }
         }
 
-        // FAB for creating new order
-        FloatingActionButton(
-            onClick = onShowCreateDialog,
+        // Scrim when FAB is expanded (must be before FAB menu so it's behind it)
+        if (uiState.isFabExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        onClick = onCollapseFab
+                    )
+            )
+        }
+
+        // Expandable FAB Menu
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp),
-            containerColor = accentPrimary
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Create order",
-                tint = textOnAccent
-            )
+            // Create Shipping Labels option
+            AnimatedVisibility(
+                visible = uiState.isFabExpanded,
+                enter = fadeIn() + slideInVertically { it },
+                exit = fadeOut() + slideOutVertically { it }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Create shipping labels",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textPrimary,
+                        modifier = Modifier
+                            .background(bgSurface, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                    SmallFloatingActionButton(
+                        onClick = onShowShippingLabelsDialog,
+                        containerColor = accentPrimary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalShipping,
+                            contentDescription = "Create shipping labels",
+                            tint = textOnAccent
+                        )
+                    }
+                }
+            }
+
+            // Create Order option
+            AnimatedVisibility(
+                visible = uiState.isFabExpanded,
+                enter = fadeIn() + slideInVertically { it },
+                exit = fadeOut() + slideOutVertically { it }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "Create order",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textPrimary,
+                        modifier = Modifier
+                            .background(bgSurface, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                    SmallFloatingActionButton(
+                        onClick = onShowCreateDialog,
+                        containerColor = accentPrimary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Create order",
+                            tint = textOnAccent
+                        )
+                    }
+                }
+            }
+
+            // Main FAB (toggle)
+            FloatingActionButton(
+                onClick = onToggleFabExpanded,
+                containerColor = accentPrimary
+            ) {
+                Icon(
+                    imageVector = if (uiState.isFabExpanded) Icons.Default.Close else Icons.Default.Add,
+                    contentDescription = if (uiState.isFabExpanded) "Close menu" else "Open menu",
+                    tint = textOnAccent
+                )
+            }
         }
 
         // Create/Edit Order Dialog
@@ -355,6 +450,58 @@ fun OrderScreen(
                         onClick = onDismissRemoveCardDialog,
                         enabled = !dialogState.isRemoving
                     ) {
+                        Text("Cancel", color = textSecondary)
+                    }
+                },
+                containerColor = bgSurface,
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+
+        // Shipping Labels Confirmation Dialog
+        if (uiState.showShippingLabelsDialog) {
+            val newOrders = uiState.newStatusOrders
+            AlertDialog(
+                onDismissRequest = onDismissShippingLabelsDialog,
+                title = {
+                    Text(
+                        text = "Create Shipping Labels",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                    )
+                },
+                text = {
+                    if (newOrders.isEmpty()) {
+                        Text(
+                            text = "No orders with 'New' status to export.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textSecondary
+                        )
+                    } else {
+                        Text(
+                            text = "${newOrders.size} shipping label row${if (newOrders.size > 1) "s" else ""} will be created in a CSV file that Pirate Ship will accept as an import.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textSecondary
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { onExportShippingLabels(newOrders) },
+                        enabled = newOrders.isNotEmpty(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = accentPrimary,
+                            contentColor = textOnAccent,
+                            disabledContainerColor = bgSecondary,
+                            disabledContentColor = textTertiary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Export")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = onDismissShippingLabelsDialog) {
                         Text("Cancel", color = textSecondary)
                     }
                 },

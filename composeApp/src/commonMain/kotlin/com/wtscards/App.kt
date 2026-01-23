@@ -20,6 +20,7 @@ import com.wtscards.ui.screens.collection.CollectionViewModel
 import com.wtscards.ui.screens.import.ImportScreen
 import com.wtscards.ui.screens.import.ImportState
 import com.wtscards.ui.screens.import.ImportViewModel
+import com.wtscards.data.model.Order
 import com.wtscards.ui.screens.orders.OrderScreen
 import com.wtscards.ui.screens.orders.OrderViewModel
 import com.wtscards.ui.theme.WTSCardsTheme
@@ -29,7 +30,8 @@ import com.wtscards.ui.theme.bgPrimary
 fun App(
     dependencies: AppDependencies,
     importViewModel: ImportViewModel,
-    onBrowseFiles: () -> Unit
+    onBrowseFiles: () -> Unit,
+    onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit
 ) {
     WTSCardsTheme {
         Surface(
@@ -39,7 +41,8 @@ fun App(
             MainScreen(
                 dependencies = dependencies,
                 importViewModel = importViewModel,
-                onBrowseFiles = onBrowseFiles
+                onBrowseFiles = onBrowseFiles,
+                onExportShippingLabels = onExportShippingLabels
             )
         }
     }
@@ -49,7 +52,8 @@ fun App(
 fun MainScreen(
     dependencies: AppDependencies,
     importViewModel: ImportViewModel,
-    onBrowseFiles: () -> Unit
+    onBrowseFiles: () -> Unit,
+    onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit
 ) {
     var currentRoute by remember { mutableStateOf(NavigationItem.Collection.route) }
 
@@ -92,8 +96,13 @@ fun MainScreen(
             NavigationItem.Orders.route -> {
                 OrderScreen(
                     uiState = orderViewModel.uiState,
+                    onToggleFabExpanded = orderViewModel::onToggleFabExpanded,
+                    onCollapseFab = orderViewModel::onCollapseFab,
                     onShowCreateDialog = orderViewModel::onShowCreateDialog,
                     onDismissCreateDialog = orderViewModel::onDismissCreateDialog,
+                    onShowShippingLabelsDialog = orderViewModel::onShowShippingLabelsDialog,
+                    onDismissShippingLabelsDialog = orderViewModel::onDismissShippingLabelsDialog,
+                    onExportShippingLabels = { orders -> onExportShippingLabels(orders, orderViewModel) },
                     onSearchQueryChanged = orderViewModel::onSearchQueryChanged,
                     onStatusFilterToggled = orderViewModel::onStatusFilterToggled,
                     onSortOptionChanged = orderViewModel::onSortOptionChanged,

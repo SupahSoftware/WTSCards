@@ -23,7 +23,11 @@ import com.wtscards.db.WTSCardsDatabase
 import com.wtscards.domain.usecase.CardUseCaseImpl
 import com.wtscards.domain.usecase.OrderUseCaseImpl
 import com.wtscards.ui.screens.import.ImportViewModel
+import com.wtscards.ui.screens.orders.OrderViewModel
+import com.wtscards.data.model.Order
 import java.awt.Toolkit
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.awt.datatransfer.DataFlavor
 import java.io.File
 import javax.swing.JFileChooser
@@ -159,6 +163,59 @@ fun main() = application {
             }
         }
 
+        val onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit = { orders, viewModel ->
+            if (orders.isEmpty()) {
+                viewModel.onShippingLabelsExportError("No orders to export")
+            } else {
+                val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                val defaultFileName = "shipping-labels-$dateStr.csv"
+
+                val fileChooser = JFileChooser().apply {
+                    dialogTitle = "Save Shipping Labels CSV"
+                    fileFilter = FileNameExtensionFilter("CSV Files (*.csv)", "csv")
+                    isAcceptAllFileFilterUsed = false
+                    selectedFile = File(defaultFileName)
+                }
+
+                val result = fileChooser.showSaveDialog(null)
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    try {
+                        var file = fileChooser.selectedFile
+                        // Ensure .csv extension
+                        if (!file.name.lowercase().endsWith(".csv")) {
+                            file = File(file.absolutePath + ".csv")
+                        }
+
+                        // Create CSV content in Pirate Ship format
+                        val csvContent = buildString {
+                            // Header row
+                            appendLine("Name,Address Line 1,City,State,Zip,Country")
+
+                            // Data rows
+                            orders.forEach { order ->
+                                val name = escapeCsvField(order.name)
+                                val address = escapeCsvField(order.streetAddress)
+                                val city = escapeCsvField(order.city)
+                                val state = escapeCsvField(order.state)
+                                val zip = escapeCsvField(order.zipcode)
+                                appendLine("$name,$address,$city,$state,$zip,US")
+                            }
+                        }
+
+                        file.writeText(csvContent)
+
+                        // Notify success and update order statuses
+                        viewModel.onShippingLabelsExported(orders.map { it.id })
+                    } catch (e: Exception) {
+                        viewModel.onShippingLabelsExportError(e.message ?: "Failed to save CSV file")
+                    }
+                } else {
+                    // User cancelled - dismiss dialog
+                    viewModel.onDismissShippingLabelsDialog()
+                }
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -176,8 +233,17 @@ fun main() = application {
             App(
                 dependencies = dependencies,
                 importViewModel = importViewModel,
-                onBrowseFiles = onBrowseFiles
+                onBrowseFiles = onBrowseFiles,
+                onExportShippingLabels = onExportShippingLabels
             )
         }
+    }
+}
+
+private fun escapeCsvField(value: String): String {
+    return if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+        "\"${value.replace("\"", "\"\"")}\""
+    } else {
+        value
     }
 }

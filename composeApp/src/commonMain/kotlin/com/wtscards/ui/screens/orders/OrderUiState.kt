@@ -18,7 +18,9 @@ data class OrderUiState(
     val searchQuery: String = "",
     val statusFilters: Set<String> = OrderStatus.allStatuses.toSet(),
     val sortOption: OrderSortOption = OrderSortOption.DATE_DESC,
+    val isFabExpanded: Boolean = false,
     val showCreateDialog: Boolean = false,
+    val showShippingLabelsDialog: Boolean = false,
     val editingOrderId: String? = null,
     val createFormState: CreateOrderFormState = CreateOrderFormState(),
     val addCardsDialogState: AddCardsDialogState? = null,
@@ -26,6 +28,9 @@ data class OrderUiState(
     val availableCards: List<Card> = emptyList(),
     val toast: ToastState? = null
 ) {
+    val newStatusOrders: List<Order>
+        get() = orders.filter { it.status == OrderStatus.NEW }
+
     val filteredOrders: List<Order>
         get() {
             var result = orders
