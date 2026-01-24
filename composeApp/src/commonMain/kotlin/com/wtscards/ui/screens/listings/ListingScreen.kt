@@ -175,7 +175,7 @@ private fun SearchRow(
             .fillMaxWidth()
             .height(SearchRowHeight),
         placeholder = {
-            Text("Search listings...", color = textTertiary)
+            Text("Search listings by title or card name", color = textTertiary)
         },
         leadingIcon = {
             Icon(
@@ -673,8 +673,11 @@ private fun CreateListingDialog(
                         unfocusedBorderColor = textTertiary,
                         cursorColor = accentPrimary,
                         focusedLabelColor = accentPrimary,
-                        unfocusedLabelColor = textTertiary
-                    )
+                        unfocusedLabelColor = textTertiary,
+                        focusedContainerColor = bgSecondary,
+                        unfocusedContainerColor = bgSecondary
+                    ),
+                    shape = RoundedCornerShape(8.dp)
                 )
             }
         },
@@ -687,7 +690,8 @@ private fun CreateListingDialog(
                     contentColor = textOnAccent,
                     disabledContainerColor = bgSurface,
                     disabledContentColor = textTertiary
-                )
+                ),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text(if (formState.isSaving) "Creating..." else "Create")
             }

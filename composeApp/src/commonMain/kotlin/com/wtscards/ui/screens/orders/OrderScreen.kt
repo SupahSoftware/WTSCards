@@ -1531,7 +1531,7 @@ private fun CreateOrderDialog(
                     onValueChange = onCreateOrderTrackingNumberChanged,
                     label = "Tracking Number",
                     placeholder = "1Z12345678901234567890",
-                    secondaryText = "Optional"
+                    secondaryText = "Optional, you can add this later"
                 )
             }
         },
