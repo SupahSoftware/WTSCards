@@ -28,6 +28,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.sqldelight.driver.jvm)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.sqlite.jdbc)
         }
     }
 }
@@ -36,6 +37,7 @@ sqldelight {
     databases {
         create("WTSCardsDatabase") {
             packageName.set("com.wtscards.db")
+            verifyMigrations.set(false)
         }
     }
 }
@@ -43,6 +45,13 @@ sqldelight {
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "17"
+    }
+}
+
+// Disable SQLDelight migration verification to avoid Windows permission issues
+afterEvaluate {
+    tasks.named("verifyCommonMainWTSCardsDatabaseMigration") {
+        enabled = false
     }
 }
 
@@ -62,6 +71,9 @@ compose.desktop {
             packageVersion = project.findProperty("app.version") as String? ?: "1.0.0"
             description = "WTS Cards Application"
             vendor = "WTSCards"
+            
+            // Explicitly include runtime dependencies
+            includeAllModules = true
 
             windows {
                 menuGroup = "WTSCards"
