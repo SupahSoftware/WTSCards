@@ -208,7 +208,6 @@ fun MainScreen(
             }
         }
 
-        // Show conflict dialog when needed
         val importState = importViewModel.uiState.importState
         if (importState is ImportState.ConflictDetected) {
             ImportConflictDialog(

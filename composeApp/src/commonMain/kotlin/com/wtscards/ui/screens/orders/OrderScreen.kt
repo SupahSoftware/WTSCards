@@ -1024,20 +1024,17 @@ private fun OrderCard(
             .background(bgSurface)
             .padding(16.dp)
     ) {
-        // Top row: purchaser name on left, status dropdown and overflow menu on right
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left side: purchaser name
             Text(
                 text = order.name,
                 style = MaterialTheme.typography.titleLarge,
                 color = textPrimary
             )
 
-            // Right side: status dropdown and overflow menu (or back icon in edit mode)
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1087,7 +1084,6 @@ private fun OrderCard(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 if (isEditingCards) {
-                    // Back icon to exit edit mode
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Exit edit mode",
@@ -1097,7 +1093,6 @@ private fun OrderCard(
                             .padding(4.dp)
                     )
                 } else {
-                    // Overflow menu
                     Box {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
@@ -1161,7 +1156,6 @@ private fun OrderCard(
             }
         }
 
-        // Address info
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = order.streetAddress,
@@ -1180,11 +1174,9 @@ private fun OrderCard(
             color = textTertiary
         )
 
-        // Display shipping and cards if present
         if (order.shippingType != null || order.cards.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Shipping line item first
             if (order.shippingType != null) {
                 Text(
                     text = "Shipping: ${order.shippingType}    ${formatPrice(order.shippingCost)}",
@@ -1194,7 +1186,6 @@ private fun OrderCard(
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Cards
             order.cards.forEach { card ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -1222,7 +1213,6 @@ private fun OrderCard(
             }
         }
 
-        // Total at the bottom
         Spacer(modifier = Modifier.height(8.dp))
         val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
         val total = cardsTotal + order.shippingCost
@@ -1233,7 +1223,6 @@ private fun OrderCard(
             color = successColor
         )
 
-        // Warning banner for shipping type issues
         OrderWarningBanner(
             order = order,
             onUpgradeShipping = onUpgradeShipping,
@@ -1255,7 +1244,6 @@ private fun OrderWarningBanner(
     val isEnvelope = order.shippingType?.equals("Envelope", ignoreCase = true) == true
     val isBubbleMailer = order.shippingType?.equals("Bubble mailer", ignoreCase = true) == true
 
-    // Envelope: warn at 2+, upgrade button at 4+
     if (isEnvelope && cardCount >= 2) {
         Spacer(modifier = Modifier.height(8.dp))
         WarningBanner(
@@ -1265,7 +1253,6 @@ private fun OrderWarningBanner(
         )
     }
 
-    // Bubble mailer: warn and split button at 15+
     if (isBubbleMailer && cardCount >= 15) {
         val splitCount = ceil(cardCount / 15.0).toInt()
         Spacer(modifier = Modifier.height(8.dp))
@@ -1453,7 +1440,6 @@ private fun CreateOrderDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Name
                 DialogFormTextField(
                     value = formState.name,
                     onValueChange = onNameChanged,
@@ -1461,7 +1447,6 @@ private fun CreateOrderDialog(
                     placeholder = "Customer name"
                 )
 
-                // Street Address
                 DialogFormTextField(
                     value = formState.streetAddress,
                     onValueChange = onStreetAddressChanged,
@@ -1469,12 +1454,10 @@ private fun CreateOrderDialog(
                     placeholder = "123 Main St"
                 )
 
-                // City, State, Zipcode row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // City
                     DialogFormTextField(
                         value = formState.city,
                         onValueChange = onCityChanged,
@@ -1483,7 +1466,6 @@ private fun CreateOrderDialog(
                         modifier = Modifier.weight(1f)
                     )
 
-                    // State
                     DialogFormTextField(
                         value = formState.state,
                         onValueChange = onStateChanged,
@@ -1492,7 +1474,6 @@ private fun CreateOrderDialog(
                         modifier = Modifier.width(80.dp)
                     )
 
-                    // Zipcode
                     DialogFormTextField(
                         value = formState.zipcode,
                         onValueChange = onZipcodeChanged,
@@ -1502,19 +1483,16 @@ private fun CreateOrderDialog(
                     )
                 }
 
-                // Package type and Shipping price row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Package type dropdown
                     ShippingTypeDropdown(
                         selectedType = formState.shippingType,
                         onTypeSelected = onShippingTypeChanged,
                         modifier = Modifier.weight(1f)
                     )
 
-                    // Shipping price
                     DialogFormTextField(
                         value = formState.shippingPrice,
                         onValueChange = onShippingPriceChanged,
@@ -1525,7 +1503,6 @@ private fun CreateOrderDialog(
                     )
                 }
 
-                // Tracking number (optional)
                 DialogFormTextField(
                     value = formState.trackingNumber,
                     onValueChange = onCreateOrderTrackingNumberChanged,
@@ -1737,7 +1714,6 @@ private fun CardSelectionContent(
     Column(
         modifier = Modifier.fillMaxWidth().height(500.dp)
     ) {
-        // Search bar
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchChanged,
@@ -1763,9 +1739,8 @@ private fun CardSelectionContent(
             shape = RoundedCornerShape(8.dp)
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(12.dp)        )
 
-        // Cards list
         val filteredCards = if (searchQuery.isBlank()) {
             availableCards
         } else {
@@ -1870,9 +1845,7 @@ private fun PriceConfirmationContent(
                     OutlinedTextField(
                         value = cardPrices[card.id] ?: "",
                         onValueChange = { value ->
-                            // Only allow digits and decimal point
                             val filtered = value.filter { it.isDigit() || it == '.' }
-                            // Only allow one decimal point
                             if (filtered.count { it == '.' } <= 1) {
                                 onCardPriceChanged(card.id, filtered)
                             }

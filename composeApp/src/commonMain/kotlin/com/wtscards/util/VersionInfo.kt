@@ -9,19 +9,10 @@ object VersionInfo {
         loadProperty("app.gitHash") ?: "unknown"
     }
     
-    /**
-     * Returns the version string (e.g., "1.0.1")
-     */
     fun getVersion(): String = versionValue
     
-    /**
-     * Returns the git hash (e.g., "6c654c3")
-     */
     fun getGitHash(): String = gitHashValue
     
-    /**
-     * Returns the full version string with git hash (e.g., "1.0.1-6c654c3")
-     */
     fun getFullVersion(): String = "$versionValue-$gitHashValue"
     
     private fun loadProperty(key: String): String? {

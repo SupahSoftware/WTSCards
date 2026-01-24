@@ -65,21 +65,23 @@ class AddCardViewModel(
     }
 
     fun onQuantityChanged(quantityText: String) {
-        // Only allow digits
         val filtered = quantityText.filter { it.isDigit() }
         uiState = uiState.copy(quantityText = filtered)
     }
 
     fun onPriceChanged(priceText: String) {
-        // Allow digits and at most one decimal point
-        val filtered = priceText.filter { it.isDigit() || it == '.' }
+        val filtered = filterPriceInput(priceText)
+        uiState = uiState.copy(priceText = filtered)
+    }
+
+    private fun filterPriceInput(input: String): String {
+        val filtered = input.filter { it.isDigit() || it == '.' }
         val parts = filtered.split(".")
-        val result = if (parts.size > 2) {
+        return if (parts.size > 2) {
             parts[0] + "." + parts.drop(1).joinToString("")
         } else {
             filtered
         }
-        uiState = uiState.copy(priceText = result)
     }
 
     fun canSave(): Boolean {
@@ -96,45 +98,14 @@ class AddCardViewModel(
 
         coroutineScope.launch {
             try {
-                val quantity = uiState.quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
-                
-                // Convert price to pennies if provided
-                val priceInPennies = if (uiState.priceText.isNotBlank()) {
-                    ((uiState.priceText.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                } else {
-                    0L
-                }
-
-                // Create separate card instances for each quantity
-                val cards = List(quantity) {
-                    Card(
-                        id = UUID.randomUUID().toString(),
-                        sportsCardProId = null,
-                        name = buildCardName(),
-                        setName = uiState.setName.toTitleCase(),
-                        priceInPennies = priceInPennies,
-                        gradedString = uiState.gradeOption,
-                        priceSold = null
-                    )
-                }
+                val quantity = getValidQuantity()
+                val priceInPennies = convertPriceToPennies()
+                val cards = createCards(quantity, priceInPennies)
 
                 cardUseCase.addCards(cards)
+                saveAutocompleteEntries()
 
-                // Add new names to autocomplete tables for future use
-                autocompleteUseCase.addPlayerName(uiState.name.toTitleCase())
-                if (uiState.setName.isNotBlank()) {
-                    autocompleteUseCase.addSetName(uiState.setName.toTitleCase())
-                }
-                if (uiState.parallelName.isNotBlank()) {
-                    autocompleteUseCase.addParallelName(uiState.parallelName.toTitleCase())
-                }
-
-                val successMessage = if (quantity == 1) {
-                    "Card added successfully"
-                } else {
-                    "$quantity cards added successfully"
-                }
-
+                val successMessage = buildSuccessMessage(quantity)
                 uiState = defaultState.copy(
                     toastMessage = ToastMessage(successMessage, isError = false)
                 )
@@ -144,6 +115,50 @@ class AddCardViewModel(
                     toastMessage = ToastMessage(e.message ?: "Failed to add card", isError = true)
                 )
             }
+        }
+    }
+
+    private fun getValidQuantity(): Int {
+        return uiState.quantityText.toIntOrNull()?.coerceAtLeast(1) ?: 1
+    }
+
+    private fun convertPriceToPennies(): Long {
+        return if (uiState.priceText.isNotBlank()) {
+            ((uiState.priceText.toDoubleOrNull() ?: 0.0) * 100).toLong()
+        } else {
+            0L
+        }
+    }
+
+    private fun createCards(quantity: Int, priceInPennies: Long): List<Card> {
+        return List(quantity) {
+            Card(
+                id = UUID.randomUUID().toString(),
+                sportsCardProId = null,
+                name = buildCardName(),
+                setName = uiState.setName.toTitleCase(),
+                priceInPennies = priceInPennies,
+                gradedString = uiState.gradeOption,
+                priceSold = null
+            )
+        }
+    }
+
+    private suspend fun saveAutocompleteEntries() {
+        autocompleteUseCase.addPlayerName(uiState.name.toTitleCase())
+        if (uiState.setName.isNotBlank()) {
+            autocompleteUseCase.addSetName(uiState.setName.toTitleCase())
+        }
+        if (uiState.parallelName.isNotBlank()) {
+            autocompleteUseCase.addParallelName(uiState.parallelName.toTitleCase())
+        }
+    }
+
+    private fun buildSuccessMessage(quantity: Int): String {
+        return if (quantity == 1) {
+            "Card added successfully"
+        } else {
+            "$quantity cards added successfully"
         }
     }
 

@@ -24,33 +24,51 @@ class CardUseCaseImpl(
 
     override suspend fun importCards(cards: List<Card>, strategy: ImportStrategy) {
         when (strategy) {
-            ImportStrategy.OVERWRITE_ALL -> {
-                localDataSource.deleteAllCards()
-                localDataSource.insertOrReplaceCards(cards)
-            }
-            ImportStrategy.UPDATE_PRICES_ONLY -> {
-                val existingCards = localDataSource.getAllCards()
-                val existingBySportsCardProId = existingCards
-                    .filter { it.sportsCardProId != null }
-                    .associateBy { it.sportsCardProId }
-
-                cards.forEach { card ->
-                    val existingCard = card.sportsCardProId?.let { existingBySportsCardProId[it] }
-                    if (existingCard != null) {
-                        localDataSource.updatePrice(existingCard.id, card.priceInPennies)
-                    } else {
-                        localDataSource.insertCard(card)
-                    }
-                }
-            }
-            ImportStrategy.SAFE_IMPORT -> {
-                val existingIds = localDataSource.getAllCards()
-                    .mapNotNull { it.sportsCardProId }
-                    .toSet()
-                val newCards = cards.filter { it.sportsCardProId !in existingIds }
-                newCards.forEach { localDataSource.insertCard(it) }
-            }
+            ImportStrategy.OVERWRITE_ALL -> importWithOverwrite(cards)
+            ImportStrategy.UPDATE_PRICES_ONLY -> importWithPriceUpdates(cards)
+            ImportStrategy.SAFE_IMPORT -> importNewCardsOnly(cards)
         }
+    }
+
+    private suspend fun importWithOverwrite(cards: List<Card>) {
+        localDataSource.deleteAllCards()
+        localDataSource.insertOrReplaceCards(cards)
+    }
+
+    private suspend fun importWithPriceUpdates(cards: List<Card>) {
+        val existingCards = localDataSource.getAllCards()
+        val existingBySportsCardProId = buildExistingCardsMap(existingCards)
+
+        cards.forEach { card ->
+            updateOrInsertCard(card, existingBySportsCardProId)
+        }
+    }
+
+    private fun buildExistingCardsMap(existingCards: List<Card>): Map<String, Card> {
+        return existingCards
+            .filter { it.sportsCardProId != null }
+            .associateBy { it.sportsCardProId!! }
+    }
+
+    private suspend fun updateOrInsertCard(card: Card, existingBySportsCardProId: Map<String, Card>) {
+        val existingCard = card.sportsCardProId?.let { existingBySportsCardProId[it] }
+        if (existingCard != null) {
+            localDataSource.updatePrice(existingCard.id, card.priceInPennies)
+        } else {
+            localDataSource.insertCard(card)
+        }
+    }
+
+    private suspend fun importNewCardsOnly(cards: List<Card>) {
+        val existingIds = getExistingSportsCardProIds()
+        val newCards = cards.filter { it.sportsCardProId !in existingIds }
+        newCards.forEach { localDataSource.insertCard(it) }
+    }
+
+    private suspend fun getExistingSportsCardProIds(): Set<String> {
+        return localDataSource.getAllCards()
+            .mapNotNull { it.sportsCardProId }
+            .toSet()
     }
 
     override suspend fun deleteCards(cardIds: List<String>) {

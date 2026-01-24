@@ -72,7 +72,6 @@ fun AddCardScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Name input with autocomplete
             AutocompleteTextField(
                 value = uiState.name,
                 onValueChange = onNameChanged,
@@ -81,7 +80,6 @@ fun AddCardScreen(
                 suggestions = uiState.nameSuggestions
             )
 
-            // Card number input
             FormTextField(
                 value = uiState.cardNumber,
                 onValueChange = onCardNumberChanged,
@@ -89,7 +87,6 @@ fun AddCardScreen(
                 placeholder = "e.g., 123 or FT-3"
             )
 
-            // Set name input (optional) with autocomplete
             AutocompleteTextField(
                 value = uiState.setName,
                 onValueChange = onSetNameChanged,
@@ -99,7 +96,6 @@ fun AddCardScreen(
                 suggestions = uiState.setNameSuggestions
             )
 
-            // Parallel name input (optional) with autocomplete
             AutocompleteTextField(
                 value = uiState.parallelName,
                 onValueChange = onParallelNameChanged,
@@ -109,12 +105,10 @@ fun AddCardScreen(
                 suggestions = uiState.parallelNameSuggestions
             )
 
-            // wrap grade dropdown, quantity, and price input in a row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Grade dropdown
                 GradeDropdown(
                     modifier = Modifier.weight(1f),
                     selectedGrade = uiState.gradeOption,
@@ -123,7 +117,6 @@ fun AddCardScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Quantity input
                 FormTextField(
                     modifier = Modifier.weight(1f),
                     value = uiState.quantityText,
@@ -135,7 +128,6 @@ fun AddCardScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Price input (optional)
                 FormTextField(
                     modifier = Modifier.weight(1f),
                     value = uiState.priceText,
@@ -149,7 +141,6 @@ fun AddCardScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Save button
             Button(
                 onClick = onSave,
                 enabled = canSave,
@@ -169,7 +160,6 @@ fun AddCardScreen(
             }
         }
 
-        // Toast message
         uiState.toastMessage?.let { toast ->
             ToastMessage(
                 message = toast.message,

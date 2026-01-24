@@ -156,16 +156,28 @@ fun CollectionScreen(
             )
         }
 
-        // Toast message
         uiState.toastMessage?.let { toast ->
-            ToastMessage(
-                message = toast.message,
-                isError = toast.isError,
+            CollectionToastMessage(
+                toast = toast,
                 onDismiss = onClearToast,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
+}
+
+@Composable
+private fun CollectionToastMessage(
+    toast: ToastMessage,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ToastMessage(
+        message = toast.message,
+        isError = toast.isError,
+        onDismiss = onDismiss,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -281,39 +293,16 @@ private fun SearchAndSortRow(
             .height(SearchRowHeight),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Search Bar (weight 3)
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChanged,
+        SearchBar(
+            searchQuery = searchQuery,
+            onSearchQueryChanged = onSearchQueryChanged,
             modifier = Modifier
                 .weight(3f)
-                .fillMaxHeight(),
-            placeholder = {
-                Text("Search cards...", color = textTertiary)
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = textTertiary
-                )
-            },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = textPrimary,
-                unfocusedTextColor = textPrimary,
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent,
-                cursorColor = accentPrimary,
-                focusedContainerColor = bgSurface,
-                unfocusedContainerColor = bgSurface
-            ),
-            shape = RoundedCornerShape(8.dp)
+                .fillMaxHeight()
         )
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Sort Dropdown (weight 1)
         SortDropdown(
             selectedOption = sortOption,
             onOptionSelected = onSortOptionChanged,
@@ -324,26 +313,55 @@ private fun SearchAndSortRow(
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        // Edit Button
         Box(
             modifier = Modifier
                 .size(SearchRowHeight)
                 .clip(RoundedCornerShape(8.dp))
                 .background(if (isEditMode) errorColor else accentPrimary)
-                .then(Modifier.padding(4.dp)),
+                .clickable(onClick = onToggleEditMode),
             contentAlignment = Alignment.Center
         ) {
-            IconButton(
-                onClick = onToggleEditMode
-            ) {
-                Icon(
-                    imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
-                    contentDescription = if (isEditMode) "Exit edit mode" else "Edit",
-                    tint = textOnAccent
-                )
-            }
+            Icon(
+                imageVector = if (isEditMode) Icons.Default.Close else Icons.Default.Edit,
+                contentDescription = if (isEditMode) "Exit edit mode" else "Edit",
+                tint = textOnAccent
+            )
         }
     }
+}
+
+@Composable
+private fun SearchBar(
+    searchQuery: String,
+    onSearchQueryChanged: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChanged,
+        modifier = modifier,
+        placeholder = {
+            Text("Search cards...", color = textTertiary)
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = textTertiary
+            )
+        },
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = textPrimary,
+            unfocusedTextColor = textPrimary,
+            focusedBorderColor = Color.Transparent,
+            unfocusedBorderColor = Color.Transparent,
+            cursorColor = accentPrimary,
+            focusedContainerColor = bgSurface,
+            unfocusedContainerColor = bgSurface
+        ),
+        shape = RoundedCornerShape(8.dp)
+    )
 }
 
 @Composable
@@ -452,7 +470,6 @@ private fun CardList(
     onToggleCardSelection: (String) -> Unit,
     onEditCard: (Card) -> Unit
 ) {
-    // Key the list state to filters so it resets when they change
     val listState = remember(searchQuery, sortOption) {
         androidx.compose.foundation.lazy.LazyListState()
     }
@@ -495,7 +512,6 @@ private fun CardList(
                                     }
                                 }
                                 PointerEventType.Release -> {
-                                    // Apply fling with calculated velocity
                                     if (kotlin.math.abs(velocity) > 100) {
                                         coroutineScope.launch {
                                             listState.scroll {
@@ -563,7 +579,6 @@ private fun CardRow(
             .clickable { onEditClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Grade badge (rotated 90 degrees)
         if (showGradeBadge) {
             Box(
                 modifier = Modifier
@@ -580,8 +595,7 @@ private fun CardRow(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = textOnAccent,
-                    modifier = Modifier
-                        .graphicsLayer { rotationZ = 90f }
+                    modifier = Modifier.graphicsLayer { rotationZ = 90f }
                 )
             }
         }
@@ -592,7 +606,6 @@ private fun CardRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox and Edit button (shown in edit mode)
             if (isEditMode) {
                 Checkbox(
                     checked = isSelected,
@@ -619,7 +632,6 @@ private fun CardRow(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Card Info (takes remaining space)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = card.name,
@@ -634,7 +646,6 @@ private fun CardRow(
                 )
             }
 
-            // SportsCardPro Button
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
@@ -659,7 +670,6 @@ private fun CardRow(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // eBay Button
             IconButton(
                 onClick = { UrlUtils.openEbaySoldListings(card.name) },
                 modifier = Modifier.size(40.dp)
@@ -674,7 +684,6 @@ private fun CardRow(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Price (rightmost)
             if (card.priceInPennies > 0) {
                 Text(
                     text = formatPrice(card.priceInPennies),

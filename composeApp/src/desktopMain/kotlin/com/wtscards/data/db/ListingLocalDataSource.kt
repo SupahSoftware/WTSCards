@@ -17,14 +17,11 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
     private val cardQueries = database.cardQueries
 
     fun getAllListingsFlow(): Flow<List<Listing>> {
-        // Combine flows from ListingEntity, ListingCardEntity, and CardEntity tables
-        // so updates to any of them trigger a refresh
         return kotlinx.coroutines.flow.combine(
             listingQueries.selectAll().asFlow().mapToList(Dispatchers.IO),
             listingQueries.selectAllListingCards().asFlow().mapToList(Dispatchers.IO),
             cardQueries.selectAll().asFlow().mapToList(Dispatchers.IO)
         ) { listingEntities, _, _ ->
-            // Re-fetch with cards whenever any table changes
             listingEntities.map { listingEntity ->
                 listingEntity.toListing(getCardsForListing(listingEntity.id))
             }
@@ -45,19 +42,25 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
 
     suspend fun insertListing(listing: Listing) = withContext(Dispatchers.IO) {
         database.transaction {
-            listingQueries.insert(
-                id = listing.id,
-                title = listing.title,
-                createdAt = listing.createdAt
-            )
+            insertListingEntity(listing)
+            insertListingCardRelationships(listing)
+        }
+    }
 
-            // Insert listing-card relationships
-            listing.cards.forEach { card ->
-                listingQueries.insertListingCard(
-                    listingId = listing.id,
-                    cardId = card.id
-                )
-            }
+    private fun insertListingEntity(listing: Listing) {
+        listingQueries.insert(
+            id = listing.id,
+            title = listing.title,
+            createdAt = listing.createdAt
+        )
+    }
+
+    private fun insertListingCardRelationships(listing: Listing) {
+        listing.cards.forEach { card ->
+            listingQueries.insertListingCard(
+                listingId = listing.id,
+                cardId = card.id
+            )
         }
     }
 

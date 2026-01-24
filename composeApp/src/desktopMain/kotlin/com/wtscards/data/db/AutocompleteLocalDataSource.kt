@@ -8,7 +8,6 @@ class AutocompleteLocalDataSource(private val database: WTSCardsDatabase) {
 
     private val queries = database.autocompleteQueries
 
-    // Player Names
     suspend fun getPlayerNamesByPrefix(prefix: String): List<String> = withContext(Dispatchers.IO) {
         queries.selectPlayerNamesByPrefix(prefix).executeAsList()
     }
@@ -21,7 +20,6 @@ class AutocompleteLocalDataSource(private val database: WTSCardsDatabase) {
         }
     }
 
-    // Set Names
     suspend fun getSetNamesByPrefix(prefix: String): List<String> = withContext(Dispatchers.IO) {
         queries.selectSetNamesByPrefix(prefix).executeAsList()
     }
@@ -34,7 +32,6 @@ class AutocompleteLocalDataSource(private val database: WTSCardsDatabase) {
         }
     }
 
-    // Parallel Names
     suspend fun getParallelNamesByPrefix(prefix: String): List<String> = withContext(Dispatchers.IO) {
         queries.selectParallelNamesByPrefix(prefix).executeAsList()
     }

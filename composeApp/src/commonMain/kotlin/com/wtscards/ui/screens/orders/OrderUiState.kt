@@ -38,10 +38,8 @@ data class OrderUiState(
         get() {
             var result = orders
 
-            // Filter by status
             result = result.filter { it.status in statusFilters }
 
-            // Filter by search query
             if (searchQuery.isNotBlank()) {
                 val query = searchQuery.lowercase()
                 result = result.filter { order ->
@@ -54,7 +52,6 @@ data class OrderUiState(
                 }
             }
 
-            // Sort
             result = when (sortOption) {
                 OrderSortOption.DATE_DESC -> result.sortedByDescending { it.createdAt }
                 OrderSortOption.DATE_ASC -> result.sortedBy { it.createdAt }

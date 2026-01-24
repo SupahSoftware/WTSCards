@@ -38,7 +38,6 @@ data class CollectionUiState(
     val isEditMode: Boolean = false,
     val selectedCardIds: Set<String> = emptySet(),
     val showDeleteConfirmDialog: Boolean = false,
-    // Edit card dialog state
     val showEditCardDialog: Boolean = false,
     val editCardForm: EditCardFormState = EditCardFormState(),
     val toastMessage: ToastMessage? = null

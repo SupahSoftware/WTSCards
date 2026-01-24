@@ -26,9 +26,6 @@ import com.wtscards.ui.theme.textPrimary
 import com.wtscards.ui.theme.textSecondary
 import com.wtscards.ui.theme.textTertiary
 
-/**
- * Reusable card form fields used by both AddCardScreen and EditCardDialog
- */
 @Composable
 fun CardFormFields(
     name: String,
@@ -52,7 +49,6 @@ fun CardFormFields(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Name input with autocomplete
         AutocompleteTextField(
             value = name,
             onValueChange = onNameChanged,
@@ -61,7 +57,6 @@ fun CardFormFields(
             suggestions = nameSuggestions
         )
 
-        // Card number input
         FormTextField(
             value = cardNumber,
             onValueChange = onCardNumberChanged,
@@ -69,7 +64,6 @@ fun CardFormFields(
             placeholder = "e.g., 123 or FT-3"
         )
 
-        // Set name input (optional) with autocomplete
         AutocompleteTextField(
             value = setName,
             onValueChange = onSetNameChanged,
@@ -79,7 +73,6 @@ fun CardFormFields(
             suggestions = setNameSuggestions
         )
 
-        // Parallel name input (optional) with autocomplete
         AutocompleteTextField(
             value = parallelName,
             onValueChange = onParallelNameChanged,
@@ -89,12 +82,10 @@ fun CardFormFields(
             suggestions = parallelNameSuggestions
         )
 
-        // Grade and Price row
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            // Grade dropdown
             GradeDropdown(
                 modifier = Modifier.weight(1f),
                 selectedGrade = gradeOption,
@@ -103,7 +94,6 @@ fun CardFormFields(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Price input (optional)
             FormTextField(
                 modifier = Modifier.weight(1f),
                 value = priceText,

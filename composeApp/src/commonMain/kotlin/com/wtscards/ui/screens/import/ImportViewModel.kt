@@ -80,22 +80,23 @@ class ImportViewModel(
         uiState = uiState.copy(importState = ImportState.Importing)
         try {
             cardUseCase.importCards(cards, strategy)
-
-            // Add autocomplete entries for imported cards
-            cards.forEach { card ->
-                val parsed = CardNameParser.parse(card.name)
-                parsed.playerName?.let { autocompleteUseCase.addPlayerName(it) }
-                parsed.parallelName?.let { autocompleteUseCase.addParallelName(it) }
-                if (card.setName.isNotBlank()) {
-                    autocompleteUseCase.addSetName(card.setName)
-                }
-            }
-
+            saveAutocompleteEntriesForCards(cards)
             uiState = uiState.copy(importState = ImportState.Success(cards.size))
         } catch (e: Exception) {
             uiState = uiState.copy(
                 importState = ImportState.Error(e.message ?: "Import failed")
             )
+        }
+    }
+
+    private suspend fun saveAutocompleteEntriesForCards(cards: List<Card>) {
+        cards.forEach { card ->
+            val parsed = CardNameParser.parse(card.name)
+            parsed.playerName?.let { autocompleteUseCase.addPlayerName(it) }
+            parsed.parallelName?.let { autocompleteUseCase.addParallelName(it) }
+            if (card.setName.isNotBlank()) {
+                autocompleteUseCase.addSetName(card.setName)
+            }
         }
     }
 }

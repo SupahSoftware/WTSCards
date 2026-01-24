@@ -60,34 +60,48 @@ class OrderUseCaseImpl(
     }
 
     override suspend fun splitOrder(orderId: String, splitCount: Int) {
-        val originalOrder = orderLocalDataSource.getOrderById(orderId)
+        val originalOrder = getOriginalOrderOrThrow(orderId)
+        val cardChunks = splitCardsIntoChunks(originalOrder.cards, splitCount)
+        
+        updateOriginalOrderWithFirstChunk(orderId, cardChunks.first())
+        createNewOrdersForRemainingChunks(originalOrder, cardChunks.drop(1))
+    }
+
+    private suspend fun getOriginalOrderOrThrow(orderId: String): Order {
+        return orderLocalDataSource.getOrderById(orderId)
             ?: throw IllegalArgumentException("Order not found")
+    }
 
-        val cards = originalOrder.cards
+    private fun splitCardsIntoChunks(cards: List<com.wtscards.data.model.Card>, splitCount: Int): List<List<com.wtscards.data.model.Card>> {
         val cardsPerOrder = kotlin.math.ceil(cards.size / splitCount.toDouble()).toInt()
-        val cardChunks = cards.chunked(cardsPerOrder)
+        return cards.chunked(cardsPerOrder)
+    }
 
-        // Update original order with first chunk of cards and reset to NEW status
-        val firstChunk = cardChunks.first()
+    private suspend fun updateOriginalOrderWithFirstChunk(orderId: String, firstChunk: List<com.wtscards.data.model.Card>) {
         orderLocalDataSource.replaceOrderCards(orderId, firstChunk.map { it.id })
         orderLocalDataSource.updateStatus(orderId, OrderStatus.NEW)
+    }
 
-        // Create new orders for remaining chunks with NEW status
-        cardChunks.drop(1).forEach { cardChunk ->
-            val newOrder = Order(
-                id = java.util.UUID.randomUUID().toString(),
-                name = originalOrder.name,
-                streetAddress = originalOrder.streetAddress,
-                city = originalOrder.city,
-                state = originalOrder.state,
-                zipcode = originalOrder.zipcode,
-                shippingType = originalOrder.shippingType,
-                shippingCost = originalOrder.shippingCost,
-                status = OrderStatus.NEW,
-                createdAt = originalOrder.createdAt,
-                cards = cardChunk
-            )
+    private suspend fun createNewOrdersForRemainingChunks(originalOrder: Order, cardChunks: List<List<com.wtscards.data.model.Card>>) {
+        cardChunks.forEach { cardChunk ->
+            val newOrder = createSplitOrder(originalOrder, cardChunk)
             orderLocalDataSource.insertOrder(newOrder)
         }
+    }
+
+    private fun createSplitOrder(originalOrder: Order, cards: List<com.wtscards.data.model.Card>): Order {
+        return Order(
+            id = java.util.UUID.randomUUID().toString(),
+            name = originalOrder.name,
+            streetAddress = originalOrder.streetAddress,
+            city = originalOrder.city,
+            state = originalOrder.state,
+            zipcode = originalOrder.zipcode,
+            shippingType = originalOrder.shippingType,
+            shippingCost = originalOrder.shippingCost,
+            status = OrderStatus.NEW,
+            createdAt = originalOrder.createdAt,
+            cards = cards
+        )
     }
 }

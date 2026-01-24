@@ -18,14 +18,11 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
     private val cardQueries = database.cardQueries
 
     fun getAllOrdersFlow(): Flow<List<Order>> {
-        // Combine flows from OrderEntity, OrderCardEntity, and CardEntity tables
-        // so updates to any of them trigger a refresh
         return kotlinx.coroutines.flow.combine(
             orderQueries.selectAll().asFlow().mapToList(Dispatchers.IO),
             orderQueries.selectAllOrderCards().asFlow().mapToList(Dispatchers.IO),
             cardQueries.selectAll().asFlow().mapToList(Dispatchers.IO)
         ) { orderEntities, _, _ ->
-            // Re-fetch with cards whenever any table changes
             orderEntities.map { orderEntity ->
                 orderEntity.toOrder(getCardsForOrder(orderEntity.id))
             }
@@ -46,27 +43,33 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
 
     suspend fun insertOrder(order: Order) = withContext(Dispatchers.IO) {
         database.transaction {
-            orderQueries.insert(
-                id = order.id,
-                name = order.name,
-                streetAddress = order.streetAddress,
-                city = order.city,
-                state = order.state,
-                zipcode = order.zipcode,
-                shippingType = order.shippingType,
-                shippingCost = order.shippingCost,
-                status = order.status,
-                createdAt = order.createdAt,
-                trackingNumber = order.trackingNumber
-            )
+            insertOrderEntity(order)
+            insertOrderCardRelationships(order)
+        }
+    }
 
-            // Insert order-card relationships
-            order.cards.forEach { card ->
-                orderQueries.insertOrderCard(
-                    orderId = order.id,
-                    cardId = card.id
-                )
-            }
+    private fun insertOrderEntity(order: Order) {
+        orderQueries.insert(
+            id = order.id,
+            name = order.name,
+            streetAddress = order.streetAddress,
+            city = order.city,
+            state = order.state,
+            zipcode = order.zipcode,
+            shippingType = order.shippingType,
+            shippingCost = order.shippingCost,
+            status = order.status,
+            createdAt = order.createdAt,
+            trackingNumber = order.trackingNumber
+        )
+    }
+
+    private fun insertOrderCardRelationships(order: Order) {
+        order.cards.forEach { card ->
+            orderQueries.insertOrderCard(
+                orderId = order.id,
+                cardId = card.id
+            )
         }
     }
 

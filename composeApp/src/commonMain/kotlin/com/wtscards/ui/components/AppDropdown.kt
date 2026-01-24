@@ -28,10 +28,6 @@ import com.wtscards.ui.theme.textPrimary
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.graphics.Color
 
-/**
- * Standard dropdown with filled background style.
- * Use for form fields where the dropdown fills available width.
- */
 @Composable
 fun AppDropdown(
     selectedValue: String,

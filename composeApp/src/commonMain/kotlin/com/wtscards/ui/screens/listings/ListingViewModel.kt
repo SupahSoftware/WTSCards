@@ -51,7 +51,7 @@ class ListingViewModel(
             .onEach { cards ->
                 uiState = uiState.copy(availableCards = cards)
             }
-            .catch { /* Silently fail */ }
+            .catch { }
             .launchIn(coroutineScope)
     }
 
@@ -59,7 +59,6 @@ class ListingViewModel(
         uiState = uiState.copy(searchQuery = query)
     }
 
-    // Create listing dialog
     fun onShowCreateDialog() {
         uiState = uiState.copy(showCreateDialog = true)
     }
@@ -108,7 +107,6 @@ class ListingViewModel(
         }
     }
 
-    // Add cards dialog
     fun onShowAddCardsDialog(listingId: String) {
         uiState = uiState.copy(
             addCardsDialogState = ListingAddCardsDialogState(listingId = listingId)
@@ -169,7 +167,6 @@ class ListingViewModel(
         }
     }
 
-    // Remove card dialog
     fun onShowRemoveCardDialog(listingId: String, cardId: String, cardName: String) {
         uiState = uiState.copy(
             removeCardDialogState = ListingRemoveCardDialogState(
@@ -208,7 +205,6 @@ class ListingViewModel(
         }
     }
 
-    // Delete listing dialog
     fun onShowDeleteListingDialog(listingId: String, title: String) {
         uiState = uiState.copy(
             deleteListingDialogState = DeleteListingDialogState(

@@ -21,7 +21,6 @@ object DatabaseDriverFactory {
             0
         }
 
-        // If schema version changed, delete old database
         if (databaseFile.exists() && currentVersion < SCHEMA_VERSION) {
             databaseFile.delete()
         }

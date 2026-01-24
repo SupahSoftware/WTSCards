@@ -102,16 +102,10 @@ fun ListingScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            // Header
-            Text(
-                text = "Listings",
-                style = MaterialTheme.typography.headlineMedium,
-                color = textPrimary
-            )
+            ListingScreenHeader()
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Search bar
             SearchRow(
                 searchQuery = uiState.searchQuery,
                 onSearchQueryChanged = onSearchQueryChanged
@@ -119,7 +113,6 @@ fun ListingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Content
             ContentArea(
                 uiState = uiState,
                 onShowAddCardsDialog = onShowAddCardsDialog,
@@ -129,13 +122,11 @@ fun ListingScreen(
             )
         }
 
-        // FAB
         CreateListingFab(
             onClick = onShowCreateDialog,
             modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp)
         )
 
-        // Dialogs
         ListingDialogs(
             uiState = uiState,
             onDismissCreateDialog = onDismissCreateDialog,
@@ -151,16 +142,37 @@ fun ListingScreen(
             onConfirmDeleteListing = onConfirmDeleteListing
         )
 
-        // Toast
         uiState.toast?.let { toast ->
-            ToastMessage(
-                message = toast.message,
-                isError = toast.isError,
+            ListingToast(
+                toast = toast,
                 onDismiss = onClearToast,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }
+}
+
+@Composable
+private fun ListingScreenHeader() {
+    Text(
+        text = "Listings",
+        style = MaterialTheme.typography.headlineMedium,
+        color = textPrimary
+    )
+}
+
+@Composable
+private fun ListingToast(
+    toast: ListingToastState,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ToastMessage(
+        message = toast.message,
+        isError = toast.isError,
+        onDismiss = onDismiss,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -374,19 +386,16 @@ private fun ListingCard(
             .background(bgSurface)
             .padding(16.dp)
     ) {
-        // Title row with copy, Reddit, and overflow menu
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Title with copy button directly next to it
             Text(
                 text = listing.title,
                 style = MaterialTheme.typography.titleLarge,
                 color = textPrimary
             )
 
-            // Copy title button (directly next to title)
             IconButton(
                 onClick = {
                     copyToClipboard(listing.title)
@@ -404,7 +413,6 @@ private fun ListingCard(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Reddit button
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
@@ -419,7 +427,6 @@ private fun ListingCard(
                 )
             }
 
-            // Overflow menu
             ListingOverflowMenu(
                 onAddCards = onShowAddCardsDialog,
                 onDelete = onShowDeleteListingDialog
@@ -429,7 +436,6 @@ private fun ListingCard(
         if (listing.cards.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Markdown body with copy button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
@@ -459,7 +465,6 @@ private fun ListingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Cards list
             listing.cards.forEach { card ->
                 CardItem(
                     card = card,
@@ -715,7 +720,6 @@ private fun AddCardsDialog(
     onToggleCardSelection: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
-    // Filter to cards not already in listing
     val cardsToShow = availableCards.filter { it.id !in existingCardIds }
     val filteredCards = if (dialogState.searchQuery.isBlank()) {
         cardsToShow

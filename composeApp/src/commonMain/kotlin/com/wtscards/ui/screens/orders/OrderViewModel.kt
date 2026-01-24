@@ -52,9 +52,7 @@ class OrderViewModel(
             .onEach { cards ->
                 uiState = uiState.copy(availableCards = cards)
             }
-            .catch { e ->
-                // Silently fail for cards loading
-            }
+            .catch { }
             .launchIn(coroutineScope)
     }
 
@@ -171,7 +169,6 @@ class OrderViewModel(
     }
 
     fun onStateChanged(state: String) {
-        // Limit to 2 characters and convert to uppercase
         val filtered = state.take(2).uppercase().filter { it.isLetter() }
         uiState = uiState.copy(
             createFormState = uiState.createFormState.copy(state = filtered)
@@ -179,7 +176,6 @@ class OrderViewModel(
     }
 
     fun onZipcodeChanged(zipcode: String) {
-        // Only allow alphanumeric characters
         val filtered = zipcode.filter { it.isLetterOrDigit() }
         uiState = uiState.copy(
             createFormState = uiState.createFormState.copy(zipcode = filtered)
@@ -187,14 +183,7 @@ class OrderViewModel(
     }
 
     fun onShippingTypeChanged(shippingType: String) {
-        // Set default price based on shipping type
-        val defaultPrice = when (shippingType) {
-            "Bubble mailer" -> "5.00"
-            "Envelope" -> "1.00"
-            "Box" -> "10.00"
-            "Other" -> "0.00"
-            else -> "0.00"
-        }
+        val defaultPrice = getDefaultShippingPrice(shippingType)
         uiState = uiState.copy(
             createFormState = uiState.createFormState.copy(
                 shippingType = shippingType,
@@ -203,10 +192,18 @@ class OrderViewModel(
         )
     }
 
+    private fun getDefaultShippingPrice(shippingType: String): String {
+        return when (shippingType) {
+            "Bubble mailer" -> "5.00"
+            "Envelope" -> "1.00"
+            "Box" -> "10.00"
+            "Other" -> "0.00"
+            else -> "0.00"
+        }
+    }
+
     fun onShippingPriceChanged(price: String) {
-        // Only allow digits and decimal point
         val filtered = price.filter { it.isDigit() || it == '.' }
-        // Only allow one decimal point
         if (filtered.count { it == '.' } <= 1) {
             uiState = uiState.copy(
                 createFormState = uiState.createFormState.copy(shippingPrice = filtered)
@@ -237,7 +234,6 @@ class OrderViewModel(
                 val trackingNumber = form.trackingNumber.trim().takeIf { it.isNotBlank() }
                 
                 if (isEditMode) {
-                    // Find the existing order to preserve createdAt and cards
                     val existingOrder = uiState.orders.find { it.id == uiState.editingOrderId }
                     val order = Order(
                         id = uiState.editingOrderId!!,
@@ -319,15 +315,8 @@ class OrderViewModel(
 
     fun onProceedToPriceConfirmation() {
         uiState.addCardsDialogState?.let { dialogState ->
-            // Auto-populate prices from card data
             val selectedCards = uiState.availableCards.filter { it.id in dialogState.selectedCardIds }
-            val initialPrices = selectedCards.associate { card ->
-                card.id to if (card.priceInPennies > 0) {
-                    (card.priceInPennies / 100.0).toString()
-                } else {
-                    ""
-                }
-            }
+            val initialPrices = buildInitialCardPrices(selectedCards)
             
             uiState = uiState.copy(
                 addCardsDialogState = dialogState.copy(
@@ -335,6 +324,16 @@ class OrderViewModel(
                     cardPrices = initialPrices
                 )
             )
+        }
+    }
+
+    private fun buildInitialCardPrices(selectedCards: List<com.wtscards.data.model.Card>): Map<String, String> {
+        return selectedCards.associate { card ->
+            card.id to if (card.priceInPennies > 0) {
+                (card.priceInPennies / 100.0).toString()
+            } else {
+                ""
+            }
         }
     }
 
@@ -356,12 +355,7 @@ class OrderViewModel(
 
             coroutineScope.launch {
                 try {
-                    // Convert prices from dollars to pennies
-                    val cardPrices = dialogState.cardPrices.mapValues { (_, priceStr) ->
-                        val priceDouble = priceStr.toDoubleOrNull() ?: 0.0
-                        (priceDouble * 100).toLong()
-                    }
-
+                    val cardPrices = convertCardPricesToPennies(dialogState)
                     orderUseCase.addCardsToOrder(dialogState.orderId, cardPrices)
 
                     uiState = uiState.copy(
@@ -395,6 +389,13 @@ class OrderViewModel(
 
     fun clearToast() {
         uiState = uiState.copy(toast = null)
+    }
+
+    private fun convertCardPricesToPennies(dialogState: AddCardsDialogState): Map<String, Long> {
+        return dialogState.cardPrices.mapValues { (_, priceString) ->
+            val priceDouble = priceString.toDoubleOrNull() ?: 0.0
+            (priceDouble * 100).toLong()
+        }
     }
 
     fun onDeleteOrder(orderId: String) {
@@ -449,7 +450,6 @@ class OrderViewModel(
         }
     }
 
-    // Upgrade Shipping Dialog
     fun onShowUpgradeShippingDialog(orderId: String, cardCount: Int) {
         uiState = uiState.copy(
             upgradeShippingDialogState = UpgradeShippingDialogState(
@@ -490,7 +490,6 @@ class OrderViewModel(
         }
     }
 
-    // Split Order Dialog
     fun onShowSplitOrderDialog(orderId: String, cardCount: Int) {
         val splitCount = kotlin.math.ceil(cardCount / 15.0).toInt()
         uiState = uiState.copy(
@@ -529,7 +528,6 @@ class OrderViewModel(
         }
     }
 
-    // Tracking Number Dialog
     fun onShowTrackingNumberDialog(orderId: String, currentTrackingNumber: String?) {
         uiState = uiState.copy(
             trackingNumberDialogState = TrackingNumberDialogState(

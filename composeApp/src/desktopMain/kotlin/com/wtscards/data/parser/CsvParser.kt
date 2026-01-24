@@ -13,14 +13,17 @@ object CsvParser {
                 return Result.failure(IllegalArgumentException("CSV file is empty"))
             }
 
-            val cards = lines.drop(1) // Skip header row
-                .filter { it.isNotBlank() }
-                .flatMap { line -> parseLine(line) }
-
+            val cards = parseAllLines(lines)
             Result.success(cards)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun parseAllLines(lines: List<String>): List<Card> {
+        return lines.drop(1)
+            .filter { it.isNotBlank() }
+            .flatMap { line -> parseLine(line) }
     }
 
     private fun parseLine(line: String): List<Card> {
@@ -28,29 +31,40 @@ object CsvParser {
             val columns = parseCSVLine(line)
             if (columns.size < 10) return emptyList()
 
-            val sportsCardProId = columns[0].trim()
-            val nameInfo = columns[1].trim()
-            val setName = columns[2].trim()
-            val priceInPennies = columns[3].trim().toLongOrNull() ?: 0L
-            val gradedString = columns[4].trim()
-            val quantity = columns[9].trim().toIntOrNull() ?: 1
+            val cardData = extractCardData(columns)
+            if (cardData == null) return emptyList()
 
-            if (sportsCardProId.isBlank()) return emptyList()
-
-            // Create separate card instances for each quantity
-            List(quantity) {
-                Card(
-                    id = UUID.randomUUID().toString(),
-                    sportsCardProId = sportsCardProId,
-                    name = nameInfo,
-                    setName = setName,
-                    priceInPennies = priceInPennies,
-                    gradedString = gradedString,
-                    priceSold = null
-                )
-            }
+            createCardInstances(cardData)
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+    private fun extractCardData(columns: List<String>): CardData? {
+        val sportsCardProId = columns[0].trim()
+        if (sportsCardProId.isBlank()) return null
+
+        return CardData(
+            sportsCardProId = sportsCardProId,
+            nameInfo = columns[1].trim(),
+            setName = columns[2].trim(),
+            priceInPennies = columns[3].trim().toLongOrNull() ?: 0L,
+            gradedString = columns[4].trim(),
+            quantity = columns[9].trim().toIntOrNull() ?: 1
+        )
+    }
+
+    private fun createCardInstances(cardData: CardData): List<Card> {
+        return List(cardData.quantity) {
+            Card(
+                id = UUID.randomUUID().toString(),
+                sportsCardProId = cardData.sportsCardProId,
+                name = cardData.nameInfo,
+                setName = cardData.setName,
+                priceInPennies = cardData.priceInPennies,
+                gradedString = cardData.gradedString,
+                priceSold = null
+            )
         }
     }
 
@@ -73,4 +87,13 @@ object CsvParser {
 
         return result
     }
+
+    private data class CardData(
+        val sportsCardProId: String,
+        val nameInfo: String,
+        val setName: String,
+        val priceInPennies: Long,
+        val gradedString: String,
+        val quantity: Int
+    )
 }

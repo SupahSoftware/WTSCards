@@ -138,21 +138,10 @@ class CollectionViewModel(
         }
     }
 
-    // Edit card functionality
     fun onEditCard(card: Card) {
-        // Parse the card name to extract player name and parallel name
         val parsed = CardNameParser.parse(card.name)
-
-        // Extract card number from the name (everything after #)
-        val cardNumberMatch = Regex("""#(\S+)""").find(card.name)
-        val cardNumber = cardNumberMatch?.groupValues?.get(1) ?: ""
-
-        // Format price for display
-        val priceText = if (card.priceInPennies > 0) {
-            String.format("%.2f", card.priceInPennies / 100.0)
-        } else {
-            ""
-        }
+        val cardNumber = extractCardNumber(card.name)
+        val priceText = formatPriceForDisplay(card.priceInPennies)
 
         uiState = uiState.copy(
             showEditCardDialog = true,
@@ -166,6 +155,19 @@ class CollectionViewModel(
                 priceText = priceText
             )
         )
+    }
+
+    private fun extractCardNumber(cardName: String): String {
+        val cardNumberMatch = Regex("""#(\S+)""").find(cardName)
+        return cardNumberMatch?.groupValues?.get(1) ?: ""
+    }
+
+    private fun formatPriceForDisplay(priceInPennies: Long): String {
+        return if (priceInPennies > 0) {
+            String.format("%.2f", priceInPennies / 100.0)
+        } else {
+            ""
+        }
     }
 
     fun onDismissEditCardDialog() {
@@ -236,17 +238,20 @@ class CollectionViewModel(
     }
 
     fun onEditPriceChanged(priceText: String) {
-        // Allow digits and at most one decimal point
-        val filtered = priceText.filter { it.isDigit() || it == '.' }
+        val filtered = filterPriceInput(priceText)
+        uiState = uiState.copy(
+            editCardForm = uiState.editCardForm.copy(priceText = filtered)
+        )
+    }
+
+    private fun filterPriceInput(input: String): String {
+        val filtered = input.filter { it.isDigit() || it == '.' }
         val parts = filtered.split(".")
-        val result = if (parts.size > 2) {
+        return if (parts.size > 2) {
             parts[0] + "." + parts.drop(1).joinToString("")
         } else {
             filtered
         }
-        uiState = uiState.copy(
-            editCardForm = uiState.editCardForm.copy(priceText = result)
-        )
     }
 
     fun canSaveEditCard(): Boolean {
@@ -264,43 +269,9 @@ class CollectionViewModel(
 
         coroutineScope.launch {
             try {
-                // Convert price to pennies if provided
-                val priceInPennies = if (form.priceText.isNotBlank()) {
-                    ((form.priceText.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                } else {
-                    0L
-                }
-
-                // Build the card name
-                val cardName = buildCardName(
-                    name = form.name,
-                    cardNumber = form.cardNumber,
-                    parallelName = form.parallelName
-                )
-
-                // Find the original card to preserve sportsCardProId and priceSold
-                val originalCard = uiState.allCards.find { it.id == form.cardId }
-
-                val updatedCard = Card(
-                    id = form.cardId,
-                    sportsCardProId = originalCard?.sportsCardProId,
-                    name = cardName,
-                    setName = form.setName.toTitleCase(),
-                    priceInPennies = priceInPennies,
-                    gradedString = form.gradeOption,
-                    priceSold = originalCard?.priceSold
-                )
-
+                val updatedCard = buildUpdatedCard(form)
                 cardUseCase.updateCard(updatedCard)
-
-                // Add autocomplete entries
-                autocompleteUseCase.addPlayerName(form.name.toTitleCase())
-                if (form.setName.isNotBlank()) {
-                    autocompleteUseCase.addSetName(form.setName.toTitleCase())
-                }
-                if (form.parallelName.isNotBlank()) {
-                    autocompleteUseCase.addParallelName(form.parallelName.toTitleCase())
-                }
+                saveEditAutocompleteEntries(form)
 
                 uiState = uiState.copy(
                     showEditCardDialog = false,
@@ -313,6 +284,40 @@ class CollectionViewModel(
                     toastMessage = ToastMessage(e.message ?: "Failed to update card", isError = true)
                 )
             }
+        }
+    }
+
+    private fun buildUpdatedCard(form: EditCardFormState): Card {
+        val priceInPennies = convertFormPriceToPennies(form.priceText)
+        val cardName = buildCardName(form.name, form.cardNumber, form.parallelName)
+        val originalCard = uiState.allCards.find { it.id == form.cardId }
+
+        return Card(
+            id = form.cardId,
+            sportsCardProId = originalCard?.sportsCardProId,
+            name = cardName,
+            setName = form.setName.toTitleCase(),
+            priceInPennies = priceInPennies,
+            gradedString = form.gradeOption,
+            priceSold = originalCard?.priceSold
+        )
+    }
+
+    private fun convertFormPriceToPennies(priceText: String): Long {
+        return if (priceText.isNotBlank()) {
+            ((priceText.toDoubleOrNull() ?: 0.0) * 100).toLong()
+        } else {
+            0L
+        }
+    }
+
+    private suspend fun saveEditAutocompleteEntries(form: EditCardFormState) {
+        autocompleteUseCase.addPlayerName(form.name.toTitleCase())
+        if (form.setName.isNotBlank()) {
+            autocompleteUseCase.addSetName(form.setName.toTitleCase())
+        }
+        if (form.parallelName.isNotBlank()) {
+            autocompleteUseCase.addParallelName(form.parallelName.toTitleCase())
         }
     }
 

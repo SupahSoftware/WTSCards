@@ -82,147 +82,26 @@ fun main() = application {
         }
 
         val dragAndDropTarget = remember {
-            object : DragAndDropTarget {
-                override fun onStarted(event: DragAndDropEvent) {
-                    try {
-                        val transferable = event.awtTransferable
-                        if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                            val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
-                            val file = files?.firstOrNull() as? File
-                            if (file != null && file.extension.lowercase() == "csv") {
-                                importViewModel.onFileHoverStart(file.name)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        importViewModel.onFileHoverStart("file.csv")
-                    }
-                }
-
-                override fun onEnded(event: DragAndDropEvent) {
-                    importViewModel.onFileHoverEnd()
-                }
-
-                override fun onDrop(event: DragAndDropEvent): Boolean {
-                    try {
-                        val transferable = event.awtTransferable
-                        if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                            val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
-                            val file = files?.firstOrNull() as? File
-
-                            if (file == null) {
-                                return false
-                            }
-
-                            if (file.extension.lowercase() != "csv") {
-                                importViewModel.onImportError("Only CSV files are supported")
-                                return true
-                            }
-
-                            val result = CsvParser.parseFile(file)
-                            result.fold(
-                                onSuccess = { cards ->
-                                    if (cards.isEmpty()) {
-                                        importViewModel.onImportError("No valid card data found in CSV")
-                                    } else {
-                                        importViewModel.onFileDropped(cards)
-                                    }
-                                },
-                                onFailure = { error ->
-                                    importViewModel.onImportError(error.message ?: "Failed to parse CSV file")
-                                }
-                            )
-                            return true
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        importViewModel.onImportError("Failed to process file")
-                    }
-                    return false
-                }
-            }
+            createDragAndDropTarget(importViewModel)
         }
 
         val onBrowseFiles: () -> Unit = onBrowseFiles@{
-            val fileChooser = JFileChooser().apply {
-                dialogTitle = "Select CSV File"
-                fileFilter = FileNameExtensionFilter("CSV Files (*.csv)", "csv")
-                isAcceptAllFileFilterUsed = false
+            val file = selectCsvFile()
+            if (file == null) return@onBrowseFiles
+            
+            if (!isCsvFile(file)) {
+                importViewModel.onImportError("Only CSV files are supported")
+                return@onBrowseFiles
             }
 
-            val result = fileChooser.showOpenDialog(null)
-            if (result == JFileChooser.APPROVE_OPTION) {
-                val file = fileChooser.selectedFile
-                if (file.extension.lowercase() != "csv") {
-                    importViewModel.onImportError("Only CSV files are supported")
-                    return@onBrowseFiles
-                }
-
-                val parseResult = CsvParser.parseFile(file)
-                parseResult.fold(
-                    onSuccess = { cards ->
-                        if (cards.isEmpty()) {
-                            importViewModel.onImportError("No valid card data found in CSV")
-                        } else {
-                            importViewModel.onFileDropped(cards)
-                        }
-                    },
-                    onFailure = { error ->
-                        importViewModel.onImportError(error.message ?: "Failed to parse CSV file")
-                    }
-                )
-            }
+            parseAndImportFile(file, importViewModel)
         }
 
         val onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit = { orders, viewModel ->
             if (orders.isEmpty()) {
                 viewModel.onShippingLabelsExportError("No orders to export")
             } else {
-                val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                val defaultFileName = "shipping-labels-$dateStr.csv"
-
-                val fileChooser = JFileChooser().apply {
-                    dialogTitle = "Save Shipping Labels CSV"
-                    fileFilter = FileNameExtensionFilter("CSV Files (*.csv)", "csv")
-                    isAcceptAllFileFilterUsed = false
-                    selectedFile = File(defaultFileName)
-                }
-
-                val result = fileChooser.showSaveDialog(null)
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    try {
-                        var file = fileChooser.selectedFile
-                        // Ensure .csv extension
-                        if (!file.name.lowercase().endsWith(".csv")) {
-                            file = File(file.absolutePath + ".csv")
-                        }
-
-                        // Create CSV content in Pirate Ship format
-                        val csvContent = buildString {
-                            // Header row
-                            appendLine("Name,Address Line 1,City,State,Zip,Country")
-
-                            // Data rows
-                            orders.forEach { order ->
-                                val name = escapeCsvField(order.name)
-                                val address = escapeCsvField(order.streetAddress)
-                                val city = escapeCsvField(order.city)
-                                val state = escapeCsvField(order.state)
-                                val zip = escapeCsvField(order.zipcode)
-                                appendLine("$name,$address,$city,$state,$zip,US")
-                            }
-                        }
-
-                        file.writeText(csvContent)
-
-                        // Notify success and update order statuses
-                        viewModel.onShippingLabelsExported(orders.map { it.id })
-                    } catch (e: Exception) {
-                        viewModel.onShippingLabelsExportError(e.message ?: "Failed to save CSV file")
-                    }
-                } else {
-                    // User cancelled - dismiss dialog
-                    viewModel.onDismissShippingLabelsDialog()
-                }
+                exportShippingLabelsCsv(orders, viewModel)
             }
         }
 
@@ -250,10 +129,155 @@ fun main() = application {
     }
 }
 
+private fun selectCsvFile(): File? {
+    val fileChooser = JFileChooser().apply {
+        dialogTitle = "Select CSV File"
+        fileFilter = FileNameExtensionFilter("CSV Files (*.csv)", "csv")
+        isAcceptAllFileFilterUsed = false
+    }
+    
+    val result = fileChooser.showOpenDialog(null)
+    return if (result == JFileChooser.APPROVE_OPTION) {
+        fileChooser.selectedFile
+    } else {
+        null
+    }
+}
+
+private fun isCsvFile(file: File): Boolean {
+    return file.extension.lowercase() == "csv"
+}
+
+private fun parseAndImportFile(file: File, importViewModel: ImportViewModel) {
+    val parseResult = CsvParser.parseFile(file)
+    parseResult.fold(
+        onSuccess = { cards ->
+            if (cards.isEmpty()) {
+                importViewModel.onImportError("No valid card data found in CSV")
+            } else {
+                importViewModel.onFileDropped(cards)
+            }
+        },
+        onFailure = { error ->
+            importViewModel.onImportError(error.message ?: "Failed to parse CSV file")
+        }
+    )
+}
+
+private fun exportShippingLabelsCsv(orders: List<Order>, viewModel: OrderViewModel) {
+    val file = selectSaveLocation() ?: run {
+        viewModel.onDismissShippingLabelsDialog()
+        return
+    }
+    
+    try {
+        val csvContent = buildShippingLabelsCsv(orders)
+        file.writeText(csvContent)
+        viewModel.onShippingLabelsExported(orders.map { it.id })
+    } catch (e: Exception) {
+        viewModel.onShippingLabelsExportError(e.message ?: "Failed to save CSV file")
+    }
+}
+
+private fun selectSaveLocation(): File? {
+    val dateStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    val defaultFileName = "shipping-labels-$dateStr.csv"
+    
+    val fileChooser = JFileChooser().apply {
+        dialogTitle = "Save Shipping Labels CSV"
+        fileFilter = FileNameExtensionFilter("CSV Files (*.csv)", "csv")
+        isAcceptAllFileFilterUsed = false
+        selectedFile = File(defaultFileName)
+    }
+    
+    val result = fileChooser.showSaveDialog(null)
+    if (result != JFileChooser.APPROVE_OPTION) {
+        return null
+    }
+    
+    var file = fileChooser.selectedFile
+    if (!file.name.lowercase().endsWith(".csv")) {
+        file = File(file.absolutePath + ".csv")
+    }
+    return file
+}
+
+private fun buildShippingLabelsCsv(orders: List<Order>): String {
+    return buildString {
+        appendLine("Name,Address Line 1,City,State,Zip,Country")
+        orders.forEach { order ->
+            val name = escapeCsvField(order.name)
+            val address = escapeCsvField(order.streetAddress)
+            val city = escapeCsvField(order.city)
+            val state = escapeCsvField(order.state)
+            val zip = escapeCsvField(order.zipcode)
+            appendLine("$name,$address,$city,$state,$zip,US")
+        }
+    }
+}
+
 private fun escapeCsvField(value: String): String {
     return if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
         "\"${value.replace("\"", "\"\"")}\""
     } else {
         value
     }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+private fun createDragAndDropTarget(importViewModel: ImportViewModel): DragAndDropTarget {
+    return object : DragAndDropTarget {
+        override fun onStarted(event: DragAndDropEvent) {
+            handleDragStarted(event, importViewModel)
+        }
+
+        override fun onEnded(event: DragAndDropEvent) {
+            importViewModel.onFileHoverEnd()
+        }
+
+        override fun onDrop(event: DragAndDropEvent): Boolean {
+            return handleFileDrop(event, importViewModel)
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+private fun handleDragStarted(event: DragAndDropEvent, importViewModel: ImportViewModel) {
+    try {
+        val file = extractFileFromEvent(event)
+        if (file != null && isCsvFile(file)) {
+            importViewModel.onFileHoverStart(file.name)
+        }
+    } catch (e: Exception) {
+        importViewModel.onFileHoverStart("file.csv")
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+private fun handleFileDrop(event: DragAndDropEvent, importViewModel: ImportViewModel): Boolean {
+    try {
+        val file = extractFileFromEvent(event) ?: return false
+        
+        if (!isCsvFile(file)) {
+            importViewModel.onImportError("Only CSV files are supported")
+            return true
+        }
+        
+        parseAndImportFile(file, importViewModel)
+        return true
+    } catch (e: Exception) {
+        e.printStackTrace()
+        importViewModel.onImportError("Failed to process file")
+    }
+    return false
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+private fun extractFileFromEvent(event: DragAndDropEvent): File? {
+    val transferable = event.awtTransferable
+    if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+        val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as? List<*>
+        return files?.firstOrNull() as? File
+    }
+    return null
 }

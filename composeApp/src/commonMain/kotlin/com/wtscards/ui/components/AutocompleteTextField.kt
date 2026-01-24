@@ -65,17 +65,14 @@ fun AutocompleteTextField(
     var textFieldHeight by remember { mutableStateOf(0) }
     val density = LocalDensity.current
 
-    // Internal TextFieldValue state for cursor control
     var textFieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
 
-    // Sync external value changes to internal state (but preserve cursor if text is same)
     LaunchedEffect(value) {
         if (textFieldValue.text != value) {
             textFieldValue = TextFieldValue(value, TextRange(value.length))
         }
     }
 
-    // Show dropdown when focused, have suggestions, not dismissed, and not manually dismissed
     val showDropdown = isFocused && suggestions.isNotEmpty() && value.isNotBlank() && value != dismissedValue && !isManuallyDismissed
 
     Column(modifier = modifier) {
@@ -101,7 +98,6 @@ fun AutocompleteTextField(
                 value = textFieldValue,
                 onValueChange = { newValue ->
                     textFieldValue = newValue
-                    // Reset dismissed states when user types something different
                     if (newValue.text != dismissedValue) {
                         dismissedValue = null
                     }
@@ -123,14 +119,13 @@ fun AutocompleteTextField(
                     }
                     .onPreviewKeyEvent { keyEvent ->
                         if (keyEvent.key == Key.Tab && showDropdown) {
-                            // Auto-fill first suggestion on Tab with cursor at end
                             val selected = suggestions.first()
                             textFieldValue = TextFieldValue(selected, TextRange(selected.length))
                             onValueChange(selected)
                             dismissedValue = selected
-                            true // consume the event
+                            true
                         } else {
-                            false // Let Tab pass through to move to next field
+                            false
                         }
                     },
                 placeholder = {
@@ -163,9 +158,7 @@ fun AutocompleteTextField(
                 shape = RoundedCornerShape(8.dp)
             )
 
-            // Popup for suggestions (non-focusable so it doesn't steal focus from text field)
             if (showDropdown) {
-                // Invisible scrim to detect clicks outside the dropdown
                 Popup(
                     alignment = Alignment.TopStart,
                     properties = PopupProperties(focusable = false)
@@ -182,7 +175,6 @@ fun AutocompleteTextField(
                     )
                 }
 
-                // Suggestions dropdown
                 Popup(
                     alignment = Alignment.TopStart,
                     offset = IntOffset(0, textFieldHeight),
@@ -204,7 +196,6 @@ fun AutocompleteTextField(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
-                                        // Set value with cursor at end
                                         textFieldValue = TextFieldValue(suggestion, TextRange(suggestion.length))
                                         onValueChange(suggestion)
                                         dismissedValue = suggestion
