@@ -20,6 +20,8 @@ import com.wtscards.ui.screens.collection.CollectionViewModel
 import com.wtscards.ui.screens.import.ImportScreen
 import com.wtscards.ui.screens.import.ImportState
 import com.wtscards.ui.screens.import.ImportViewModel
+import com.wtscards.ui.screens.listings.ListingScreen
+import com.wtscards.ui.screens.listings.ListingViewModel
 import com.wtscards.data.model.Order
 import com.wtscards.ui.screens.orders.OrderScreen
 import com.wtscards.ui.screens.orders.OrderViewModel
@@ -65,6 +67,10 @@ fun MainScreen(
         OrderViewModel(dependencies.orderUseCase, dependencies.cardUseCase, dependencies.coroutineScope)
     }
 
+    val listingViewModel = remember {
+        ListingViewModel(dependencies.listingUseCase, dependencies.cardUseCase, dependencies.coroutineScope)
+    }
+
     val addCardViewModel = remember {
         AddCardViewModel(dependencies.cardUseCase, dependencies.autocompleteUseCase, dependencies.coroutineScope)
     }
@@ -101,6 +107,30 @@ fun MainScreen(
                     onSaveEditCard = collectionViewModel::onSaveEditCard,
                     canSaveEditCard = collectionViewModel.canSaveEditCard(),
                     onClearToast = collectionViewModel::clearToast,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            NavigationItem.Listings.route -> {
+                ListingScreen(
+                    uiState = listingViewModel.uiState,
+                    onSearchQueryChanged = listingViewModel::onSearchQueryChanged,
+                    onShowCreateDialog = listingViewModel::onShowCreateDialog,
+                    onDismissCreateDialog = listingViewModel::onDismissCreateDialog,
+                    onTitleChanged = listingViewModel::onTitleChanged,
+                    onCreateListing = listingViewModel::onCreateListing,
+                    onShowAddCardsDialog = listingViewModel::onShowAddCardsDialog,
+                    onDismissAddCardsDialog = listingViewModel::onDismissAddCardsDialog,
+                    onAddCardsSearchChanged = listingViewModel::onAddCardsSearchChanged,
+                    onToggleCardSelection = listingViewModel::onToggleCardSelection,
+                    onConfirmAddCards = listingViewModel::onConfirmAddCards,
+                    onShowRemoveCardDialog = listingViewModel::onShowRemoveCardDialog,
+                    onDismissRemoveCardDialog = listingViewModel::onDismissRemoveCardDialog,
+                    onConfirmRemoveCard = listingViewModel::onConfirmRemoveCard,
+                    onShowDeleteListingDialog = listingViewModel::onShowDeleteListingDialog,
+                    onDismissDeleteListingDialog = listingViewModel::onDismissDeleteListingDialog,
+                    onConfirmDeleteListing = listingViewModel::onConfirmDeleteListing,
+                    onShowCopyToast = listingViewModel::showCopyToast,
+                    onClearToast = listingViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -148,6 +178,7 @@ fun MainScreen(
                     onDismissTrackingNumberDialog = orderViewModel::onDismissTrackingNumberDialog,
                     onTrackingNumberChanged = orderViewModel::onTrackingNumberChanged,
                     onConfirmTrackingNumber = orderViewModel::onConfirmTrackingNumber,
+                    onDeleteOrder = orderViewModel::onDeleteOrder,
                     onClearToast = orderViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )

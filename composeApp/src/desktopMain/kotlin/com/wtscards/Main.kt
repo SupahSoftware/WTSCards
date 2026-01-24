@@ -18,11 +18,13 @@ import androidx.compose.ui.window.application
 import com.wtscards.data.db.AutocompleteLocalDataSource
 import com.wtscards.data.db.CardLocalDataSource
 import com.wtscards.data.db.DatabaseDriverFactory
+import com.wtscards.data.db.ListingLocalDataSource
 import com.wtscards.data.db.OrderLocalDataSource
 import com.wtscards.data.parser.CsvParser
 import com.wtscards.db.WTSCardsDatabase
 import com.wtscards.domain.usecase.AutocompleteUseCaseImpl
 import com.wtscards.domain.usecase.CardUseCaseImpl
+import com.wtscards.domain.usecase.ListingUseCaseImpl
 import com.wtscards.domain.usecase.OrderUseCaseImpl
 import com.wtscards.ui.screens.import.ImportViewModel
 import com.wtscards.ui.screens.orders.OrderViewModel
@@ -59,14 +61,17 @@ fun main() = application {
             val database = WTSCardsDatabase(driver)
             val cardLocalDataSource = CardLocalDataSource(database)
             val orderLocalDataSource = OrderLocalDataSource(database)
+            val listingLocalDataSource = ListingLocalDataSource(database)
             val autocompleteLocalDataSource = AutocompleteLocalDataSource(database)
             val cardUseCase = CardUseCaseImpl(cardLocalDataSource)
             val orderUseCase = OrderUseCaseImpl(orderLocalDataSource, cardLocalDataSource)
+            val listingUseCase = ListingUseCaseImpl(listingLocalDataSource)
             val autocompleteUseCase = AutocompleteUseCaseImpl(autocompleteLocalDataSource)
 
             AppDependencies(
                 cardUseCase = cardUseCase,
                 orderUseCase = orderUseCase,
+                listingUseCase = listingUseCase,
                 autocompleteUseCase = autocompleteUseCase,
                 coroutineScope = coroutineScope
             )

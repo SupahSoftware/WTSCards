@@ -397,6 +397,21 @@ class OrderViewModel(
         uiState = uiState.copy(toast = null)
     }
 
+    fun onDeleteOrder(orderId: String) {
+        coroutineScope.launch {
+            try {
+                orderUseCase.deleteOrder(orderId)
+                uiState = uiState.copy(
+                    toast = ToastState("Order deleted", isError = false)
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    toast = ToastState(e.message ?: "Failed to delete order", isError = true)
+                )
+            }
+        }
+    }
+
     fun onShowRemoveCardDialog(orderId: String, cardId: String, cardName: String) {
         uiState = uiState.copy(
             removeCardDialogState = RemoveCardDialogState(

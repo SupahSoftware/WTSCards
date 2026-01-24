@@ -139,6 +139,7 @@ fun OrderScreen(
     onDismissTrackingNumberDialog: () -> Unit,
     onTrackingNumberChanged: (String) -> Unit,
     onConfirmTrackingNumber: () -> Unit,
+    onDeleteOrder: (String) -> Unit,
     onClearToast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -166,7 +167,8 @@ fun OrderScreen(
                 onShowRemoveCardDialog = onShowRemoveCardDialog,
                 onUpgradeShipping = onShowUpgradeShippingDialog,
                 onSplitOrder = onShowSplitOrderDialog,
-                onShowTrackingNumberDialog = onShowTrackingNumberDialog
+                onShowTrackingNumberDialog = onShowTrackingNumberDialog,
+                onDeleteOrder = onDeleteOrder
             )
         }
 
@@ -334,7 +336,8 @@ private fun ContentArea(
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onUpgradeShipping: (String, Int) -> Unit,
     onSplitOrder: (String, Int) -> Unit,
-    onShowTrackingNumberDialog: (String, String?) -> Unit
+    onShowTrackingNumberDialog: (String, String?) -> Unit,
+    onDeleteOrder: (String) -> Unit
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -351,11 +354,23 @@ private fun ContentArea(
                 )
             }
             uiState.orders.isEmpty() -> {
-                Text(
-                    text = "No orders yet",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = textSecondary
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Text(
+                        text = "No orders yet",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "When you add cards to an order, they will be removed from your collection. If you remove cards from an order, they will return to your collection.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textSecondary,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
             uiState.filteredOrders.isEmpty() -> {
                 Text(
@@ -373,7 +388,8 @@ private fun ContentArea(
                     onShowRemoveCardDialog = onShowRemoveCardDialog,
                     onUpgradeShipping = onUpgradeShipping,
                     onSplitOrder = onSplitOrder,
-                    onShowTrackingNumberDialog = onShowTrackingNumberDialog
+                    onShowTrackingNumberDialog = onShowTrackingNumberDialog,
+                    onDeleteOrder = onDeleteOrder
                 )
             }
         }
@@ -899,7 +915,8 @@ private fun OrderList(
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onUpgradeShipping: (String, Int) -> Unit,
     onSplitOrder: (String, Int) -> Unit,
-    onShowTrackingNumberDialog: (String, String?) -> Unit
+    onShowTrackingNumberDialog: (String, String?) -> Unit,
+    onDeleteOrder: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -971,7 +988,8 @@ private fun OrderList(
                 onShowRemoveCardDialog = onShowRemoveCardDialog,
                 onUpgradeShipping = onUpgradeShipping,
                 onSplitOrder = onSplitOrder,
-                onShowTrackingNumberDialog = onShowTrackingNumberDialog
+                onShowTrackingNumberDialog = onShowTrackingNumberDialog,
+                onDeleteOrder = onDeleteOrder
             )
         }
     }
@@ -986,7 +1004,8 @@ private fun OrderCard(
     onShowRemoveCardDialog: (String, String, String) -> Unit,
     onUpgradeShipping: (String, Int) -> Unit,
     onSplitOrder: (String, Int) -> Unit,
-    onShowTrackingNumberDialog: (String, String?) -> Unit
+    onShowTrackingNumberDialog: (String, String?) -> Unit,
+    onDeleteOrder: (String) -> Unit
 ) {
     var showOverflowMenu by remember { mutableStateOf(false) }
     var isEditingCards by remember { mutableStateOf(false) }
@@ -1091,61 +1110,51 @@ private fun OrderCard(
 
                         DropdownMenu(
                             expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
+                            onDismissRequest = { showOverflowMenu = false },
+                            modifier = Modifier.background(bgSecondary)
                         ) {
                             DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = null,
-                                            tint = textPrimary
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Add cards", color = textPrimary)
-                                    }
-                                },
+                                text = { Text("Add cards", color = textPrimary) },
                                 onClick = {
                                     showOverflowMenu = false
                                     onShowAddCardsDialog(order.id)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Add, contentDescription = null, tint = accentPrimary)
                                 }
                             )
                             DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = null,
-                                            tint = textPrimary
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Edit order", color = textPrimary)
-                                    }
-                                },
+                                text = { Text("Edit order", color = textPrimary) },
                                 onClick = {
                                     showOverflowMenu = false
                                     onEditOrder(order)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Edit, contentDescription = null, tint = accentPrimary)
                                 }
                             )
                             if (order.cards.isNotEmpty()) {
                                 DropdownMenuItem(
-                                    text = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.Edit,
-                                                contentDescription = null,
-                                                tint = textPrimary
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Edit cards", color = textPrimary)
-                                        }
-                                    },
+                                    text = { Text("Edit cards", color = textPrimary) },
                                     onClick = {
                                         showOverflowMenu = false
                                         isEditingCards = true
+                                    },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Edit, contentDescription = null, tint = accentPrimary)
                                     }
                                 )
                             }
+                            DropdownMenuItem(
+                                text = { Text("Delete order", color = errorColor) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    onDeleteOrder(order.id)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Delete, contentDescription = null, tint = errorColor)
+                                }
+                            )
                         }
                     }
                 }

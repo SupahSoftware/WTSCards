@@ -32,4 +32,14 @@ object UrlUtils {
     fun openSportsCardPro(searchTerm: String) {
         openInBrowser(getSportsCardProUrl(searchTerm))
     }
+
+    fun getRedditSubmitUrl(title: String, body: String): String {
+        val encodedTitle = URLEncoder.encode(title, "UTF-8")
+        val encodedBody = URLEncoder.encode(body, "UTF-8")
+        return "https://www.reddit.com/r/baseballcards/submit/?type=TEXT&title=$encodedTitle&text=$encodedBody"
+    }
+
+    fun openRedditSubmit(title: String, body: String) {
+        openInBrowser(getRedditSubmitUrl(title, body))
+    }
 }

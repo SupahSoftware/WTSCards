@@ -1,0 +1,52 @@
+CREATE TABLE ListingEntity (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    createdAt INTEGER NOT NULL
+);
+
+CREATE TABLE ListingCardEntity (
+    listingId TEXT NOT NULL,
+    cardId TEXT NOT NULL,
+    PRIMARY KEY (listingId, cardId),
+    FOREIGN KEY (listingId) REFERENCES ListingEntity(id) ON DELETE CASCADE,
+    FOREIGN KEY (cardId) REFERENCES CardEntity(id) ON DELETE CASCADE
+);
+
+selectAll:
+SELECT * FROM ListingEntity ORDER BY createdAt DESC;
+
+selectAllListingCards:
+SELECT * FROM ListingCardEntity;
+
+selectById:
+SELECT * FROM ListingEntity WHERE id = ?;
+
+selectCardsByListingId:
+SELECT c.* FROM CardEntity c
+INNER JOIN ListingCardEntity lc ON c.id = lc.cardId
+WHERE lc.listingId = ?;
+
+insert:
+INSERT INTO ListingEntity (id, title, createdAt)
+VALUES (?, ?, ?);
+
+insertListingCard:
+INSERT OR IGNORE INTO ListingCardEntity (listingId, cardId)
+VALUES (?, ?);
+
+updateTitle:
+UPDATE ListingEntity
+SET title = ?
+WHERE id = ?;
+
+deleteById:
+DELETE FROM ListingEntity WHERE id = ?;
+
+deleteListingCardsByListingId:
+DELETE FROM ListingCardEntity WHERE listingId = ?;
+
+deleteListingCard:
+DELETE FROM ListingCardEntity WHERE listingId = ? AND cardId = ?;
+
+count:
+SELECT COUNT(*) FROM ListingEntity;
