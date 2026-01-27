@@ -4,6 +4,7 @@ import com.wtscards.domain.usecase.AutocompleteUseCase
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.ListingUseCase
 import com.wtscards.domain.usecase.OrderUseCase
+import com.wtscards.domain.usecase.SettingUseCase
 import kotlinx.coroutines.CoroutineScope
 
 data class AppDependencies(
@@ -11,5 +12,6 @@ data class AppDependencies(
     val orderUseCase: OrderUseCase,
     val listingUseCase: ListingUseCase,
     val autocompleteUseCase: AutocompleteUseCase,
+    val settingUseCase: SettingUseCase,
     val coroutineScope: CoroutineScope
 )

@@ -20,12 +20,14 @@ import com.wtscards.data.db.CardLocalDataSource
 import com.wtscards.data.db.DatabaseDriverFactory
 import com.wtscards.data.db.ListingLocalDataSource
 import com.wtscards.data.db.OrderLocalDataSource
+import com.wtscards.data.db.SettingLocalDataSource
 import com.wtscards.data.parser.CsvParser
 import com.wtscards.db.WTSCardsDatabase
 import com.wtscards.domain.usecase.AutocompleteUseCaseImpl
 import com.wtscards.domain.usecase.CardUseCaseImpl
 import com.wtscards.domain.usecase.ListingUseCaseImpl
 import com.wtscards.domain.usecase.OrderUseCaseImpl
+import com.wtscards.domain.usecase.SettingUseCaseImpl
 import com.wtscards.ui.screens.import.ImportViewModel
 import com.wtscards.ui.screens.orders.OrderViewModel
 import com.wtscards.data.model.Order
@@ -63,16 +65,19 @@ fun main() = application {
             val orderLocalDataSource = OrderLocalDataSource(database)
             val listingLocalDataSource = ListingLocalDataSource(database)
             val autocompleteLocalDataSource = AutocompleteLocalDataSource(database)
+            val settingLocalDataSource = SettingLocalDataSource(database)
             val cardUseCase = CardUseCaseImpl(cardLocalDataSource)
             val orderUseCase = OrderUseCaseImpl(orderLocalDataSource, cardLocalDataSource)
             val listingUseCase = ListingUseCaseImpl(listingLocalDataSource)
             val autocompleteUseCase = AutocompleteUseCaseImpl(autocompleteLocalDataSource)
+            val settingUseCase = SettingUseCaseImpl(settingLocalDataSource)
 
             AppDependencies(
                 cardUseCase = cardUseCase,
                 orderUseCase = orderUseCase,
                 listingUseCase = listingUseCase,
                 autocompleteUseCase = autocompleteUseCase,
+                settingUseCase = settingUseCase,
                 coroutineScope = coroutineScope
             )
         }

@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -37,5 +38,10 @@ enum class NavigationItem(
         label = "Import",
         icon = Icons.Default.FileUpload,
         route = "import"
+    ),
+    Settings(
+        label = "Settings",
+        icon = Icons.Default.Settings,
+        route = "settings"
     )
 }

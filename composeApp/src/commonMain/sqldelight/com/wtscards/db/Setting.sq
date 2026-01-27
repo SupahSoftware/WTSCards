@@ -1,0 +1,17 @@
+CREATE TABLE SettingEntity (
+    settingKey TEXT NOT NULL PRIMARY KEY,
+    settingValue TEXT NOT NULL
+);
+
+selectAll:
+SELECT * FROM SettingEntity;
+
+selectByKey:
+SELECT settingValue FROM SettingEntity WHERE settingKey = ?;
+
+upsert:
+INSERT OR REPLACE INTO SettingEntity (settingKey, settingValue)
+VALUES (?, ?);
+
+deleteByKey:
+DELETE FROM SettingEntity WHERE settingKey = ?;

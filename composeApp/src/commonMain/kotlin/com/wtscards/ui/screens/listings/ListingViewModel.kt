@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import com.wtscards.data.model.Listing
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.ListingUseCase
+import com.wtscards.domain.usecase.SettingUseCase
+import com.wtscards.ui.screens.settings.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
@@ -17,6 +19,7 @@ import java.util.UUID
 class ListingViewModel(
     private val listingUseCase: ListingUseCase,
     private val cardUseCase: CardUseCase,
+    private val settingUseCase: SettingUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(ListingUiState())
@@ -25,6 +28,7 @@ class ListingViewModel(
     init {
         observeListings()
         observeCards()
+        observeSettings()
     }
 
     private fun observeListings() {
@@ -50,6 +54,18 @@ class ListingViewModel(
         cardUseCase.getAllCardsFlow()
             .onEach { cards ->
                 uiState = uiState.copy(availableCards = cards)
+            }
+            .catch { }
+            .launchIn(coroutineScope)
+    }
+
+    private fun observeSettings() {
+        settingUseCase.getAllSettingsFlow()
+            .onEach { settings ->
+                uiState = uiState.copy(
+                    preBodyText = settings[SettingsViewModel.KEY_PRE_BODY_TEXT] ?: "",
+                    postBodyText = settings[SettingsViewModel.KEY_POST_BODY_TEXT] ?: ""
+                )
             }
             .catch { }
             .launchIn(coroutineScope)

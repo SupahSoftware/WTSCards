@@ -118,7 +118,9 @@ fun ListingScreen(
                 onShowAddCardsDialog = onShowAddCardsDialog,
                 onShowDeleteListingDialog = onShowDeleteListingDialog,
                 onShowRemoveCardDialog = onShowRemoveCardDialog,
-                onShowCopyToast = onShowCopyToast
+                onShowCopyToast = onShowCopyToast,
+                preBodyText = uiState.preBodyText,
+                postBodyText = uiState.postBodyText
             )
         }
 
@@ -216,7 +218,9 @@ private fun ContentArea(
     onShowAddCardsDialog: (String) -> Unit,
     onShowDeleteListingDialog: (String, String) -> Unit,
     onShowRemoveCardDialog: (String, String, String) -> Unit,
-    onShowCopyToast: (String) -> Unit
+    onShowCopyToast: (String) -> Unit,
+    preBodyText: String,
+    postBodyText: String
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -264,7 +268,9 @@ private fun ContentArea(
                     onShowAddCardsDialog = onShowAddCardsDialog,
                     onShowDeleteListingDialog = onShowDeleteListingDialog,
                     onShowRemoveCardDialog = onShowRemoveCardDialog,
-                    onShowCopyToast = onShowCopyToast
+                    onShowCopyToast = onShowCopyToast,
+                    preBodyText = preBodyText,
+                    postBodyText = postBodyText
                 )
             }
         }
@@ -277,7 +283,9 @@ private fun ListingList(
     onShowAddCardsDialog: (String) -> Unit,
     onShowDeleteListingDialog: (String, String) -> Unit,
     onShowRemoveCardDialog: (String, String, String) -> Unit,
-    onShowCopyToast: (String) -> Unit
+    onShowCopyToast: (String) -> Unit,
+    preBodyText: String,
+    postBodyText: String
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -350,7 +358,9 @@ private fun ListingList(
                     onShowRemoveCardDialog = { cardId, cardName ->
                         onShowRemoveCardDialog(listing.id, cardId, cardName)
                     },
-                    onShowCopyToast = onShowCopyToast
+                    onShowCopyToast = onShowCopyToast,
+                    preBodyText = preBodyText,
+                    postBodyText = postBodyText
                 )
             }
         }
@@ -375,7 +385,9 @@ private fun ListingCard(
     onShowAddCardsDialog: () -> Unit,
     onShowDeleteListingDialog: () -> Unit,
     onShowRemoveCardDialog: (String, String) -> Unit,
-    onShowCopyToast: (String) -> Unit
+    onShowCopyToast: (String) -> Unit,
+    preBodyText: String,
+    postBodyText: String
 ) {
     val markdownBody = generateMarkdownBody(listing.cards)
 
@@ -449,7 +461,8 @@ private fun ListingCard(
 
                 IconButton(
                     onClick = {
-                        copyToClipboard(markdownBody)
+                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText)
+                        copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     },
                     modifier = Modifier.size(36.dp)
@@ -932,6 +945,21 @@ private fun ToastMessage(
             color = textOnAccent,
             style = MaterialTheme.typography.bodyMedium
         )
+    }
+}
+
+private fun buildFullBody(preBodyText: String, body: String, postBodyText: String): String {
+    return buildString {
+        if (preBodyText.isNotBlank()) {
+            append(preBodyText)
+            append("\n")
+        }
+        append(body)
+        if (postBodyText.isNotBlank()) {
+            append("\n")
+            append("\n")
+            append(postBodyText)
+        }
     }
 }
 

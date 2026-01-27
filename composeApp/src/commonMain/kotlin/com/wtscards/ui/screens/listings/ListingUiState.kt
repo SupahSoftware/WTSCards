@@ -14,7 +14,9 @@ data class ListingUiState(
     val removeCardDialogState: ListingRemoveCardDialogState? = null,
     val deleteListingDialogState: DeleteListingDialogState? = null,
     val availableCards: List<Card> = emptyList(),
-    val toast: ListingToastState? = null
+    val toast: ListingToastState? = null,
+    val preBodyText: String = "",
+    val postBodyText: String = ""
 ) {
     val filteredListings: List<Listing>
         get() {

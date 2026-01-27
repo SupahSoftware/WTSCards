@@ -22,6 +22,8 @@ import com.wtscards.ui.screens.import.ImportState
 import com.wtscards.ui.screens.import.ImportViewModel
 import com.wtscards.ui.screens.listings.ListingScreen
 import com.wtscards.ui.screens.listings.ListingViewModel
+import com.wtscards.ui.screens.settings.SettingsScreen
+import com.wtscards.ui.screens.settings.SettingsViewModel
 import com.wtscards.data.model.Order
 import com.wtscards.ui.screens.orders.OrderScreen
 import com.wtscards.ui.screens.orders.OrderViewModel
@@ -68,7 +70,11 @@ fun MainScreen(
     }
 
     val listingViewModel = remember {
-        ListingViewModel(dependencies.listingUseCase, dependencies.cardUseCase, dependencies.coroutineScope)
+        ListingViewModel(dependencies.listingUseCase, dependencies.cardUseCase, dependencies.settingUseCase, dependencies.coroutineScope)
+    }
+
+    val settingsViewModel = remember {
+        SettingsViewModel(dependencies.settingUseCase, dependencies.coroutineScope)
     }
 
     val addCardViewModel = remember {
@@ -203,6 +209,16 @@ fun MainScreen(
                 ImportScreen(
                     uiState = importViewModel.uiState,
                     onBrowseFiles = onBrowseFiles,
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+            NavigationItem.Settings.route -> {
+                SettingsScreen(
+                    uiState = settingsViewModel.uiState,
+                    onPreBodyTextChanged = settingsViewModel::onPreBodyTextChanged,
+                    onPostBodyTextChanged = settingsViewModel::onPostBodyTextChanged,
+                    onSave = settingsViewModel::onSave,
+                    onClearToast = settingsViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
