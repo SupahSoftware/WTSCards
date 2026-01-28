@@ -116,6 +116,7 @@ fun OrderScreen(
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
     onCreateOrderTrackingNumberChanged: (String) -> Unit,
+    onDiscountChanged: (String) -> Unit,
     onCreateOrUpdateOrder: () -> Unit,
     onEditOrder: (Order) -> Unit,
     onStatusChanged: (String, String) -> Unit,
@@ -168,7 +169,10 @@ fun OrderScreen(
                 onUpgradeShipping = onShowUpgradeShippingDialog,
                 onSplitOrder = onShowSplitOrderDialog,
                 onShowTrackingNumberDialog = onShowTrackingNumberDialog,
-                onDeleteOrder = onDeleteOrder
+                onDeleteOrder = onDeleteOrder,
+                freeShippingEnabled = uiState.freeShippingEnabled,
+                freeShippingThreshold = uiState.freeShippingThreshold,
+                nicePricesEnabled = uiState.nicePricesEnabled
             )
         }
 
@@ -192,6 +196,7 @@ fun OrderScreen(
             onShippingTypeChanged = onShippingTypeChanged,
             onShippingPriceChanged = onShippingPriceChanged,
             onCreateOrderTrackingNumberChanged = onCreateOrderTrackingNumberChanged,
+            onDiscountChanged = onDiscountChanged,
             onCreateOrUpdateOrder = onCreateOrUpdateOrder,
             onDismissAddCardsDialog = onDismissAddCardsDialog,
             onAddCardsSearchChanged = onAddCardsSearchChanged,
@@ -337,7 +342,10 @@ private fun ContentArea(
     onUpgradeShipping: (String, Int) -> Unit,
     onSplitOrder: (String, Int) -> Unit,
     onShowTrackingNumberDialog: (String, String?) -> Unit,
-    onDeleteOrder: (String) -> Unit
+    onDeleteOrder: (String) -> Unit,
+    freeShippingEnabled: Boolean,
+    freeShippingThreshold: Long,
+    nicePricesEnabled: Boolean
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -389,7 +397,10 @@ private fun ContentArea(
                     onUpgradeShipping = onUpgradeShipping,
                     onSplitOrder = onSplitOrder,
                     onShowTrackingNumberDialog = onShowTrackingNumberDialog,
-                    onDeleteOrder = onDeleteOrder
+                    onDeleteOrder = onDeleteOrder,
+                    freeShippingEnabled = freeShippingEnabled,
+                    freeShippingThreshold = freeShippingThreshold,
+                    nicePricesEnabled = nicePricesEnabled
                 )
             }
         }
@@ -509,6 +520,7 @@ private fun OrderDialogs(
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
     onCreateOrderTrackingNumberChanged: (String) -> Unit,
+    onDiscountChanged: (String) -> Unit,
     onCreateOrUpdateOrder: () -> Unit,
     onDismissAddCardsDialog: () -> Unit,
     onAddCardsSearchChanged: (String) -> Unit,
@@ -541,6 +553,7 @@ private fun OrderDialogs(
             onShippingTypeChanged = onShippingTypeChanged,
             onShippingPriceChanged = onShippingPriceChanged,
             onCreateOrderTrackingNumberChanged = onCreateOrderTrackingNumberChanged,
+            onDiscountChanged = onDiscountChanged,
             onConfirm = onCreateOrUpdateOrder
         )
     }
@@ -916,7 +929,10 @@ private fun OrderList(
     onUpgradeShipping: (String, Int) -> Unit,
     onSplitOrder: (String, Int) -> Unit,
     onShowTrackingNumberDialog: (String, String?) -> Unit,
-    onDeleteOrder: (String) -> Unit
+    onDeleteOrder: (String) -> Unit,
+    freeShippingEnabled: Boolean,
+    freeShippingThreshold: Long,
+    nicePricesEnabled: Boolean
 ) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -989,7 +1005,10 @@ private fun OrderList(
                 onUpgradeShipping = onUpgradeShipping,
                 onSplitOrder = onSplitOrder,
                 onShowTrackingNumberDialog = onShowTrackingNumberDialog,
-                onDeleteOrder = onDeleteOrder
+                onDeleteOrder = onDeleteOrder,
+                freeShippingEnabled = freeShippingEnabled,
+                freeShippingThreshold = freeShippingThreshold,
+                nicePricesEnabled = nicePricesEnabled
             )
         }
     }
@@ -1005,7 +1024,10 @@ private fun OrderCard(
     onUpgradeShipping: (String, Int) -> Unit,
     onSplitOrder: (String, Int) -> Unit,
     onShowTrackingNumberDialog: (String, String?) -> Unit,
-    onDeleteOrder: (String) -> Unit
+    onDeleteOrder: (String) -> Unit,
+    freeShippingEnabled: Boolean,
+    freeShippingThreshold: Long,
+    nicePricesEnabled: Boolean
 ) {
     var showOverflowMenu by remember { mutableStateOf(false) }
     var isEditingCards by remember { mutableStateOf(false) }
@@ -1177,11 +1199,25 @@ private fun OrderCard(
         if (order.shippingType != null || order.cards.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
 
+            val cardsTotal = if (nicePricesEnabled) {
+                order.cards.sumOf { card ->
+                    val price = card.priceSold ?: 0L
+                    if (price > 0) ceil(price / 100.0).toLong() * 100 else 0L
+                }
+            } else {
+                order.cards.sumOf { it.priceSold ?: 0L }
+            }
+
+            val qualifiesForFreeShipping = freeShippingEnabled && freeShippingThreshold > 0 && cardsTotal >= freeShippingThreshold
+
             if (order.shippingType != null) {
                 Text(
                     text = "Shipping: ${order.shippingType}    ${formatPrice(order.shippingCost)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = textPrimary
+                    color = if (qualifiesForFreeShipping) textTertiary else textPrimary,
+                    textDecoration = if (qualifiesForFreeShipping) {
+                        androidx.compose.ui.text.style.TextDecoration.LineThrough
+                    } else null
                 )
                 Spacer(modifier = Modifier.height(4.dp))
             }
@@ -1203,25 +1239,53 @@ private fun OrderCard(
                                 .padding(end = 8.dp)
                         )
                     }
+                    val displayPrice = if (nicePricesEnabled) {
+                        val price = card.priceSold ?: 0L
+                        if (price > 0) ceil(price / 100.0).toLong() * 100 else 0L
+                    } else {
+                        card.priceSold ?: 0L
+                    }
                     Text(
-                        text = "${card.name}    ${formatPrice(card.priceSold ?: 0)}",
+                        text = "${card.name}    ${formatPrice(displayPrice)}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = textPrimary
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
             }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
-        val cardsTotal = order.cards.sumOf { it.priceSold ?: 0 }
-        val total = cardsTotal + order.shippingCost
-        Text(
-            text = "Total ${formatPrice(total)}",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            color = successColor
-        )
+            val discountAmount = if (order.discount > 0) {
+                cardsTotal * order.discount / 100
+            } else 0L
+
+            if (order.discount > 0) {
+                Text(
+                    text = "Discount (${order.discount}%)    -${formatPrice(discountAmount)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textPrimary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            val effectiveShipping = if (qualifiesForFreeShipping) 0L else order.shippingCost
+            val total = cardsTotal - discountAmount + effectiveShipping
+            Text(
+                text = "Total ${formatPrice(total)}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = successColor
+            )
+        } else {
+            Spacer(modifier = Modifier.height(8.dp))
+            val total = order.shippingCost
+            Text(
+                text = "Total ${formatPrice(total)}",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                color = successColor
+            )
+        }
 
         OrderWarningBanner(
             order = order,
@@ -1424,6 +1488,7 @@ private fun CreateOrderDialog(
     onShippingTypeChanged: (String) -> Unit,
     onShippingPriceChanged: (String) -> Unit,
     onCreateOrderTrackingNumberChanged: (String) -> Unit,
+    onDiscountChanged: (String) -> Unit,
     onConfirm: () -> Unit
 ) {
     AlertDialog(
@@ -1501,6 +1566,15 @@ private fun CreateOrderDialog(
                         prefix = "$",
                         modifier = Modifier.weight(1f)
                     )
+
+                    DialogFormTextField(
+                        value = formState.discount,
+                        onValueChange = onDiscountChanged,
+                        label = "Discount",
+                        placeholder = "0",
+                        suffix = "%",
+                        modifier = Modifier.width(80.dp)
+                    )
                 }
 
                 DialogFormTextField(
@@ -1548,6 +1622,7 @@ private fun DialogFormTextField(
     label: String,
     placeholder: String,
     prefix: String? = null,
+    suffix: String? = null,
     secondaryText: String? = null
 ) {
     Column(modifier = modifier) {
@@ -1581,6 +1656,9 @@ private fun DialogFormTextField(
             },
             prefix = if (prefix != null) {
                 { Text(prefix, color = textPrimary) }
+            } else null,
+            suffix = if (suffix != null) {
+                { Text(suffix, color = textPrimary) }
             } else null,
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(

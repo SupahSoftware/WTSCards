@@ -66,7 +66,7 @@ fun MainScreen(
     }
 
     val orderViewModel = remember {
-        OrderViewModel(dependencies.orderUseCase, dependencies.cardUseCase, dependencies.coroutineScope)
+        OrderViewModel(dependencies.orderUseCase, dependencies.cardUseCase, dependencies.settingUseCase, dependencies.coroutineScope)
     }
 
     val listingViewModel = remember {
@@ -161,6 +161,7 @@ fun MainScreen(
                     onShippingTypeChanged = orderViewModel::onShippingTypeChanged,
                     onShippingPriceChanged = orderViewModel::onShippingPriceChanged,
                     onCreateOrderTrackingNumberChanged = orderViewModel::onCreateOrderTrackingNumberChanged,
+                    onDiscountChanged = orderViewModel::onDiscountChanged,
                     onCreateOrUpdateOrder = orderViewModel::onCreateOrUpdateOrder,
                     onEditOrder = orderViewModel::onEditOrder,
                     onStatusChanged = orderViewModel::onStatusChanged,
@@ -217,6 +218,10 @@ fun MainScreen(
                     uiState = settingsViewModel.uiState,
                     onPreBodyTextChanged = settingsViewModel::onPreBodyTextChanged,
                     onPostBodyTextChanged = settingsViewModel::onPostBodyTextChanged,
+                    onFreeShippingEnabledChanged = settingsViewModel::onFreeShippingEnabledChanged,
+                    onFreeShippingThresholdChanged = settingsViewModel::onFreeShippingThresholdChanged,
+                    onNicePricesEnabledChanged = settingsViewModel::onNicePricesEnabledChanged,
+                    onDefaultDiscountChanged = settingsViewModel::onDefaultDiscountChanged,
                     onSave = settingsViewModel::onSave,
                     onClearToast = settingsViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)

@@ -24,10 +24,16 @@ class SettingsViewModel(
     private fun observeSettings() {
         settingUseCase.getAllSettingsFlow()
             .onEach { settings ->
-                uiState = uiState.copy(
-                    preBodyText = settings[KEY_PRE_BODY_TEXT] ?: "",
-                    postBodyText = settings[KEY_POST_BODY_TEXT] ?: ""
-                )
+                if (!uiState.isSaving) {
+                    uiState = uiState.copy(
+                        preBodyText = settings[KEY_PRE_BODY_TEXT] ?: "",
+                        postBodyText = settings[KEY_POST_BODY_TEXT] ?: "",
+                        freeShippingEnabled = settings[KEY_FREE_SHIPPING_ENABLED] == "true",
+                        freeShippingThreshold = settings[KEY_FREE_SHIPPING_THRESHOLD] ?: "",
+                        nicePricesEnabled = settings[KEY_NICE_PRICES_ENABLED] == "true",
+                        defaultDiscount = settings[KEY_DEFAULT_DISCOUNT] ?: "0"
+                    )
+                }
             }
             .catch { }
             .launchIn(coroutineScope)
@@ -41,12 +47,36 @@ class SettingsViewModel(
         uiState = uiState.copy(postBodyText = value)
     }
 
+    fun onFreeShippingEnabledChanged(enabled: Boolean) {
+        uiState = uiState.copy(freeShippingEnabled = enabled)
+    }
+
+    fun onFreeShippingThresholdChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(freeShippingThreshold = filtered)
+        }
+    }
+
+    fun onNicePricesEnabledChanged(enabled: Boolean) {
+        uiState = uiState.copy(nicePricesEnabled = enabled)
+    }
+
+    fun onDefaultDiscountChanged(value: String) {
+        val filtered = value.filter { it.isDigit() }
+        uiState = uiState.copy(defaultDiscount = filtered)
+    }
+
     fun onSave() {
         uiState = uiState.copy(isSaving = true)
         coroutineScope.launch {
             try {
                 settingUseCase.setSetting(KEY_PRE_BODY_TEXT, uiState.preBodyText)
                 settingUseCase.setSetting(KEY_POST_BODY_TEXT, uiState.postBodyText)
+                settingUseCase.setSetting(KEY_FREE_SHIPPING_ENABLED, uiState.freeShippingEnabled.toString())
+                settingUseCase.setSetting(KEY_FREE_SHIPPING_THRESHOLD, uiState.freeShippingThreshold)
+                settingUseCase.setSetting(KEY_NICE_PRICES_ENABLED, uiState.nicePricesEnabled.toString())
+                settingUseCase.setSetting(KEY_DEFAULT_DISCOUNT, uiState.defaultDiscount)
                 uiState = uiState.copy(
                     isSaving = false,
                     toast = SettingsToastState("Settings saved")
@@ -67,5 +97,9 @@ class SettingsViewModel(
     companion object {
         const val KEY_PRE_BODY_TEXT = "listing_pre_body_text"
         const val KEY_POST_BODY_TEXT = "listing_post_body_text"
+        const val KEY_FREE_SHIPPING_ENABLED = "order_free_shipping_enabled"
+        const val KEY_FREE_SHIPPING_THRESHOLD = "order_free_shipping_threshold"
+        const val KEY_NICE_PRICES_ENABLED = "order_nice_prices_enabled"
+        const val KEY_DEFAULT_DISCOUNT = "order_default_discount"
     }
 }

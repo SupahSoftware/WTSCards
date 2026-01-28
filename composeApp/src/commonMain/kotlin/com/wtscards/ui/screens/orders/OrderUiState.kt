@@ -29,7 +29,11 @@ data class OrderUiState(
     val splitOrderDialogState: SplitOrderDialogState? = null,
     val trackingNumberDialogState: TrackingNumberDialogState? = null,
     val availableCards: List<Card> = emptyList(),
-    val toast: ToastState? = null
+    val toast: ToastState? = null,
+    val freeShippingEnabled: Boolean = false,
+    val freeShippingThreshold: Long = 0,
+    val nicePricesEnabled: Boolean = false,
+    val defaultDiscount: Int = 0
 ) {
     val newStatusOrders: List<Order>
         get() = orders.filter { it.status == OrderStatus.NEW }
@@ -81,6 +85,7 @@ data class CreateOrderFormState(
     val shippingType: String = "Bubble mailer",
     val shippingPrice: String = "5.00",
     val trackingNumber: String = "",
+    val discount: String = "0",
     val isSaving: Boolean = false
 ) {
     fun isValid(): Boolean {

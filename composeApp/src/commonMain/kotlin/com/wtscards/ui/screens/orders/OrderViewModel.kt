@@ -7,6 +7,8 @@ import com.wtscards.data.model.Order
 import com.wtscards.data.model.OrderStatus
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.OrderUseCase
+import com.wtscards.domain.usecase.SettingUseCase
+import com.wtscards.ui.screens.settings.SettingsViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
@@ -18,6 +20,7 @@ import java.util.UUID
 class OrderViewModel(
     private val orderUseCase: OrderUseCase,
     private val cardUseCase: CardUseCase,
+    private val settingUseCase: SettingUseCase,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(OrderUiState())
@@ -26,6 +29,7 @@ class OrderViewModel(
     init {
         observeOrders()
         observeCards()
+        observeSettings()
     }
 
     private fun observeOrders() {
@@ -56,6 +60,23 @@ class OrderViewModel(
             .launchIn(coroutineScope)
     }
 
+    private fun observeSettings() {
+        settingUseCase.getAllSettingsFlow()
+            .onEach { settings ->
+                val thresholdStr = settings[SettingsViewModel.KEY_FREE_SHIPPING_THRESHOLD] ?: ""
+                val thresholdInPennies = ((thresholdStr.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                val defaultDiscount = (settings[SettingsViewModel.KEY_DEFAULT_DISCOUNT] ?: "0").toIntOrNull() ?: 0
+                uiState = uiState.copy(
+                    freeShippingEnabled = settings[SettingsViewModel.KEY_FREE_SHIPPING_ENABLED] == "true",
+                    freeShippingThreshold = thresholdInPennies,
+                    nicePricesEnabled = settings[SettingsViewModel.KEY_NICE_PRICES_ENABLED] == "true",
+                    defaultDiscount = defaultDiscount
+                )
+            }
+            .catch { }
+            .launchIn(coroutineScope)
+    }
+
     fun onToggleFabExpanded() {
         uiState = uiState.copy(isFabExpanded = !uiState.isFabExpanded)
     }
@@ -65,7 +86,13 @@ class OrderViewModel(
     }
 
     fun onShowCreateDialog() {
-        uiState = uiState.copy(showCreateDialog = true, isFabExpanded = false)
+        uiState = uiState.copy(
+            showCreateDialog = true,
+            isFabExpanded = false,
+            createFormState = CreateOrderFormState(
+                discount = uiState.defaultDiscount.toString()
+            )
+        )
     }
 
     fun onShowShippingLabelsDialog() {
@@ -137,7 +164,8 @@ class OrderViewModel(
                 zipcode = order.zipcode,
                 shippingType = order.shippingType ?: "Bubble mailer",
                 shippingPrice = shippingPriceStr,
-                trackingNumber = order.trackingNumber ?: ""
+                trackingNumber = order.trackingNumber ?: "",
+                discount = order.discount.toString()
             )
         )
     }
@@ -217,6 +245,13 @@ class OrderViewModel(
         )
     }
 
+    fun onDiscountChanged(discount: String) {
+        val filtered = discount.filter { it.isDigit() }
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(discount = filtered)
+        )
+    }
+
     fun onCreateOrUpdateOrder() {
         if (!uiState.createFormState.isValid()) return
 
@@ -232,7 +267,8 @@ class OrderViewModel(
                 val shippingCostInPennies = ((form.shippingPrice.toDoubleOrNull() ?: 0.0) * 100).toLong()
 
                 val trackingNumber = form.trackingNumber.trim().takeIf { it.isNotBlank() }
-                
+                val discount = form.discount.toIntOrNull() ?: 0
+
                 if (isEditMode) {
                     val existingOrder = uiState.orders.find { it.id == uiState.editingOrderId }
                     val order = Order(
@@ -247,6 +283,7 @@ class OrderViewModel(
                         status = existingOrder?.status ?: OrderStatus.NEW,
                         createdAt = existingOrder?.createdAt ?: System.currentTimeMillis(),
                         trackingNumber = trackingNumber,
+                        discount = discount,
                         cards = existingOrder?.cards ?: emptyList()
                     )
                     orderUseCase.updateOrder(order)
@@ -263,6 +300,7 @@ class OrderViewModel(
                         status = OrderStatus.NEW,
                         createdAt = System.currentTimeMillis(),
                         trackingNumber = trackingNumber,
+                        discount = discount,
                         cards = emptyList()
                     )
                     orderUseCase.createOrder(order)
