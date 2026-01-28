@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.automirrored.filled.CallSplit
 import androidx.compose.ui.text.font.FontWeight
 import kotlin.math.ceil
@@ -141,6 +142,7 @@ fun OrderScreen(
     onTrackingNumberChanged: (String) -> Unit,
     onConfirmTrackingNumber: () -> Unit,
     onDeleteOrder: (String) -> Unit,
+    onShowToast: (String) -> Unit,
     onClearToast: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -170,6 +172,7 @@ fun OrderScreen(
                 onSplitOrder = onShowSplitOrderDialog,
                 onShowTrackingNumberDialog = onShowTrackingNumberDialog,
                 onDeleteOrder = onDeleteOrder,
+                onShowToast = onShowToast,
                 freeShippingEnabled = uiState.freeShippingEnabled,
                 freeShippingThreshold = uiState.freeShippingThreshold,
                 nicePricesEnabled = uiState.nicePricesEnabled
@@ -343,6 +346,7 @@ private fun ContentArea(
     onSplitOrder: (String, Int) -> Unit,
     onShowTrackingNumberDialog: (String, String?) -> Unit,
     onDeleteOrder: (String) -> Unit,
+    onShowToast: (String) -> Unit,
     freeShippingEnabled: Boolean,
     freeShippingThreshold: Long,
     nicePricesEnabled: Boolean
@@ -398,6 +402,7 @@ private fun ContentArea(
                     onSplitOrder = onSplitOrder,
                     onShowTrackingNumberDialog = onShowTrackingNumberDialog,
                     onDeleteOrder = onDeleteOrder,
+                    onShowToast = onShowToast,
                     freeShippingEnabled = freeShippingEnabled,
                     freeShippingThreshold = freeShippingThreshold,
                     nicePricesEnabled = nicePricesEnabled
@@ -930,6 +935,7 @@ private fun OrderList(
     onSplitOrder: (String, Int) -> Unit,
     onShowTrackingNumberDialog: (String, String?) -> Unit,
     onDeleteOrder: (String) -> Unit,
+    onShowToast: (String) -> Unit,
     freeShippingEnabled: Boolean,
     freeShippingThreshold: Long,
     nicePricesEnabled: Boolean
@@ -1006,6 +1012,7 @@ private fun OrderList(
                 onSplitOrder = onSplitOrder,
                 onShowTrackingNumberDialog = onShowTrackingNumberDialog,
                 onDeleteOrder = onDeleteOrder,
+                onShowToast = onShowToast,
                 freeShippingEnabled = freeShippingEnabled,
                 freeShippingThreshold = freeShippingThreshold,
                 nicePricesEnabled = nicePricesEnabled
@@ -1025,6 +1032,7 @@ private fun OrderCard(
     onSplitOrder: (String, Int) -> Unit,
     onShowTrackingNumberDialog: (String, String?) -> Unit,
     onDeleteOrder: (String) -> Unit,
+    onShowToast: (String) -> Unit,
     freeShippingEnabled: Boolean,
     freeShippingThreshold: Long,
     nicePricesEnabled: Boolean
@@ -1150,6 +1158,18 @@ private fun OrderCard(
                                     Icon(Icons.Default.Edit, contentDescription = null, tint = accentPrimary)
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text("Copy order", color = textPrimary) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    val text = buildOrderCopyText(order, nicePricesEnabled, freeShippingEnabled, freeShippingThreshold)
+                                    copyToClipboard(text)
+                                    onShowToast("Order copied to clipboard")
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = null, tint = accentPrimary)
+                                }
+                            )
                             if (order.cards.isNotEmpty()) {
                                 DropdownMenuItem(
                                     text = { Text("Edit cards", color = textPrimary) },
@@ -1179,16 +1199,31 @@ private fun OrderCard(
         }
 
         Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = order.streetAddress,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textSecondary
-        )
-        Text(
-            text = "${order.city}, ${order.state} ${order.zipcode}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = textSecondary
-        )
+        if (order.streetAddress.isNotBlank()) {
+            Text(
+                text = order.streetAddress,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary
+            )
+        }
+        val cityStateZip = buildString {
+            if (order.city.isNotBlank()) append(order.city)
+            if (order.state.isNotBlank()) {
+                if (isNotEmpty()) append(", ")
+                append(order.state)
+            }
+            if (order.zipcode.isNotBlank()) {
+                if (isNotEmpty()) append(" ")
+                append(order.zipcode)
+            }
+        }
+        if (cityStateZip.isNotBlank()) {
+            Text(
+                text = cityStateZip,
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary
+            )
+        }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = formatOrderDate(order.createdAt),
@@ -1473,6 +1508,61 @@ private fun formatPrice(priceInPennies: Long): String {
     return "$${String.format("%.2f", dollars)}"
 }
 
+private fun buildOrderCopyText(
+    order: Order,
+    nicePricesEnabled: Boolean,
+    freeShippingEnabled: Boolean,
+    freeShippingThreshold: Long
+): String {
+    val cardsTotal = if (nicePricesEnabled) {
+        order.cards.sumOf { card ->
+            val price = card.priceSold ?: 0L
+            if (price > 0) kotlin.math.ceil(price / 100.0).toLong() * 100 else 0L
+        }
+    } else {
+        order.cards.sumOf { it.priceSold ?: 0L }
+    }
+    val qualifiesForFreeShipping = freeShippingEnabled && freeShippingThreshold > 0 && cardsTotal >= freeShippingThreshold
+    val discountAmount = if (order.discount > 0) cardsTotal * order.discount / 100 else 0L
+    val effectiveShipping = if (qualifiesForFreeShipping) 0L else order.shippingCost
+    val total = cardsTotal - discountAmount + effectiveShipping
+
+    return buildString {
+        appendLine(order.name)
+        append("\n")
+        if (order.streetAddress.isNotBlank()) appendLine(order.streetAddress)
+        val cityStateZip = buildString {
+            if (order.city.isNotBlank()) append(order.city)
+            if (order.state.isNotBlank()) {
+                if (isNotEmpty()) append(", ")
+                append(order.state)
+            }
+            if (order.zipcode.isNotBlank()) {
+                if (isNotEmpty()) append(" ")
+                append(order.zipcode)
+            }
+        }
+        if (cityStateZip.isNotBlank()) appendLine(cityStateZip)
+        append("\n")
+        appendLine(formatPrice(total))
+        append("\n")
+        order.cards.forEach { card ->
+            appendLine(card.name)
+            append("\n")
+        }
+    }.trimEnd()
+}
+
+private fun copyToClipboard(text: String) {
+    try {
+        val clipboard = java.awt.Toolkit.getDefaultToolkit().systemClipboard
+        val selection = java.awt.datatransfer.StringSelection(text)
+        clipboard.setContents(selection, selection)
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
 private val shippingTypeOptions = listOf("Bubble mailer", "Envelope", "Box", "Other")
 
 @Composable
@@ -1516,7 +1606,8 @@ private fun CreateOrderDialog(
                     value = formState.streetAddress,
                     onValueChange = onStreetAddressChanged,
                     label = "Street Address",
-                    placeholder = "123 Main St"
+                    placeholder = "123 Main St",
+                    secondaryText = "All addresse fields are optional and can be added later"
                 )
 
                 Row(

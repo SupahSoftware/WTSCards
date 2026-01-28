@@ -89,12 +89,11 @@ data class CreateOrderFormState(
     val isSaving: Boolean = false
 ) {
     fun isValid(): Boolean {
+        val stateValid = state.isEmpty() || state.length == 2
+        val zipcodeValid = zipcode.isEmpty() || zipcode.all { it.isLetterOrDigit() }
         return name.isNotBlank() &&
-                streetAddress.isNotBlank() &&
-                city.isNotBlank() &&
-                state.length == 2 &&
-                zipcode.isNotBlank() &&
-                zipcode.all { it.isLetterOrDigit() } &&
+                stateValid &&
+                zipcodeValid &&
                 !isSaving
     }
 }

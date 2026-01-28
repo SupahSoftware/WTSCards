@@ -186,6 +186,7 @@ fun MainScreen(
                     onTrackingNumberChanged = orderViewModel::onTrackingNumberChanged,
                     onConfirmTrackingNumber = orderViewModel::onConfirmTrackingNumber,
                     onDeleteOrder = orderViewModel::onDeleteOrder,
+                    onShowToast = orderViewModel::showToast,
                     onClearToast = orderViewModel::clearToast,
                     modifier = Modifier.padding(paddingValues)
                 )

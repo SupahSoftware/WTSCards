@@ -425,6 +425,10 @@ class OrderViewModel(
         }
     }
 
+    fun showToast(message: String) {
+        uiState = uiState.copy(toast = ToastState(message))
+    }
+
     fun clearToast() {
         uiState = uiState.copy(toast = null)
     }
