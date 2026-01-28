@@ -19,6 +19,11 @@ enum class NavigationItem(
         icon = Icons.Default.GridView,
         route = "collection"
     ),
+    AddCard(
+        label = "Add Card",
+        icon = Icons.Default.Add,
+        route = "addcard"
+    ),
     Listings(
         label = "Listings",
         icon = Icons.Default.FormatListBulleted,
@@ -28,11 +33,6 @@ enum class NavigationItem(
         label = "Orders",
         icon = Icons.Default.ShoppingBag,
         route = "orders"
-    ),
-    AddCard(
-        label = "Add Card",
-        icon = Icons.Default.Add,
-        route = "addcard"
     ),
     Import(
         label = "Import",
