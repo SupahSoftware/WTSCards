@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -29,6 +30,7 @@ kotlin {
             implementation(libs.sqldelight.driver.jvm)
             implementation(libs.sqldelight.coroutines)
             implementation(libs.sqlite.jdbc)
+            implementation(libs.kotlinx.serialization.json)
         }
     }
 }

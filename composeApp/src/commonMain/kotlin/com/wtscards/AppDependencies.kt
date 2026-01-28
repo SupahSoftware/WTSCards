@@ -1,6 +1,7 @@
 package com.wtscards
 
 import com.wtscards.domain.usecase.AutocompleteUseCase
+import com.wtscards.domain.usecase.BackupUseCase
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.ListingUseCase
 import com.wtscards.domain.usecase.OrderUseCase
@@ -13,5 +14,6 @@ data class AppDependencies(
     val listingUseCase: ListingUseCase,
     val autocompleteUseCase: AutocompleteUseCase,
     val settingUseCase: SettingUseCase,
+    val backupUseCase: BackupUseCase,
     val coroutineScope: CoroutineScope
 )

@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -24,6 +25,7 @@ import com.wtscards.data.db.SettingLocalDataSource
 import com.wtscards.data.parser.CsvParser
 import com.wtscards.db.WTSCardsDatabase
 import com.wtscards.domain.usecase.AutocompleteUseCaseImpl
+import com.wtscards.domain.usecase.BackupUseCaseImpl
 import com.wtscards.domain.usecase.CardUseCaseImpl
 import com.wtscards.domain.usecase.ListingUseCaseImpl
 import com.wtscards.domain.usecase.OrderUseCaseImpl
@@ -31,6 +33,7 @@ import com.wtscards.domain.usecase.SettingUseCaseImpl
 import com.wtscards.ui.screens.import.ImportViewModel
 import com.wtscards.ui.screens.orders.OrderViewModel
 import com.wtscards.data.model.Order
+import kotlinx.coroutines.delay
 import java.awt.Toolkit
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -71,6 +74,8 @@ fun main() = application {
             val listingUseCase = ListingUseCaseImpl(listingLocalDataSource)
             val autocompleteUseCase = AutocompleteUseCaseImpl(autocompleteLocalDataSource)
             val settingUseCase = SettingUseCaseImpl(settingLocalDataSource)
+            val backupDir = File(DatabaseDriverFactory.getAppDataDirectory(), "backups")
+            val backupUseCase = BackupUseCaseImpl(database, backupDir)
 
             AppDependencies(
                 cardUseCase = cardUseCase,
@@ -78,8 +83,17 @@ fun main() = application {
                 listingUseCase = listingUseCase,
                 autocompleteUseCase = autocompleteUseCase,
                 settingUseCase = settingUseCase,
+                backupUseCase = backupUseCase,
                 coroutineScope = coroutineScope
             )
+        }
+
+        LaunchedEffect(Unit) {
+            dependencies.backupUseCase.createBackupIfNeeded()
+            while (true) {
+                delay(15 * 60 * 1000L) // 15 minutes
+                dependencies.backupUseCase.createBackupIfNeeded()
+            }
         }
 
         val importViewModel = remember {
@@ -128,7 +142,8 @@ fun main() = application {
                 dependencies = dependencies,
                 importViewModel = importViewModel,
                 onBrowseFiles = onBrowseFiles,
-                onExportShippingLabels = onExportShippingLabels
+                onExportShippingLabels = onExportShippingLabels,
+                onRestoreComplete = ::exitApplication
             )
         }
     }

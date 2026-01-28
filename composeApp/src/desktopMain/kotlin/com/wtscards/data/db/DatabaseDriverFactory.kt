@@ -36,7 +36,7 @@ object DatabaseDriverFactory {
         return driver
     }
 
-    private fun getAppDataDirectory(): File {
+    internal fun getAppDataDirectory(): File {
         val os = System.getProperty("os.name").lowercase()
         val userHome = System.getProperty("user.home")
 

@@ -1,6 +1,8 @@
 package com.wtscards.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import com.wtscards.ui.components.dragScrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,22 +13,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.wtscards.domain.model.BackupInfo
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
@@ -49,6 +58,12 @@ fun SettingsScreen(
     onDefaultDiscountChanged: (String) -> Unit,
     onSave: () -> Unit,
     onClearToast: () -> Unit,
+    onBackupNow: () -> Unit,
+    onShowRestoreDialog: () -> Unit,
+    onDismissRestoreDialog: () -> Unit,
+    onSelectBackupToRestore: (BackupInfo) -> Unit,
+    onConfirmRestore: () -> Unit,
+    onDismissRestoreConfirmation: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -85,14 +100,17 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            val scrollState = rememberScrollState()
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
+                    .dragScrollable(scrollState)
             ) {
                 Text(
                     text = "Listings",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = accentPrimary
                 )
 
@@ -114,11 +132,18 @@ fun SettingsScreen(
                     onValueChange = onPostBodyTextChanged
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+
+                HorizontalDivider(
+                    color = bgSecondary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
                     text = "Orders",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = accentPrimary
                 )
 
@@ -161,6 +186,72 @@ fun SettingsScreen(
                     placeholder = "0",
                     suffix = "%"
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                HorizontalDivider(
+                    color = bgSecondary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "Database Backups",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = accentPrimary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = if (uiState.lastBackupDate != null) {
+                        "Last backup: ${uiState.lastBackupDate}"
+                    } else {
+                        "No backups yet"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textSecondary
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onBackupNow,
+                        enabled = !uiState.isCreatingBackup,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = accentPrimary,
+                            contentColor = textOnAccent,
+                            disabledContainerColor = bgSurface,
+                            disabledContentColor = textTertiary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(if (uiState.isCreatingBackup) "Creating Backup..." else "Backup Now")
+                    }
+
+                    OutlinedButton(
+                        onClick = onShowRestoreDialog,
+                        enabled = !uiState.isRestoring,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = textPrimary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(if (uiState.isRestoring) "Restoring..." else "Restore from Backup")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Backups are created automatically every 24 hours. The 10 most recent backups are kept.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textTertiary
+                )
             }
         }
 
@@ -171,7 +262,128 @@ fun SettingsScreen(
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
+
+        if (uiState.showRestoreDialog) {
+            RestoreBackupListDialog(
+                backups = uiState.availableBackups,
+                onSelectBackup = onSelectBackupToRestore,
+                onDismiss = onDismissRestoreDialog
+            )
+        }
+
+        uiState.showRestoreConfirmation?.let { backup ->
+            RestoreConfirmationDialog(
+                backup = backup,
+                onConfirm = onConfirmRestore,
+                onDismiss = onDismissRestoreConfirmation
+            )
+        }
     }
+}
+
+@Composable
+private fun RestoreBackupListDialog(
+    backups: List<BackupInfo>,
+    onSelectBackup: (BackupInfo) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Restore from Backup",
+                color = textPrimary
+            )
+        },
+        text = {
+            if (backups.isEmpty()) {
+                Text(
+                    text = "No backups available.",
+                    color = textSecondary
+                )
+            } else {
+                LazyColumn {
+                    items(backups) { backup ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelectBackup(backup) }
+                                .padding(vertical = 12.dp, horizontal = 4.dp)
+                        ) {
+                            Text(
+                                text = backup.displayDate,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = textPrimary
+                            )
+                            Text(
+                                text = backup.fileName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = textTertiary
+                            )
+                        }
+                        HorizontalDivider(color = bgSecondary)
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = accentPrimary)
+            }
+        },
+        containerColor = bgSurface
+    )
+}
+
+@Composable
+private fun RestoreConfirmationDialog(
+    backup: BackupInfo,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Restore Backup?",
+                color = textPrimary
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "This will overwrite ALL current data with data from the selected backup. The app will close and you will need to reopen it.",
+                    color = textSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Backup: ${backup.displayDate}",
+                    color = textPrimary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = errorColor,
+                    contentColor = textOnAccent
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Restore")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = accentPrimary)
+            }
+        },
+        containerColor = bgSurface
+    )
 }
 
 @Composable

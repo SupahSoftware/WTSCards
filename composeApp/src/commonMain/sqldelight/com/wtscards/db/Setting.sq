@@ -13,5 +13,8 @@ upsert:
 INSERT OR REPLACE INTO SettingEntity (settingKey, settingValue)
 VALUES (?, ?);
 
+deleteAllSettings:
+DELETE FROM SettingEntity;
+
 deleteByKey:
 DELETE FROM SettingEntity WHERE settingKey = ?;

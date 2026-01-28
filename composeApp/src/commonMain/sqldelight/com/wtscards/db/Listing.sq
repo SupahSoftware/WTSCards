@@ -42,6 +42,12 @@ WHERE id = ?;
 deleteById:
 DELETE FROM ListingEntity WHERE id = ?;
 
+deleteAllListings:
+DELETE FROM ListingEntity;
+
+deleteAllListingCards:
+DELETE FROM ListingCardEntity;
+
 deleteListingCardsByListingId:
 DELETE FROM ListingCardEntity WHERE listingId = ?;
 

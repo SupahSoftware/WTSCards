@@ -2,7 +2,7 @@ package com.wtscards.ui.screens.listings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.scrollBy
+import com.wtscards.ui.components.dragScrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -47,14 +47,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -288,7 +285,6 @@ private fun ListingList(
     postBodyText: String
 ) {
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -296,55 +292,7 @@ private fun ListingList(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(end = 24.dp)
-                .pointerInput(listState) {
-                    var lastY = 0f
-                    var velocity = 0f
-                    var lastTime = System.currentTimeMillis()
-
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            when (event.type) {
-                                PointerEventType.Press -> {
-                                    lastY = event.changes.first().position.y
-                                    velocity = 0f
-                                    lastTime = System.currentTimeMillis()
-                                }
-                                PointerEventType.Move -> {
-                                    if (event.changes.first().pressed) {
-                                        val currentY = event.changes.first().position.y
-                                        val currentTime = System.currentTimeMillis()
-                                        val delta = lastY - currentY
-                                        val timeDelta = (currentTime - lastTime).coerceAtLeast(1)
-
-                                        velocity = delta / timeDelta * 2000
-                                        lastY = currentY
-                                        lastTime = currentTime
-
-                                        coroutineScope.launch {
-                                            listState.scrollBy(delta)
-                                        }
-                                    }
-                                }
-                                PointerEventType.Release -> {
-                                    if (kotlin.math.abs(velocity) > 100) {
-                                        coroutineScope.launch {
-                                            listState.scroll {
-                                                var remainingVelocity = velocity * 0.5f
-                                                val decay = 0.95f
-                                                while (kotlin.math.abs(remainingVelocity) > 1f) {
-                                                    scrollBy(remainingVelocity / 60f)
-                                                    remainingVelocity *= decay
-                                                    kotlinx.coroutines.delay(16)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
+                .dragScrollable(listState),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(

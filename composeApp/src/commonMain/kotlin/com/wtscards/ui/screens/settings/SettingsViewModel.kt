@@ -3,6 +3,8 @@ package com.wtscards.ui.screens.settings
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.wtscards.domain.model.BackupInfo
+import com.wtscards.domain.usecase.BackupUseCase
 import com.wtscards.domain.usecase.SettingUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
@@ -12,6 +14,8 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val settingUseCase: SettingUseCase,
+    private val backupUseCase: BackupUseCase,
+    private val onRestoreComplete: () -> Unit,
     private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(SettingsUiState())
@@ -19,6 +23,7 @@ class SettingsViewModel(
 
     init {
         observeSettings()
+        loadLastBackupDate()
     }
 
     private fun observeSettings() {
@@ -92,6 +97,77 @@ class SettingsViewModel(
 
     fun clearToast() {
         uiState = uiState.copy(toast = null)
+    }
+
+    private fun loadLastBackupDate() {
+        coroutineScope.launch {
+            val date = backupUseCase.getLastBackupDisplayDate()
+            uiState = uiState.copy(lastBackupDate = date)
+        }
+    }
+
+    fun onBackupNow() {
+        uiState = uiState.copy(isCreatingBackup = true)
+        coroutineScope.launch {
+            backupUseCase.createBackup().fold(
+                onSuccess = { backupInfo ->
+                    uiState = uiState.copy(
+                        isCreatingBackup = false,
+                        lastBackupDate = backupInfo.displayDate,
+                        toast = SettingsToastState("Backup created successfully")
+                    )
+                },
+                onFailure = { e ->
+                    uiState = uiState.copy(
+                        isCreatingBackup = false,
+                        toast = SettingsToastState(e.message ?: "Failed to create backup", isError = true)
+                    )
+                }
+            )
+        }
+    }
+
+    fun onShowRestoreDialog() {
+        coroutineScope.launch {
+            val backups = backupUseCase.getAvailableBackups()
+            uiState = uiState.copy(
+                showRestoreDialog = true,
+                availableBackups = backups
+            )
+        }
+    }
+
+    fun onDismissRestoreDialog() {
+        uiState = uiState.copy(showRestoreDialog = false)
+    }
+
+    fun onSelectBackupToRestore(backup: BackupInfo) {
+        uiState = uiState.copy(
+            showRestoreDialog = false,
+            showRestoreConfirmation = backup
+        )
+    }
+
+    fun onConfirmRestore() {
+        val backup = uiState.showRestoreConfirmation ?: return
+        uiState = uiState.copy(isRestoring = true, showRestoreConfirmation = null)
+        coroutineScope.launch {
+            backupUseCase.restoreFromBackup(backup.fileName).fold(
+                onSuccess = {
+                    onRestoreComplete()
+                },
+                onFailure = { e ->
+                    uiState = uiState.copy(
+                        isRestoring = false,
+                        toast = SettingsToastState(e.message ?: "Failed to restore backup", isError = true)
+                    )
+                }
+            )
+        }
+    }
+
+    fun onDismissRestoreConfirmation() {
+        uiState = uiState.copy(showRestoreConfirmation = null)
     }
 
     companion object {

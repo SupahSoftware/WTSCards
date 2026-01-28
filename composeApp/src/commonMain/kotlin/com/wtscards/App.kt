@@ -35,7 +35,8 @@ fun App(
     dependencies: AppDependencies,
     importViewModel: ImportViewModel,
     onBrowseFiles: () -> Unit,
-    onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit
+    onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit,
+    onRestoreComplete: () -> Unit
 ) {
     WTSCardsTheme {
         Surface(
@@ -46,7 +47,8 @@ fun App(
                 dependencies = dependencies,
                 importViewModel = importViewModel,
                 onBrowseFiles = onBrowseFiles,
-                onExportShippingLabels = onExportShippingLabels
+                onExportShippingLabels = onExportShippingLabels,
+                onRestoreComplete = onRestoreComplete
             )
         }
     }
@@ -57,7 +59,8 @@ fun MainScreen(
     dependencies: AppDependencies,
     importViewModel: ImportViewModel,
     onBrowseFiles: () -> Unit,
-    onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit
+    onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit,
+    onRestoreComplete: () -> Unit
 ) {
     var currentRoute by remember { mutableStateOf(NavigationItem.Collection.route) }
 
@@ -74,7 +77,7 @@ fun MainScreen(
     }
 
     val settingsViewModel = remember {
-        SettingsViewModel(dependencies.settingUseCase, dependencies.coroutineScope)
+        SettingsViewModel(dependencies.settingUseCase, dependencies.backupUseCase, onRestoreComplete, dependencies.coroutineScope)
     }
 
     val addCardViewModel = remember {
@@ -225,6 +228,12 @@ fun MainScreen(
                     onDefaultDiscountChanged = settingsViewModel::onDefaultDiscountChanged,
                     onSave = settingsViewModel::onSave,
                     onClearToast = settingsViewModel::clearToast,
+                    onBackupNow = settingsViewModel::onBackupNow,
+                    onShowRestoreDialog = settingsViewModel::onShowRestoreDialog,
+                    onDismissRestoreDialog = settingsViewModel::onDismissRestoreDialog,
+                    onSelectBackupToRestore = settingsViewModel::onSelectBackupToRestore,
+                    onConfirmRestore = settingsViewModel::onConfirmRestore,
+                    onDismissRestoreConfirmation = settingsViewModel::onDismissRestoreConfirmation,
                     modifier = Modifier.padding(paddingValues)
                 )
             }
