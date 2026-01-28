@@ -960,6 +960,9 @@ private fun buildFullBody(preBodyText: String, body: String, postBodyText: Strin
             append("\n")
             append(postBodyText)
         }
+        append("\n")
+        append("\n")
+        append("Created with [WTSCards](https://github.com/SupahSoftware/WTSCards)")
     }
 }
 
