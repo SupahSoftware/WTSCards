@@ -17,10 +17,13 @@ data class SettingsUiState(
     val showRestoreConfirmation: BackupInfo? = null,
     val isCreatingBackup: Boolean = false,
     val isRestoring: Boolean = false,
+    val envelopeCost: String = "1.00",
     val envelopeLength: String = "3.5",
     val envelopeWidth: String = "6.5",
+    val bubbleMailerCost: String = "7.00",
     val bubbleMailerLength: String = "6",
     val bubbleMailerWidth: String = "9",
+    val boxCost: String = "10.00",
     val boxLength: String = "6",
     val boxWidth: String = "9",
     val boxHeight: String = "6"

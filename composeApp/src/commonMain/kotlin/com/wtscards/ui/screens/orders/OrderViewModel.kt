@@ -71,10 +71,13 @@ class OrderViewModel(
                     freeShippingThreshold = thresholdInPennies,
                     nicePricesEnabled = settings[SettingsViewModel.KEY_NICE_PRICES_ENABLED] == "true",
                     defaultDiscount = defaultDiscount,
+                    defaultEnvelopeCost = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_COST] ?: "1.00",
                     defaultEnvelopeLength = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_LENGTH] ?: "3.5",
                     defaultEnvelopeWidth = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_WIDTH] ?: "6.5",
+                    defaultBubbleMailerCost = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_COST] ?: "7.00",
                     defaultBubbleMailerLength = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_LENGTH] ?: "6",
                     defaultBubbleMailerWidth = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_WIDTH] ?: "9",
+                    defaultBoxCost = settings[SettingsViewModel.KEY_SHIPPING_BOX_COST] ?: "10.00",
                     defaultBoxLength = settings[SettingsViewModel.KEY_SHIPPING_BOX_LENGTH] ?: "6",
                     defaultBoxWidth = settings[SettingsViewModel.KEY_SHIPPING_BOX_WIDTH] ?: "9",
                     defaultBoxHeight = settings[SettingsViewModel.KEY_SHIPPING_BOX_HEIGHT] ?: "6"
@@ -98,6 +101,7 @@ class OrderViewModel(
             isFabExpanded = false,
             createFormState = CreateOrderFormState(
                 discount = uiState.defaultDiscount.toString(),
+                shippingPrice = uiState.defaultBubbleMailerCost,
                 length = uiState.defaultBubbleMailerLength,
                 width = uiState.defaultBubbleMailerWidth,
                 height = "0"
@@ -250,9 +254,9 @@ class OrderViewModel(
 
     private fun getDefaultShippingPrice(shippingType: String): String {
         return when (shippingType) {
-            "Bubble mailer" -> "5.00"
-            "Envelope" -> "1.00"
-            "Box" -> "10.00"
+            "Envelope" -> uiState.defaultEnvelopeCost
+            "Bubble mailer" -> uiState.defaultBubbleMailerCost
+            "Box" -> uiState.defaultBoxCost
             "Other" -> "0.00"
             else -> "0.00"
         }

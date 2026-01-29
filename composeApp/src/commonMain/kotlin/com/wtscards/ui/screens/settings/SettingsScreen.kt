@@ -59,10 +59,13 @@ fun SettingsScreen(
         onFreeShippingThresholdChanged: (String) -> Unit,
         onNicePricesEnabledChanged: (Boolean) -> Unit,
         onDefaultDiscountChanged: (String) -> Unit,
+        onEnvelopeCostChanged: (String) -> Unit,
         onEnvelopeLengthChanged: (String) -> Unit,
         onEnvelopeWidthChanged: (String) -> Unit,
+        onBubbleMailerCostChanged: (String) -> Unit,
         onBubbleMailerLengthChanged: (String) -> Unit,
         onBubbleMailerWidthChanged: (String) -> Unit,
+        onBoxCostChanged: (String) -> Unit,
         onBoxLengthChanged: (String) -> Unit,
         onBoxWidthChanged: (String) -> Unit,
         onBoxHeightChanged: (String) -> Unit,
@@ -219,7 +222,7 @@ fun SettingsScreen(
 
                                         Text(
                                                 text =
-                                                        "Default dimensions for each package type (in inches). These will be pre-filled when creating orders.",
+                                                        "Default costs and dimensions for each package type. These will be pre-filled when creating orders.",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = textSecondary
                                         )
@@ -235,6 +238,13 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                                SettingSingleLineTextField(
+                                                        label = "Default Cost",
+                                                        value = uiState.envelopeCost,
+                                                        onValueChange = onEnvelopeCostChanged,
+                                                        placeholder = "1.00",
+                                                        prefix = "$"
+                                                )
                                                 SettingSingleLineTextField(
                                                         label = "Length",
                                                         value = uiState.envelopeLength,
@@ -263,6 +273,13 @@ fun SettingsScreen(
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                                 SettingSingleLineTextField(
+                                                        label = "Default Cost",
+                                                        value = uiState.bubbleMailerCost,
+                                                        onValueChange = onBubbleMailerCostChanged,
+                                                        placeholder = "7.00",
+                                                        prefix = "$"
+                                                )
+                                                SettingSingleLineTextField(
                                                         label = "Length",
                                                         value = uiState.bubbleMailerLength,
                                                         onValueChange = onBubbleMailerLengthChanged,
@@ -289,6 +306,13 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                                SettingSingleLineTextField(
+                                                        label = "Default Cost",
+                                                        value = uiState.boxCost,
+                                                        onValueChange = onBoxCostChanged,
+                                                        placeholder = "10.00",
+                                                        prefix = "$"
+                                                )
                                                 SettingSingleLineTextField(
                                                         label = "Length",
                                                         value = uiState.boxLength,

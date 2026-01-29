@@ -34,10 +34,13 @@ data class OrderUiState(
     val freeShippingThreshold: Long = 0,
     val nicePricesEnabled: Boolean = false,
     val defaultDiscount: Int = 0,
+    val defaultEnvelopeCost: String = "1.00",
     val defaultEnvelopeLength: String = "3.5",
     val defaultEnvelopeWidth: String = "6.5",
+    val defaultBubbleMailerCost: String = "7.00",
     val defaultBubbleMailerLength: String = "6",
     val defaultBubbleMailerWidth: String = "9",
+    val defaultBoxCost: String = "10.00",
     val defaultBoxLength: String = "6",
     val defaultBoxWidth: String = "9",
     val defaultBoxHeight: String = "6"

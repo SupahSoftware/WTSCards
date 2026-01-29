@@ -1611,7 +1611,8 @@ private fun CreateOrderDialog(
                             value = formState.name,
                             onValueChange = onNameChanged,
                             label = "Name",
-                            placeholder = "Customer name"
+                            placeholder = "Customer name",
+                            borderColor = if (formState.name.isBlank()) errorColor else null
                     )
 
                     DialogFormTextField(
@@ -1619,8 +1620,9 @@ private fun CreateOrderDialog(
                             onValueChange = onStreetAddressChanged,
                             label = "Street Address",
                             placeholder = "123 Main St",
-                            secondaryText =
-                                    "All addresse fields are optional and can be added later"
+                            secondaryText = "All fields marked in yellow can be updated later",
+                            secondaryTextColor = warningColor,
+                            borderColor = if (formState.streetAddress.isBlank()) warningColor else null
                     )
 
                     Row(
@@ -1632,7 +1634,8 @@ private fun CreateOrderDialog(
                                 onValueChange = onCityChanged,
                                 label = "City",
                                 placeholder = "City",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                borderColor = if (formState.city.isBlank()) warningColor else null
                         )
 
                         DialogFormTextField(
@@ -1640,7 +1643,8 @@ private fun CreateOrderDialog(
                                 onValueChange = onStateChanged,
                                 label = "State",
                                 placeholder = "CA",
-                                modifier = Modifier.width(80.dp)
+                                modifier = Modifier.width(80.dp),
+                                borderColor = if (formState.state.isBlank()) warningColor else null
                         )
 
                         DialogFormTextField(
@@ -1648,7 +1652,8 @@ private fun CreateOrderDialog(
                                 onValueChange = onZipcodeChanged,
                                 label = "Zip",
                                 placeholder = "12345",
-                                modifier = Modifier.width(100.dp)
+                                modifier = Modifier.width(100.dp),
+                                borderColor = if (formState.zipcode.isBlank()) warningColor else null
                         )
                     }
 
@@ -1716,13 +1721,17 @@ private fun CreateOrderDialog(
                             )
                         }
 
+                        val weightEmpty = (formState.pounds.toIntOrNull() ?: 0) == 0 &&
+                                (formState.ounces.toIntOrNull() ?: 0) == 0
+
                         DialogFormTextField(
                                 value = formState.pounds,
                                 onValueChange = onPoundsChanged,
                                 label = "Pounds",
                                 placeholder = "0",
                                 suffix = "lbs",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                borderColor = if (weightEmpty) warningColor else null
                         )
 
                         DialogFormTextField(
@@ -1731,7 +1740,8 @@ private fun CreateOrderDialog(
                                 label = "Ounces",
                                 placeholder = "0",
                                 suffix = "oz",
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                borderColor = if (weightEmpty) warningColor else null
                         )
                     }
 
@@ -1740,7 +1750,8 @@ private fun CreateOrderDialog(
                             onValueChange = onCreateOrderTrackingNumberChanged,
                             label = "Tracking Number",
                             placeholder = "1Z12345678901234567890",
-                            secondaryText = "Optional, you can add this later"
+                            secondaryText = "Optional, you can add this later",
+                            borderColor = if (formState.trackingNumber.isBlank()) warningColor else null
                     )
                 }
             },
@@ -1777,7 +1788,9 @@ private fun DialogFormTextField(
         placeholder: String,
         prefix: String? = null,
         suffix: String? = null,
-        secondaryText: String? = null
+        secondaryText: String? = null,
+        secondaryTextColor: androidx.compose.ui.graphics.Color = textTertiary,
+        borderColor: androidx.compose.ui.graphics.Color? = null
 ) {
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1787,7 +1800,7 @@ private fun DialogFormTextField(
                 Text(
                         text = secondaryText,
                         style = MaterialTheme.typography.bodySmall,
-                        color = textTertiary
+                        color = secondaryTextColor
                 )
             }
         }
@@ -1810,8 +1823,8 @@ private fun DialogFormTextField(
                         OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = textPrimary,
                                 unfocusedTextColor = textPrimary,
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = borderColor ?: Color.Transparent,
+                                unfocusedBorderColor = borderColor ?: Color.Transparent,
                                 cursorColor = accentPrimary,
                                 focusedContainerColor = bgSecondary,
                                 unfocusedContainerColor = bgSecondary
