@@ -224,14 +224,16 @@ private fun selectSaveLocation(): File? {
 
 private fun buildShippingLabelsCsv(orders: List<Order>): String {
     return buildString {
-        appendLine("Name,Address Line 1,City,State,Zip,Country")
+        appendLine("Name,Address,City,State,Zip,Order ID,Pounds,Length,Width,Height")
         orders.forEach { order ->
             val name = escapeCsvField(order.name)
             val address = escapeCsvField(order.streetAddress)
             val city = escapeCsvField(order.city)
             val state = escapeCsvField(order.state)
             val zip = escapeCsvField(order.zipcode)
-            appendLine("$name,$address,$city,$state,$zip,US")
+            val orderId = escapeCsvField(order.id)
+            val totalPounds = order.pounds + order.ounces / 16.0
+            appendLine("$name,$address,$city,$state,$zip,$orderId,$totalPounds,${order.length},${order.width},${order.height}")
         }
     }
 }

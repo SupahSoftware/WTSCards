@@ -13,7 +13,12 @@ data class Order(
     val createdAt: Long,
     val trackingNumber: String? = null,
     val discount: Int = 0,
-    val cards: List<Card> = emptyList()
+    val cards: List<Card> = emptyList(),
+    val length: Double = 0.0,
+    val width: Double = 0.0,
+    val height: Double = 0.0,
+    val pounds: Int = 0,
+    val ounces: Int = 0
 )
 
 object OrderStatus {

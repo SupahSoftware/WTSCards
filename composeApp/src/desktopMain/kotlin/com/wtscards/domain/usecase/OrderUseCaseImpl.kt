@@ -101,7 +101,12 @@ class OrderUseCaseImpl(
             shippingCost = originalOrder.shippingCost,
             status = OrderStatus.NEW,
             createdAt = originalOrder.createdAt,
-            cards = cards
+            cards = cards,
+            length = originalOrder.length,
+            width = originalOrder.width,
+            height = originalOrder.height,
+            pounds = originalOrder.pounds,
+            ounces = originalOrder.ounces
         )
     }
 }

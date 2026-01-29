@@ -36,7 +36,14 @@ class SettingsViewModel(
                         freeShippingEnabled = settings[KEY_FREE_SHIPPING_ENABLED] == "true",
                         freeShippingThreshold = settings[KEY_FREE_SHIPPING_THRESHOLD] ?: "",
                         nicePricesEnabled = settings[KEY_NICE_PRICES_ENABLED] == "true",
-                        defaultDiscount = settings[KEY_DEFAULT_DISCOUNT] ?: "0"
+                        defaultDiscount = settings[KEY_DEFAULT_DISCOUNT] ?: "0",
+                        envelopeLength = settings[KEY_SHIPPING_ENVELOPE_LENGTH] ?: "3.5",
+                        envelopeWidth = settings[KEY_SHIPPING_ENVELOPE_WIDTH] ?: "6.5",
+                        bubbleMailerLength = settings[KEY_SHIPPING_BUBBLE_MAILER_LENGTH] ?: "6",
+                        bubbleMailerWidth = settings[KEY_SHIPPING_BUBBLE_MAILER_WIDTH] ?: "9",
+                        boxLength = settings[KEY_SHIPPING_BOX_LENGTH] ?: "6",
+                        boxWidth = settings[KEY_SHIPPING_BOX_WIDTH] ?: "9",
+                        boxHeight = settings[KEY_SHIPPING_BOX_HEIGHT] ?: "6"
                     )
                 }
             }
@@ -72,6 +79,55 @@ class SettingsViewModel(
         uiState = uiState.copy(defaultDiscount = filtered)
     }
 
+    fun onEnvelopeLengthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(envelopeLength = filtered)
+        }
+    }
+
+    fun onEnvelopeWidthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(envelopeWidth = filtered)
+        }
+    }
+
+    fun onBubbleMailerLengthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(bubbleMailerLength = filtered)
+        }
+    }
+
+    fun onBubbleMailerWidthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(bubbleMailerWidth = filtered)
+        }
+    }
+
+    fun onBoxLengthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(boxLength = filtered)
+        }
+    }
+
+    fun onBoxWidthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(boxWidth = filtered)
+        }
+    }
+
+    fun onBoxHeightChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(boxHeight = filtered)
+        }
+    }
+
     fun onSave() {
         uiState = uiState.copy(isSaving = true)
         coroutineScope.launch {
@@ -82,6 +138,13 @@ class SettingsViewModel(
                 settingUseCase.setSetting(KEY_FREE_SHIPPING_THRESHOLD, uiState.freeShippingThreshold)
                 settingUseCase.setSetting(KEY_NICE_PRICES_ENABLED, uiState.nicePricesEnabled.toString())
                 settingUseCase.setSetting(KEY_DEFAULT_DISCOUNT, uiState.defaultDiscount)
+                settingUseCase.setSetting(KEY_SHIPPING_ENVELOPE_LENGTH, uiState.envelopeLength)
+                settingUseCase.setSetting(KEY_SHIPPING_ENVELOPE_WIDTH, uiState.envelopeWidth)
+                settingUseCase.setSetting(KEY_SHIPPING_BUBBLE_MAILER_LENGTH, uiState.bubbleMailerLength)
+                settingUseCase.setSetting(KEY_SHIPPING_BUBBLE_MAILER_WIDTH, uiState.bubbleMailerWidth)
+                settingUseCase.setSetting(KEY_SHIPPING_BOX_LENGTH, uiState.boxLength)
+                settingUseCase.setSetting(KEY_SHIPPING_BOX_WIDTH, uiState.boxWidth)
+                settingUseCase.setSetting(KEY_SHIPPING_BOX_HEIGHT, uiState.boxHeight)
                 uiState = uiState.copy(
                     isSaving = false,
                     toast = SettingsToastState("Settings saved")
@@ -177,5 +240,12 @@ class SettingsViewModel(
         const val KEY_FREE_SHIPPING_THRESHOLD = "order_free_shipping_threshold"
         const val KEY_NICE_PRICES_ENABLED = "order_nice_prices_enabled"
         const val KEY_DEFAULT_DISCOUNT = "order_default_discount"
+        const val KEY_SHIPPING_ENVELOPE_LENGTH = "shipping_envelope_length"
+        const val KEY_SHIPPING_ENVELOPE_WIDTH = "shipping_envelope_width"
+        const val KEY_SHIPPING_BUBBLE_MAILER_LENGTH = "shipping_bubble_mailer_length"
+        const val KEY_SHIPPING_BUBBLE_MAILER_WIDTH = "shipping_bubble_mailer_width"
+        const val KEY_SHIPPING_BOX_LENGTH = "shipping_box_length"
+        const val KEY_SHIPPING_BOX_WIDTH = "shipping_box_width"
+        const val KEY_SHIPPING_BOX_HEIGHT = "shipping_box_height"
     }
 }

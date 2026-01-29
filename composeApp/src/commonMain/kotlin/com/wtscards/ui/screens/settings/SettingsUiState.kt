@@ -16,7 +16,14 @@ data class SettingsUiState(
     val showRestoreDialog: Boolean = false,
     val showRestoreConfirmation: BackupInfo? = null,
     val isCreatingBackup: Boolean = false,
-    val isRestoring: Boolean = false
+    val isRestoring: Boolean = false,
+    val envelopeLength: String = "3.5",
+    val envelopeWidth: String = "6.5",
+    val bubbleMailerLength: String = "6",
+    val bubbleMailerWidth: String = "9",
+    val boxLength: String = "6",
+    val boxWidth: String = "9",
+    val boxHeight: String = "6"
 )
 
 data class SettingsToastState(

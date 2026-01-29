@@ -51,7 +51,12 @@ data class BackupOrder(
     val status: String,
     val createdAt: Long,
     val trackingNumber: String? = null,
-    val discount: Long
+    val discount: Long,
+    val length: Double = 0.0,
+    val width: Double = 0.0,
+    val height: Double = 0.0,
+    val pounds: Long = 0,
+    val ounces: Long = 0
 )
 
 @Serializable
@@ -193,7 +198,12 @@ class BackupUseCaseImpl(
                 status = order.status,
                 createdAt = order.createdAt,
                 trackingNumber = order.trackingNumber,
-                discount = order.discount
+                discount = order.discount,
+                length = order.length,
+                width = order.width,
+                height = order.height,
+                pounds = order.pounds,
+                ounces = order.ounces
             )
         }
 
@@ -277,7 +287,12 @@ class BackupUseCaseImpl(
                     status = order.status,
                     createdAt = order.createdAt,
                     trackingNumber = order.trackingNumber,
-                    discount = order.discount
+                    discount = order.discount,
+                    length = order.length,
+                    width = order.width,
+                    height = order.height,
+                    pounds = order.pounds,
+                    ounces = order.ounces
                 )
             }
 

@@ -61,7 +61,12 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             status = order.status,
             createdAt = order.createdAt,
             trackingNumber = order.trackingNumber,
-            discount = order.discount.toLong()
+            discount = order.discount.toLong(),
+            length = order.length,
+            width = order.width,
+            height = order.height,
+            pounds = order.pounds.toLong(),
+            ounces = order.ounces.toLong()
         )
     }
 
@@ -85,6 +90,11 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             shippingCost = order.shippingCost,
             trackingNumber = order.trackingNumber,
             discount = order.discount.toLong(),
+            length = order.length,
+            width = order.width,
+            height = order.height,
+            pounds = order.pounds.toLong(),
+            ounces = order.ounces.toLong(),
             id = order.id
         )
     }
@@ -163,7 +173,12 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             createdAt = createdAt,
             trackingNumber = trackingNumber,
             discount = discount.toInt(),
-            cards = cards
+            cards = cards,
+            length = length,
+            width = width,
+            height = height,
+            pounds = pounds.toInt(),
+            ounces = ounces.toInt()
         )
     }
 

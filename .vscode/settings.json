@@ -1,0 +1,7 @@
+{
+    "[kotlin]": {
+        "editor.defaultFormatter": "fwcd.kotlin",
+        "editor.formatOnPaste": true,
+        "editor.formatOnSave": true
+    }
+}

@@ -33,7 +33,14 @@ data class OrderUiState(
     val freeShippingEnabled: Boolean = false,
     val freeShippingThreshold: Long = 0,
     val nicePricesEnabled: Boolean = false,
-    val defaultDiscount: Int = 0
+    val defaultDiscount: Int = 0,
+    val defaultEnvelopeLength: String = "3.5",
+    val defaultEnvelopeWidth: String = "6.5",
+    val defaultBubbleMailerLength: String = "6",
+    val defaultBubbleMailerWidth: String = "9",
+    val defaultBoxLength: String = "6",
+    val defaultBoxWidth: String = "9",
+    val defaultBoxHeight: String = "6"
 ) {
     val newStatusOrders: List<Order>
         get() = orders.filter { it.status == OrderStatus.NEW }
@@ -86,6 +93,11 @@ data class CreateOrderFormState(
     val shippingPrice: String = "5.00",
     val trackingNumber: String = "",
     val discount: String = "0",
+    val length: String = "0",
+    val width: String = "0",
+    val height: String = "0",
+    val pounds: String = "0",
+    val ounces: String = "0",
     val isSaving: Boolean = false
 ) {
     fun isValid(): Boolean {

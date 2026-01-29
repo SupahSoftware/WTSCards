@@ -70,7 +70,14 @@ class OrderViewModel(
                     freeShippingEnabled = settings[SettingsViewModel.KEY_FREE_SHIPPING_ENABLED] == "true",
                     freeShippingThreshold = thresholdInPennies,
                     nicePricesEnabled = settings[SettingsViewModel.KEY_NICE_PRICES_ENABLED] == "true",
-                    defaultDiscount = defaultDiscount
+                    defaultDiscount = defaultDiscount,
+                    defaultEnvelopeLength = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_LENGTH] ?: "3.5",
+                    defaultEnvelopeWidth = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_WIDTH] ?: "6.5",
+                    defaultBubbleMailerLength = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_LENGTH] ?: "6",
+                    defaultBubbleMailerWidth = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_WIDTH] ?: "9",
+                    defaultBoxLength = settings[SettingsViewModel.KEY_SHIPPING_BOX_LENGTH] ?: "6",
+                    defaultBoxWidth = settings[SettingsViewModel.KEY_SHIPPING_BOX_WIDTH] ?: "9",
+                    defaultBoxHeight = settings[SettingsViewModel.KEY_SHIPPING_BOX_HEIGHT] ?: "6"
                 )
             }
             .catch { }
@@ -90,7 +97,10 @@ class OrderViewModel(
             showCreateDialog = true,
             isFabExpanded = false,
             createFormState = CreateOrderFormState(
-                discount = uiState.defaultDiscount.toString()
+                discount = uiState.defaultDiscount.toString(),
+                length = uiState.defaultBubbleMailerLength,
+                width = uiState.defaultBubbleMailerWidth,
+                height = "0"
             )
         )
     }
@@ -165,7 +175,12 @@ class OrderViewModel(
                 shippingType = order.shippingType ?: "Bubble mailer",
                 shippingPrice = shippingPriceStr,
                 trackingNumber = order.trackingNumber ?: "",
-                discount = order.discount.toString()
+                discount = order.discount.toString(),
+                length = if (order.length > 0) order.length.toBigDecimal().stripTrailingZeros().toPlainString() else "0",
+                width = if (order.width > 0) order.width.toBigDecimal().stripTrailingZeros().toPlainString() else "0",
+                height = if (order.height > 0) order.height.toBigDecimal().stripTrailingZeros().toPlainString() else "0",
+                pounds = order.pounds.toString(),
+                ounces = order.ounces.toString()
             )
         )
     }
@@ -212,12 +227,25 @@ class OrderViewModel(
 
     fun onShippingTypeChanged(shippingType: String) {
         val defaultPrice = getDefaultShippingPrice(shippingType)
+        val (defaultLength, defaultWidth, defaultHeight) = getDefaultDimensions(shippingType)
         uiState = uiState.copy(
             createFormState = uiState.createFormState.copy(
                 shippingType = shippingType,
-                shippingPrice = defaultPrice
+                shippingPrice = defaultPrice,
+                length = defaultLength,
+                width = defaultWidth,
+                height = defaultHeight
             )
         )
+    }
+
+    private fun getDefaultDimensions(shippingType: String): Triple<String, String, String> {
+        return when (shippingType) {
+            "Envelope" -> Triple(uiState.defaultEnvelopeLength, uiState.defaultEnvelopeWidth, "0")
+            "Bubble mailer" -> Triple(uiState.defaultBubbleMailerLength, uiState.defaultBubbleMailerWidth, "0")
+            "Box" -> Triple(uiState.defaultBoxLength, uiState.defaultBoxWidth, uiState.defaultBoxHeight)
+            else -> Triple("0", "0", "0")
+        }
     }
 
     private fun getDefaultShippingPrice(shippingType: String): String {
@@ -252,6 +280,49 @@ class OrderViewModel(
         )
     }
 
+    fun onLengthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(
+                createFormState = uiState.createFormState.copy(length = filtered)
+            )
+        }
+    }
+
+    fun onWidthChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(
+                createFormState = uiState.createFormState.copy(width = filtered)
+            )
+        }
+    }
+
+    fun onHeightChanged(value: String) {
+        val filtered = value.filter { it.isDigit() || it == '.' }
+        if (filtered.count { it == '.' } <= 1) {
+            uiState = uiState.copy(
+                createFormState = uiState.createFormState.copy(height = filtered)
+            )
+        }
+    }
+
+    fun onPoundsChanged(value: String) {
+        val filtered = value.filter { it.isDigit() }
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(pounds = filtered)
+        )
+    }
+
+    fun onOuncesChanged(value: String) {
+        val filtered = value.filter { it.isDigit() }
+        val intValue = filtered.toIntOrNull() ?: 0
+        val capped = if (intValue > 15) "15" else filtered
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(ounces = capped)
+        )
+    }
+
     fun onCreateOrUpdateOrder() {
         if (!uiState.createFormState.isValid()) return
 
@@ -268,6 +339,11 @@ class OrderViewModel(
 
                 val trackingNumber = form.trackingNumber.trim().takeIf { it.isNotBlank() }
                 val discount = form.discount.toIntOrNull() ?: 0
+                val length = form.length.toDoubleOrNull() ?: 0.0
+                val width = form.width.toDoubleOrNull() ?: 0.0
+                val height = form.height.toDoubleOrNull() ?: 0.0
+                val pounds = form.pounds.toIntOrNull() ?: 0
+                val ounces = form.ounces.toIntOrNull() ?: 0
 
                 if (isEditMode) {
                     val existingOrder = uiState.orders.find { it.id == uiState.editingOrderId }
@@ -284,7 +360,12 @@ class OrderViewModel(
                         createdAt = existingOrder?.createdAt ?: System.currentTimeMillis(),
                         trackingNumber = trackingNumber,
                         discount = discount,
-                        cards = existingOrder?.cards ?: emptyList()
+                        cards = existingOrder?.cards ?: emptyList(),
+                        length = length,
+                        width = width,
+                        height = height,
+                        pounds = pounds,
+                        ounces = ounces
                     )
                     orderUseCase.updateOrder(order)
                 } else {
@@ -301,7 +382,12 @@ class OrderViewModel(
                         createdAt = System.currentTimeMillis(),
                         trackingNumber = trackingNumber,
                         discount = discount,
-                        cards = emptyList()
+                        cards = emptyList(),
+                        length = length,
+                        width = width,
+                        height = height,
+                        pounds = pounds,
+                        ounces = ounces
                     )
                     orderUseCase.createOrder(order)
                 }
