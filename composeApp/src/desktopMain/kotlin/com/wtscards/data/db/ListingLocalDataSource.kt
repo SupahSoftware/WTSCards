@@ -94,6 +94,7 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
         return listingQueries.selectCardsByListingId(listingId)
             .executeAsList()
             .map { it.toCard() }
+            .sortedByDescending { it.priceInPennies }
     }
 
     private fun ListingEntity.toListing(cards: List<Card>): Listing {

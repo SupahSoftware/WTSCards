@@ -463,6 +463,8 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
                     color = successColor
             )
         }
+        
+        Spacer(modifier = Modifier.width(8.dp))
 
         Text(
                 text = "EBAY",
@@ -476,8 +478,10 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
                                             UrlUtils.getEbaySoldListingsUrl(card.name)
                                     )
                                 }
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(horizontal = 2.dp, vertical = 2.dp)
         )
+        
+        Spacer(modifier = Modifier.width(8.dp))
 
         Text(
                 text = "SCP",
@@ -491,8 +495,10 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
                                             UrlUtils.getSportsCardProUrl(card.name)
                                     )
                                 }
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(horizontal = 2.dp, vertical = 2.dp)
         )
+        
+        Spacer(modifier = Modifier.width(4.dp))
 
         Icon(
                 imageVector = Icons.Default.Delete,
@@ -500,8 +506,8 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
                 tint = errorColor,
                 modifier =
                         Modifier
+                                .size(24.dp)
                                 .padding(4.dp)
-                                .size(16.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .clickable(onClick = onRemove)
         )
