@@ -289,6 +289,7 @@ fun SettingsScreen(
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.envelopeCost,
                                                         onValueChange = onEnvelopeCostChanged,
                                                         label = "Default Cost",
@@ -297,6 +298,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.envelopeLength,
                                                         onValueChange = onEnvelopeLengthChanged,
                                                         label = "Length",
@@ -305,6 +307,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.envelopeWidth,
                                                         onValueChange = onEnvelopeWidthChanged,
                                                         label = "Width",
@@ -326,6 +329,7 @@ fun SettingsScreen(
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.bubbleMailerCost,
                                                         onValueChange = onBubbleMailerCostChanged,
                                                         label = "Default Cost",
@@ -334,6 +338,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.bubbleMailerLength,
                                                         onValueChange = onBubbleMailerLengthChanged,
                                                         label = "Length",
@@ -342,6 +347,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.bubbleMailerWidth,
                                                         onValueChange = onBubbleMailerWidthChanged,
                                                         label = "Width",
@@ -363,6 +369,7 @@ fun SettingsScreen(
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.boxCost,
                                                         onValueChange = onBoxCostChanged,
                                                         label = "Default Cost",
@@ -371,6 +378,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.boxLength,
                                                         onValueChange = onBoxLengthChanged,
                                                         label = "Length",
@@ -379,6 +387,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.boxWidth,
                                                         onValueChange = onBoxWidthChanged,
                                                         label = "Width",
@@ -387,6 +396,7 @@ fun SettingsScreen(
                                                         borderColor = textTertiary
                                                 )
                                                 AppTextField(
+                                                        modifier = Modifier.weight(1f),
                                                         value = uiState.boxHeight,
                                                         onValueChange = onBoxHeightChanged,
                                                         label = "Height",

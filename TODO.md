@@ -1,0 +1,3 @@
+1. the input widths on the settings page is wrong. the first input in the multi-input rows is taking up the whole width of the row
+2. Clicking 'Add cards' on the overflow menu opens the add card dialog. We should auto focus the input field so you can start typing immediately without clicking in
+3. For some reason the 'add card screen' clicks arean't working. I can't click on anything on the screen at all. I can't click to select an input or click the button. I can however tab select to an input and start typing tab to select the button then enter to trigger the click
