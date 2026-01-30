@@ -391,7 +391,15 @@ private fun ListingCard(
         if (listing.cards.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            listing.cards.forEach { card ->
+            val sortedCards =
+                    listing.cards.sortedWith(
+                            compareBy<Card> { card ->
+                                if (card.priceSold != null && card.priceSold > 0) 1 else 0
+                            }
+                                    .thenByDescending { card -> card.priceInPennies }
+                    )
+
+            sortedCards.forEach { card ->
                 CardItem(
                         card = card,
                         discountPercent = listing.discount,
