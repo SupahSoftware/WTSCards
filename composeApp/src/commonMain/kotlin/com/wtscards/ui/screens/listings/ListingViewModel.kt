@@ -194,7 +194,7 @@ class ListingViewModel(
     fun onShowAddCardsDialog(listingId: String) {
         uiState =
                 uiState.copy(
-                        addCardsDialogState = ListingAddCardsDialogState(listingId = listingId)
+                        addCardsDialogState = ListingAddCardsDialogState(listingId = listingId, shouldFocusSearch = true)
                 )
     }
 
