@@ -337,19 +337,23 @@ private fun ListingCard(
 
             if (listing.cards.isNotEmpty()) {
                 val totalPrice =
-                        listing.cards.sumOf { card ->
-                            calculateListingPrice(
-                                    card.priceInPennies,
-                                    listing.discount,
-                                    listing.nicePrices
-                            )
-                        }
-                Text(
-                        text = formatPrice(totalPrice),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = successColor
-                )
+                        listing.cards
+                                .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                                .sumOf { card ->
+                                    calculateListingPrice(
+                                            card.priceInPennies,
+                                            listing.discount,
+                                            listing.nicePrices
+                                    )
+                                }
+                if (totalPrice > 0) {
+                    Text(
+                            text = formatPrice(totalPrice),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = successColor
+                    )
+                }
             }
 
             Box(
@@ -1012,20 +1016,65 @@ private fun generateMarkdownBody(
         nicePrices: Boolean
 ): String {
     if (cards.isEmpty()) return ""
-    return cards.joinToString("\n") { card ->
-        val adjustedPrice = calculateListingPrice(card.priceInPennies, discountPercent, nicePrices)
-        val priceStr =
-                if (adjustedPrice > 0) {
-                    "$${String.format("%.2f", adjustedPrice / 100.0)}"
-                } else {
-                    "$0.00"
-                }
-        val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
-        val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-        val isSold = card.priceSold != null && card.priceSold > 0
-        val cardText = if (isSold) "~~${card.name}~~ [SOLD]" else card.name
-        "- $cardText - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
+
+    val availableCards = cards.filter { card -> card.priceSold == null || card.priceSold <= 0 }
+    val soldCards = cards.filter { card -> card.priceSold != null && card.priceSold > 0 }
+
+    val sections = mutableListOf<String>()
+
+    if (availableCards.isNotEmpty()) {
+        val availableSection = buildString {
+            append("**Available**\n\n")
+            append(
+                    availableCards.joinToString("\n") { card ->
+                        val adjustedPrice =
+                                calculateListingPrice(
+                                        card.priceInPennies,
+                                        discountPercent,
+                                        nicePrices
+                                )
+                        val priceStr =
+                                if (adjustedPrice > 0) {
+                                    "$${String.format("%.2f", adjustedPrice / 100.0)}"
+                                } else {
+                                    "$0.00"
+                                }
+                        val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
+                        val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
+                        "- ${card.name} - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
+                    }
+            )
+        }
+        sections.add(availableSection)
     }
+
+    if (soldCards.isNotEmpty()) {
+        val soldSection = buildString {
+            append("**Sold**\n\n")
+            append(
+                    soldCards.joinToString("\n") { card ->
+                        val adjustedPrice =
+                                calculateListingPrice(
+                                        card.priceInPennies,
+                                        discountPercent,
+                                        nicePrices
+                                )
+                        val priceStr =
+                                if (adjustedPrice > 0) {
+                                    "$${String.format("%.2f", adjustedPrice / 100.0)}"
+                                } else {
+                                    "$0.00"
+                                }
+                        val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
+                        val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
+                        "- ~~${card.name}~~ - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
+                    }
+            )
+        }
+        sections.add(soldSection)
+    }
+
+    return sections.joinToString("\n\n")
 }
 
 private fun formatPrice(priceInPennies: Long): String {
