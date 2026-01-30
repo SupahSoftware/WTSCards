@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Card
 import com.wtscards.data.model.Listing
+import com.wtscards.ui.components.AppTextField
 import com.wtscards.ui.components.ScrollableList
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgSecondary
@@ -663,47 +664,22 @@ private fun CreateListingDialog(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
-                    OutlinedTextField(
+                    AppTextField(
                             value = formState.title,
                             onValueChange = onTitleChanged,
-                            label = { Text("Title") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors =
-                                    OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = textPrimary,
-                                            unfocusedTextColor = textPrimary,
-                                            focusedBorderColor = accentPrimary,
-                                            unfocusedBorderColor = textTertiary,
-                                            cursorColor = accentPrimary,
-                                            focusedLabelColor = accentPrimary,
-                                            unfocusedLabelColor = textTertiary,
-                                            focusedContainerColor = bgSecondary,
-                                            unfocusedContainerColor = bgSecondary
-                                    ),
-                            shape = RoundedCornerShape(8.dp)
+                            label = "Title",
+                            containerColor = bgSecondary,
+                            borderColor = textTertiary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
+                    AppTextField(
                             value = formState.discount,
                             onValueChange = onDiscountChanged,
-                            label = { Text("Discount") },
-                            singleLine = true,
+                            label = "Discount",
+                            suffix = "%",
                             modifier = Modifier.width(200.dp),
-                            suffix = { Text("%", color = textPrimary) },
-                            colors =
-                                    OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = textPrimary,
-                                            unfocusedTextColor = textPrimary,
-                                            focusedBorderColor = accentPrimary,
-                                            unfocusedBorderColor = textTertiary,
-                                            cursorColor = accentPrimary,
-                                            focusedLabelColor = accentPrimary,
-                                            unfocusedLabelColor = textTertiary,
-                                            focusedContainerColor = bgSecondary,
-                                            unfocusedContainerColor = bgSecondary
-                                    ),
-                            shape = RoundedCornerShape(8.dp)
+                            containerColor = bgSecondary,
+                            borderColor = textTertiary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(

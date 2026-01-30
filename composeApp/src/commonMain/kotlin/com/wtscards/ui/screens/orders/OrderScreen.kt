@@ -71,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Order
 import com.wtscards.data.model.OrderStatus
 import com.wtscards.ui.components.AppDropdown
+import com.wtscards.ui.components.AppTextField
 import com.wtscards.ui.components.ScrollableList
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgDropdown
@@ -1607,53 +1608,58 @@ private fun CreateOrderDialog(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    DialogFormTextField(
+                    AppTextField(
+                            containerColor = bgSecondary,
                             value = formState.name,
                             onValueChange = onNameChanged,
                             label = "Name",
                             placeholder = "Customer name",
-                            borderColor = if (formState.name.isBlank()) errorColor else null
+                            borderColor = if (formState.name.isBlank()) errorColor else Color.Transparent
                     )
 
-                    DialogFormTextField(
+                    AppTextField(
+                            containerColor = bgSecondary,
                             value = formState.streetAddress,
                             onValueChange = onStreetAddressChanged,
                             label = "Street Address",
                             placeholder = "123 Main St",
-                            secondaryText = "All fields marked in yellow can be updated later",
-                            secondaryTextColor = warningColor,
-                            borderColor = if (formState.streetAddress.isBlank()) warningColor else null
+                            secondaryLabel = "All fields marked in yellow can be updated later",
+                            secondaryLabelColor = warningColor,
+                            borderColor = if (formState.streetAddress.isBlank()) warningColor else Color.Transparent
                     )
 
                     Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.city,
                                 onValueChange = onCityChanged,
                                 label = "City",
                                 placeholder = "City",
                                 modifier = Modifier.weight(1f),
-                                borderColor = if (formState.city.isBlank()) warningColor else null
+                                borderColor = if (formState.city.isBlank()) warningColor else Color.Transparent
                         )
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.state,
                                 onValueChange = onStateChanged,
                                 label = "State",
                                 placeholder = "CA",
                                 modifier = Modifier.width(80.dp),
-                                borderColor = if (formState.state.isBlank()) warningColor else null
+                                borderColor = if (formState.state.isBlank()) warningColor else Color.Transparent
                         )
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.zipcode,
                                 onValueChange = onZipcodeChanged,
                                 label = "Zip",
                                 placeholder = "12345",
                                 modifier = Modifier.width(100.dp),
-                                borderColor = if (formState.zipcode.isBlank()) warningColor else null
+                                borderColor = if (formState.zipcode.isBlank()) warningColor else Color.Transparent
                         )
                     }
 
@@ -1667,7 +1673,8 @@ private fun CreateOrderDialog(
                                 modifier = Modifier.weight(1f)
                         )
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.shippingPrice,
                                 onValueChange = onShippingPriceChanged,
                                 label = "Shipping Price",
@@ -1676,7 +1683,8 @@ private fun CreateOrderDialog(
                                 modifier = Modifier.weight(1f)
                         )
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.discount,
                                 onValueChange = onDiscountChanged,
                                 label = "Discount",
@@ -1690,7 +1698,8 @@ private fun CreateOrderDialog(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.length,
                                 onValueChange = onLengthChanged,
                                 label = "Length",
@@ -1699,7 +1708,8 @@ private fun CreateOrderDialog(
                                 modifier = Modifier.weight(1f)
                         )
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.width,
                                 onValueChange = onWidthChanged,
                                 label = "Width",
@@ -1711,7 +1721,8 @@ private fun CreateOrderDialog(
                         val showHeight =
                                 formState.shippingType == "Box" || formState.shippingType == "Other"
                         if (showHeight) {
-                            DialogFormTextField(
+                            AppTextField(
+                            containerColor = bgSecondary,
                                     value = formState.height,
                                     onValueChange = onHeightChanged,
                                     label = "Height",
@@ -1724,34 +1735,37 @@ private fun CreateOrderDialog(
                         val weightEmpty = (formState.pounds.toIntOrNull() ?: 0) == 0 &&
                                 (formState.ounces.toIntOrNull() ?: 0) == 0
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.pounds,
                                 onValueChange = onPoundsChanged,
                                 label = "Pounds",
                                 placeholder = "0",
                                 suffix = "lbs",
                                 modifier = Modifier.weight(1f),
-                                borderColor = if (weightEmpty) warningColor else null
+                                borderColor = if (weightEmpty) warningColor else Color.Transparent
                         )
 
-                        DialogFormTextField(
+                        AppTextField(
+                            containerColor = bgSecondary,
                                 value = formState.ounces,
                                 onValueChange = onOuncesChanged,
                                 label = "Ounces",
                                 placeholder = "0",
                                 suffix = "oz",
                                 modifier = Modifier.weight(1f),
-                                borderColor = if (weightEmpty) warningColor else null
+                                borderColor = if (weightEmpty) warningColor else Color.Transparent
                         )
                     }
 
-                    DialogFormTextField(
+                    AppTextField(
+                            containerColor = bgSecondary,
                             value = formState.trackingNumber,
                             onValueChange = onCreateOrderTrackingNumberChanged,
                             label = "Tracking Number",
                             placeholder = "1Z12345678901234567890",
-                            secondaryText = "Optional, you can add this later",
-                            borderColor = if (formState.trackingNumber.isBlank()) warningColor else null
+                            secondaryLabel = "Optional, you can add this later",
+                            borderColor = if (formState.trackingNumber.isBlank()) warningColor else Color.Transparent
                     )
                 }
             },
@@ -1779,60 +1793,6 @@ private fun CreateOrderDialog(
     )
 }
 
-@Composable
-private fun DialogFormTextField(
-        modifier: Modifier = Modifier,
-        value: String,
-        onValueChange: (String) -> Unit,
-        label: String,
-        placeholder: String,
-        prefix: String? = null,
-        suffix: String? = null,
-        secondaryText: String? = null,
-        secondaryTextColor: androidx.compose.ui.graphics.Color = textTertiary,
-        borderColor: androidx.compose.ui.graphics.Color? = null
-) {
-    Column(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = label, style = MaterialTheme.typography.bodyMedium, color = textPrimary)
-            if (secondaryText != null) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                        text = secondaryText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = secondaryTextColor
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(4.dp))
-        OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = placeholder, color = textTertiary) },
-                prefix =
-                        if (prefix != null) {
-                            { Text(prefix, color = textPrimary) }
-                        } else null,
-                suffix =
-                        if (suffix != null) {
-                            { Text(suffix, color = textPrimary) }
-                        } else null,
-                singleLine = true,
-                colors =
-                        OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = textPrimary,
-                                unfocusedTextColor = textPrimary,
-                                focusedBorderColor = borderColor ?: Color.Transparent,
-                                unfocusedBorderColor = borderColor ?: Color.Transparent,
-                                cursorColor = accentPrimary,
-                                focusedContainerColor = bgSecondary,
-                                unfocusedContainerColor = bgSecondary
-                        ),
-                shape = RoundedCornerShape(8.dp)
-        )
-    }
-}
 
 @Composable
 private fun ShippingTypeDropdown(

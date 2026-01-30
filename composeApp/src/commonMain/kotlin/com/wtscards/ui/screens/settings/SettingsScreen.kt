@@ -26,8 +26,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -38,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.wtscards.domain.model.BackupInfo
+import com.wtscards.ui.components.AppTextField
 import com.wtscards.ui.components.ScrollableList
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgSecondary
@@ -127,22 +126,38 @@ fun SettingsScreen(
 
                                         Spacer(modifier = Modifier.height(16.dp))
 
-                                        SettingTextField(
-                                                label = "Default pre-body text",
-                                                description =
-                                                        "This text will be automatically inserted before your listed cards when you click copy body",
+                                        Text(
+                                                text = "This text will be automatically inserted before your listed cards when you click copy body",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = textSecondary
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AppTextField(
                                                 value = uiState.preBodyText,
-                                                onValueChange = onPreBodyTextChanged
+                                                onValueChange = onPreBodyTextChanged,
+                                                label = "Default pre-body text",
+                                                singleLine = false,
+                                                minLines = 3,
+                                                maxLines = 6,
+                                                borderColor = textTertiary
                                         )
 
                                         Spacer(modifier = Modifier.height(20.dp))
 
-                                        SettingTextField(
-                                                label = "Default post-body text",
-                                                description =
-                                                        "This text will be automatically inserted after your listed cards when you click copy body",
+                                        Text(
+                                                text = "This text will be automatically inserted after your listed cards when you click copy body",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = textSecondary
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AppTextField(
                                                 value = uiState.postBodyText,
-                                                onValueChange = onPostBodyTextChanged
+                                                onValueChange = onPostBodyTextChanged,
+                                                label = "Default post-body text",
+                                                singleLine = false,
+                                                minLines = 3,
+                                                maxLines = 6,
+                                                borderColor = textTertiary
                                         )
 
                                         Spacer(modifier = Modifier.height(20.dp))
@@ -157,14 +172,19 @@ fun SettingsScreen(
 
                                         Spacer(modifier = Modifier.height(20.dp))
 
-                                        SettingSingleLineTextField(
-                                                label = "Default discount percentage",
-                                                description =
-                                                        "Default discount to apply to new listings. Enter as a whole number (e.g. 5 for 5%)",
+                                        Text(
+                                                text = "Default discount to apply to new listings. Enter as a whole number (e.g. 5 for 5%)",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = textSecondary
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AppTextField(
                                                 value = uiState.listingDefaultDiscount,
                                                 onValueChange = onListingDefaultDiscountChanged,
+                                                label = "Default discount percentage",
                                                 placeholder = "0",
-                                                suffix = "%"
+                                                suffix = "%",
+                                                borderColor = textTertiary
                                         )
 
                                         Spacer(modifier = Modifier.height(24.dp))
@@ -195,13 +215,14 @@ fun SettingsScreen(
 
                                         if (uiState.freeShippingEnabled) {
                                                 Spacer(modifier = Modifier.height(8.dp))
-                                                SettingSingleLineTextField(
-                                                        label = "Free shipping threshold",
+                                                AppTextField(
                                                         value = uiState.freeShippingThreshold,
                                                         onValueChange =
                                                                 onFreeShippingThresholdChanged,
+                                                        label = "Free shipping threshold",
                                                         placeholder = "0.00",
-                                                        prefix = "$"
+                                                        prefix = "$",
+                                                        borderColor = textTertiary
                                                 )
                                         }
 
@@ -217,14 +238,19 @@ fun SettingsScreen(
 
                                         Spacer(modifier = Modifier.height(20.dp))
 
-                                        SettingSingleLineTextField(
-                                                label = "Default discount percentage",
-                                                description =
-                                                        "Default discount to apply to new orders. Enter as a whole number (e.g. 5 for 5%)",
+                                        Text(
+                                                text = "Default discount to apply to new orders. Enter as a whole number (e.g. 5 for 5%)",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = textSecondary
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AppTextField(
                                                 value = uiState.defaultDiscount,
                                                 onValueChange = onDefaultDiscountChanged,
+                                                label = "Default discount percentage",
                                                 placeholder = "0",
-                                                suffix = "%"
+                                                suffix = "%",
+                                                borderColor = textTertiary
                                         )
 
                                         Spacer(modifier = Modifier.height(24.dp))
@@ -262,26 +288,29 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                                SettingSingleLineTextField(
-                                                        label = "Default Cost",
+                                                AppTextField(
                                                         value = uiState.envelopeCost,
                                                         onValueChange = onEnvelopeCostChanged,
+                                                        label = "Default Cost",
                                                         placeholder = "1.00",
-                                                        prefix = "$"
+                                                        prefix = "$",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Length",
+                                                AppTextField(
                                                         value = uiState.envelopeLength,
                                                         onValueChange = onEnvelopeLengthChanged,
+                                                        label = "Length",
                                                         placeholder = "3.5",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Width",
+                                                AppTextField(
                                                         value = uiState.envelopeWidth,
                                                         onValueChange = onEnvelopeWidthChanged,
+                                                        label = "Width",
                                                         placeholder = "6.5",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
                                         }
 
@@ -296,26 +325,29 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                                SettingSingleLineTextField(
-                                                        label = "Default Cost",
+                                                AppTextField(
                                                         value = uiState.bubbleMailerCost,
                                                         onValueChange = onBubbleMailerCostChanged,
+                                                        label = "Default Cost",
                                                         placeholder = "7.00",
-                                                        prefix = "$"
+                                                        prefix = "$",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Length",
+                                                AppTextField(
                                                         value = uiState.bubbleMailerLength,
                                                         onValueChange = onBubbleMailerLengthChanged,
+                                                        label = "Length",
                                                         placeholder = "6",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Width",
+                                                AppTextField(
                                                         value = uiState.bubbleMailerWidth,
                                                         onValueChange = onBubbleMailerWidthChanged,
+                                                        label = "Width",
                                                         placeholder = "9",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
                                         }
 
@@ -330,33 +362,37 @@ fun SettingsScreen(
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                                SettingSingleLineTextField(
-                                                        label = "Default Cost",
+                                                AppTextField(
                                                         value = uiState.boxCost,
                                                         onValueChange = onBoxCostChanged,
+                                                        label = "Default Cost",
                                                         placeholder = "10.00",
-                                                        prefix = "$"
+                                                        prefix = "$",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Length",
+                                                AppTextField(
                                                         value = uiState.boxLength,
                                                         onValueChange = onBoxLengthChanged,
+                                                        label = "Length",
                                                         placeholder = "6",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Width",
+                                                AppTextField(
                                                         value = uiState.boxWidth,
                                                         onValueChange = onBoxWidthChanged,
+                                                        label = "Width",
                                                         placeholder = "9",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
-                                                SettingSingleLineTextField(
-                                                        label = "Height",
+                                                AppTextField(
                                                         value = uiState.boxHeight,
                                                         onValueChange = onBoxHeightChanged,
+                                                        label = "Height",
                                                         placeholder = "6",
-                                                        suffix = "in"
+                                                        suffix = "in",
+                                                        borderColor = textTertiary
                                                 )
                                         }
 
@@ -619,46 +655,6 @@ private fun SettingsToast(
         }
 }
 
-@Composable
-private fun SettingTextField(
-        label: String,
-        description: String,
-        value: String,
-        onValueChange: (String) -> Unit
-) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = label, style = MaterialTheme.typography.bodyLarge, color = textPrimary)
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                        text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textSecondary
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                        value = value,
-                        onValueChange = onValueChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3,
-                        maxLines = 6,
-                        colors =
-                                OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = textPrimary,
-                                        unfocusedTextColor = textPrimary,
-                                        focusedBorderColor = accentPrimary,
-                                        unfocusedBorderColor = textTertiary,
-                                        cursorColor = accentPrimary,
-                                        focusedContainerColor = bgSurface,
-                                        unfocusedContainerColor = bgSurface
-                                ),
-                        shape = RoundedCornerShape(8.dp)
-                )
-        }
-}
 
 @Composable
 private fun SettingToggle(
@@ -702,56 +698,3 @@ private fun SettingToggle(
         }
 }
 
-@Composable
-private fun SettingSingleLineTextField(
-        label: String,
-        value: String,
-        onValueChange: (String) -> Unit,
-        placeholder: String = "",
-        prefix: String? = null,
-        suffix: String? = null,
-        description: String? = null,
-        modifier: Modifier = Modifier
-) {
-        Column(modifier = modifier) {
-                Text(text = label, style = MaterialTheme.typography.bodyLarge, color = textPrimary)
-
-                if (description != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                                text = description,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = textSecondary
-                        )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                        value = value,
-                        onValueChange = onValueChange,
-                        modifier = Modifier.width(200.dp),
-                        singleLine = true,
-                        placeholder = { Text(text = placeholder, color = textTertiary) },
-                        prefix =
-                                if (prefix != null) {
-                                        { Text(prefix, color = textPrimary) }
-                                } else null,
-                        suffix =
-                                if (suffix != null) {
-                                        { Text(suffix, color = textPrimary) }
-                                } else null,
-                        colors =
-                                OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = textPrimary,
-                                        unfocusedTextColor = textPrimary,
-                                        focusedBorderColor = accentPrimary,
-                                        unfocusedBorderColor = textTertiary,
-                                        cursorColor = accentPrimary,
-                                        focusedContainerColor = bgSurface,
-                                        unfocusedContainerColor = bgSurface
-                                ),
-                        shape = RoundedCornerShape(8.dp)
-                )
-        }
-}
