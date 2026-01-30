@@ -319,6 +319,15 @@ private fun ListingCard(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            if (listing.cards.isNotEmpty()) {
+                Text(
+                        text = formatPrice(listing.cards.sumOf { it.priceInPennies }),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = successColor
+                )
+            }
+
             Box(
                     modifier =
                             Modifier.clip(RoundedCornerShape(4.dp))
@@ -484,7 +493,7 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
-                text = "SCP",
+                text = "SportsCardPro",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = accentPrimary,
@@ -896,7 +905,7 @@ private fun generateMarkdownBody(cards: List<Card>): String {
                 }
         val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
         val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-        "- ${card.name} - $priceStr [SportsCardPro]($scpUrl) [EBAY]($ebayUrl)"
+        "- ${card.name} - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
     }
 }
 
