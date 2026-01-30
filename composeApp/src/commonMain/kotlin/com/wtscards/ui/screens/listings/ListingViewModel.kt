@@ -8,19 +8,19 @@ import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.ListingUseCase
 import com.wtscards.domain.usecase.SettingUseCase
 import com.wtscards.ui.screens.settings.SettingsViewModel
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class ListingViewModel(
-    private val listingUseCase: ListingUseCase,
-    private val cardUseCase: CardUseCase,
-    private val settingUseCase: SettingUseCase,
-    private val coroutineScope: CoroutineScope
+        private val listingUseCase: ListingUseCase,
+        private val cardUseCase: CardUseCase,
+        private val settingUseCase: SettingUseCase,
+        private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(ListingUiState())
         private set
@@ -32,45 +32,52 @@ class ListingViewModel(
     }
 
     private fun observeListings() {
-        listingUseCase.getAllListingsFlow()
-            .onStart { uiState = uiState.copy(isLoading = true) }
-            .onEach { listings ->
-                uiState = uiState.copy(
-                    isLoading = false,
-                    listings = listings,
-                    error = null
-                )
-            }
-            .catch { e ->
-                uiState = uiState.copy(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load listings"
-                )
-            }
-            .launchIn(coroutineScope)
+        listingUseCase
+                .getAllListingsFlow()
+                .onStart { uiState = uiState.copy(isLoading = true) }
+                .onEach { listings ->
+                    uiState = uiState.copy(isLoading = false, listings = listings, error = null)
+                }
+                .catch { e ->
+                    uiState =
+                            uiState.copy(
+                                    isLoading = false,
+                                    error = e.message ?: "Failed to load listings"
+                            )
+                }
+                .launchIn(coroutineScope)
     }
 
     private fun observeCards() {
-        cardUseCase.getAllCardsFlow()
-            .onEach { cards ->
-                uiState = uiState.copy(availableCards = cards)
-            }
-            .catch { }
-            .launchIn(coroutineScope)
+        cardUseCase
+                .getAllCardsFlow()
+                .onEach { cards -> uiState = uiState.copy(availableCards = cards) }
+                .catch {}
+                .launchIn(coroutineScope)
     }
 
     private fun observeSettings() {
-        settingUseCase.getAllSettingsFlow()
-            .onEach { settings ->
-                uiState = uiState.copy(
-                    preBodyText = settings[SettingsViewModel.KEY_PRE_BODY_TEXT] ?: "",
-                    postBodyText = settings[SettingsViewModel.KEY_POST_BODY_TEXT] ?: "",
-                    listingNicePricesDefault = settings[SettingsViewModel.KEY_LISTING_NICE_PRICES_ENABLED] == "true",
-                    listingDefaultDiscount = settings[SettingsViewModel.KEY_LISTING_DEFAULT_DISCOUNT] ?: "0"
-                )
-            }
-            .catch { }
-            .launchIn(coroutineScope)
+        settingUseCase
+                .getAllSettingsFlow()
+                .onEach { settings ->
+                    uiState =
+                            uiState.copy(
+                                    preBodyText = settings[SettingsViewModel.KEY_PRE_BODY_TEXT]
+                                                    ?: "",
+                                    postBodyText = settings[SettingsViewModel.KEY_POST_BODY_TEXT]
+                                                    ?: "",
+                                    listingNicePricesDefault =
+                                            settings[
+                                                    SettingsViewModel
+                                                            .KEY_LISTING_NICE_PRICES_ENABLED] ==
+                                                    "true",
+                                    listingDefaultDiscount =
+                                            settings[SettingsViewModel.KEY_LISTING_DEFAULT_DISCOUNT]
+                                                    ?: "0"
+                            )
+                }
+                .catch {}
+                .launchIn(coroutineScope)
     }
 
     fun onSearchQueryChanged(query: String) {
@@ -78,61 +85,58 @@ class ListingViewModel(
     }
 
     fun onShowCreateDialog() {
-        uiState = uiState.copy(
-            showCreateDialog = true,
-            editingListingId = null,
-            createFormState = CreateListingFormState(
-                discount = uiState.listingDefaultDiscount,
-                nicePrices = uiState.listingNicePricesDefault
-            )
-        )
+        uiState =
+                uiState.copy(
+                        showCreateDialog = true,
+                        editingListingId = null,
+                        createFormState =
+                                CreateListingFormState(
+                                        discount = uiState.listingDefaultDiscount,
+                                        nicePrices = uiState.listingNicePricesDefault
+                                )
+                )
     }
 
     fun onDismissCreateDialog() {
-        uiState = uiState.copy(
-            showCreateDialog = false,
-            editingListingId = null,
-            createFormState = CreateListingFormState()
-        )
+        uiState =
+                uiState.copy(
+                        showCreateDialog = false,
+                        editingListingId = null,
+                        createFormState = CreateListingFormState()
+                )
     }
 
     fun onEditListing(listing: Listing) {
-        uiState = uiState.copy(
-            showCreateDialog = true,
-            editingListingId = listing.id,
-            createFormState = CreateListingFormState(
-                title = listing.title,
-                discount = listing.discount.toString(),
-                nicePrices = listing.nicePrices
-            )
-        )
+        uiState =
+                uiState.copy(
+                        showCreateDialog = true,
+                        editingListingId = listing.id,
+                        createFormState =
+                                CreateListingFormState(
+                                        title = listing.title,
+                                        discount = listing.discount.toString(),
+                                        nicePrices = listing.nicePrices
+                                )
+                )
     }
 
     fun onTitleChanged(title: String) {
-        uiState = uiState.copy(
-            createFormState = uiState.createFormState.copy(title = title)
-        )
+        uiState = uiState.copy(createFormState = uiState.createFormState.copy(title = title))
     }
 
     fun onDiscountChanged(value: String) {
         val filtered = value.filter { it.isDigit() }
-        uiState = uiState.copy(
-            createFormState = uiState.createFormState.copy(discount = filtered)
-        )
+        uiState = uiState.copy(createFormState = uiState.createFormState.copy(discount = filtered))
     }
 
     fun onNicePricesChanged(enabled: Boolean) {
-        uiState = uiState.copy(
-            createFormState = uiState.createFormState.copy(nicePrices = enabled)
-        )
+        uiState = uiState.copy(createFormState = uiState.createFormState.copy(nicePrices = enabled))
     }
 
     fun onCreateListing() {
         if (!uiState.createFormState.isValid()) return
 
-        uiState = uiState.copy(
-            createFormState = uiState.createFormState.copy(isSaving = true)
-        )
+        uiState = uiState.copy(createFormState = uiState.createFormState.copy(isSaving = true))
 
         val editingId = uiState.editingListingId
         val discount = uiState.createFormState.discount.toIntOrNull() ?: 0
@@ -142,47 +146,56 @@ class ListingViewModel(
             try {
                 if (editingId != null) {
                     listingUseCase.updateListing(
-                        listingId = editingId,
-                        title = uiState.createFormState.title.trim(),
-                        discount = discount,
-                        nicePrices = nicePrices
+                            listingId = editingId,
+                            title = uiState.createFormState.title.trim(),
+                            discount = discount,
+                            nicePrices = nicePrices
                     )
-                    uiState = uiState.copy(
-                        showCreateDialog = false,
-                        editingListingId = null,
-                        createFormState = CreateListingFormState(),
-                        toast = ListingToastState("Listing updated", isError = false)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    showCreateDialog = false,
+                                    editingListingId = null,
+                                    createFormState = CreateListingFormState(),
+                                    toast = ListingToastState("Listing updated", isError = false)
+                            )
                 } else {
-                    val listing = Listing(
-                        id = UUID.randomUUID().toString(),
-                        title = uiState.createFormState.title.trim(),
-                        createdAt = System.currentTimeMillis(),
-                        cards = emptyList(),
-                        discount = discount,
-                        nicePrices = nicePrices
-                    )
+                    val listing =
+                            Listing(
+                                    id = UUID.randomUUID().toString(),
+                                    title = uiState.createFormState.title.trim(),
+                                    createdAt = System.currentTimeMillis(),
+                                    cards = emptyList(),
+                                    discount = discount,
+                                    nicePrices = nicePrices
+                            )
                     listingUseCase.createListing(listing)
-                    uiState = uiState.copy(
-                        showCreateDialog = false,
-                        editingListingId = null,
-                        createFormState = CreateListingFormState(),
-                        toast = ListingToastState("Listing created", isError = false)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    showCreateDialog = false,
+                                    editingListingId = null,
+                                    createFormState = CreateListingFormState(),
+                                    toast = ListingToastState("Listing created", isError = false)
+                            )
                 }
             } catch (e: Exception) {
-                uiState = uiState.copy(
-                    createFormState = uiState.createFormState.copy(isSaving = false),
-                    toast = ListingToastState(e.message ?: "Failed to save listing", isError = true)
-                )
+                uiState =
+                        uiState.copy(
+                                createFormState = uiState.createFormState.copy(isSaving = false),
+                                toast =
+                                        ListingToastState(
+                                                e.message ?: "Failed to save listing",
+                                                isError = true
+                                        )
+                        )
             }
         }
     }
 
     fun onShowAddCardsDialog(listingId: String) {
-        uiState = uiState.copy(
-            addCardsDialogState = ListingAddCardsDialogState(listingId = listingId)
-        )
+        uiState =
+                uiState.copy(
+                        addCardsDialogState = ListingAddCardsDialogState(listingId = listingId)
+                )
     }
 
     fun onDismissAddCardsDialog() {
@@ -191,22 +204,33 @@ class ListingViewModel(
 
     fun onAddCardsSearchChanged(query: String) {
         uiState.addCardsDialogState?.let { dialogState ->
-            uiState = uiState.copy(
-                addCardsDialogState = dialogState.copy(searchQuery = query)
-            )
+            uiState = uiState.copy(addCardsDialogState = dialogState.copy(searchQuery = query))
         }
     }
 
     fun onToggleCardSelection(cardId: String) {
         uiState.addCardsDialogState?.let { dialogState ->
-            val newSelection = if (cardId in dialogState.selectedCardIds) {
-                dialogState.selectedCardIds - cardId
-            } else {
-                dialogState.selectedCardIds + cardId
-            }
-            uiState = uiState.copy(
-                addCardsDialogState = dialogState.copy(selectedCardIds = newSelection)
-            )
+            val newSelection =
+                    if (cardId in dialogState.selectedCardIds) {
+                        dialogState.selectedCardIds - cardId
+                    } else {
+                        dialogState.selectedCardIds + cardId
+                    }
+            uiState =
+                    uiState.copy(
+                            addCardsDialogState =
+                                    dialogState.copy(
+                                            selectedCardIds = newSelection,
+                                            shouldFocusSearch = true
+                                    )
+                    )
+        }
+    }
+
+    fun onClearFocusSearchFlag() {
+        uiState.addCardsDialogState?.let { dialogState ->
+            uiState =
+                    uiState.copy(addCardsDialogState = dialogState.copy(shouldFocusSearch = false))
         }
     }
 
@@ -214,39 +238,49 @@ class ListingViewModel(
         uiState.addCardsDialogState?.let { dialogState ->
             if (dialogState.selectedCardIds.isEmpty()) return@let
 
-            uiState = uiState.copy(
-                addCardsDialogState = dialogState.copy(isSaving = true)
-            )
+            uiState = uiState.copy(addCardsDialogState = dialogState.copy(isSaving = true))
 
             coroutineScope.launch {
                 try {
                     listingUseCase.addCardsToListing(
-                        dialogState.listingId,
-                        dialogState.selectedCardIds.toList()
+                            dialogState.listingId,
+                            dialogState.selectedCardIds.toList()
                     )
 
-                    uiState = uiState.copy(
-                        addCardsDialogState = null,
-                        toast = ListingToastState("Cards added to listing", isError = false)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    addCardsDialogState = null,
+                                    toast =
+                                            ListingToastState(
+                                                    "Cards added to listing",
+                                                    isError = false
+                                            )
+                            )
                 } catch (e: Exception) {
-                    uiState = uiState.copy(
-                        addCardsDialogState = dialogState.copy(isSaving = false),
-                        toast = ListingToastState(e.message ?: "Failed to add cards", isError = true)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    addCardsDialogState = dialogState.copy(isSaving = false),
+                                    toast =
+                                            ListingToastState(
+                                                    e.message ?: "Failed to add cards",
+                                                    isError = true
+                                            )
+                            )
                 }
             }
         }
     }
 
     fun onShowRemoveCardDialog(listingId: String, cardId: String, cardName: String) {
-        uiState = uiState.copy(
-            removeCardDialogState = ListingRemoveCardDialogState(
-                listingId = listingId,
-                cardId = cardId,
-                cardName = cardName
-            )
-        )
+        uiState =
+                uiState.copy(
+                        removeCardDialogState =
+                                ListingRemoveCardDialogState(
+                                        listingId = listingId,
+                                        cardId = cardId,
+                                        cardName = cardName
+                                )
+                )
     }
 
     fun onDismissRemoveCardDialog() {
@@ -255,35 +289,45 @@ class ListingViewModel(
 
     fun onConfirmRemoveCard() {
         uiState.removeCardDialogState?.let { dialogState ->
-            uiState = uiState.copy(
-                removeCardDialogState = dialogState.copy(isRemoving = true)
-            )
+            uiState = uiState.copy(removeCardDialogState = dialogState.copy(isRemoving = true))
 
             coroutineScope.launch {
                 try {
                     listingUseCase.removeCardFromListing(dialogState.listingId, dialogState.cardId)
 
-                    uiState = uiState.copy(
-                        removeCardDialogState = null,
-                        toast = ListingToastState("Card removed from listing", isError = false)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    removeCardDialogState = null,
+                                    toast =
+                                            ListingToastState(
+                                                    "Card removed from listing",
+                                                    isError = false
+                                            )
+                            )
                 } catch (e: Exception) {
-                    uiState = uiState.copy(
-                        removeCardDialogState = dialogState.copy(isRemoving = false),
-                        toast = ListingToastState(e.message ?: "Failed to remove card", isError = true)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    removeCardDialogState = dialogState.copy(isRemoving = false),
+                                    toast =
+                                            ListingToastState(
+                                                    e.message ?: "Failed to remove card",
+                                                    isError = true
+                                            )
+                            )
                 }
             }
         }
     }
 
     fun onShowDeleteListingDialog(listingId: String, title: String) {
-        uiState = uiState.copy(
-            deleteListingDialogState = DeleteListingDialogState(
-                listingId = listingId,
-                listingTitle = title
-            )
-        )
+        uiState =
+                uiState.copy(
+                        deleteListingDialogState =
+                                DeleteListingDialogState(
+                                        listingId = listingId,
+                                        listingTitle = title
+                                )
+                )
     }
 
     fun onDismissDeleteListingDialog() {
@@ -292,23 +336,27 @@ class ListingViewModel(
 
     fun onConfirmDeleteListing() {
         uiState.deleteListingDialogState?.let { dialogState ->
-            uiState = uiState.copy(
-                deleteListingDialogState = dialogState.copy(isDeleting = true)
-            )
+            uiState = uiState.copy(deleteListingDialogState = dialogState.copy(isDeleting = true))
 
             coroutineScope.launch {
                 try {
                     listingUseCase.deleteListing(dialogState.listingId)
 
-                    uiState = uiState.copy(
-                        deleteListingDialogState = null,
-                        toast = ListingToastState("Listing deleted", isError = false)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    deleteListingDialogState = null,
+                                    toast = ListingToastState("Listing deleted", isError = false)
+                            )
                 } catch (e: Exception) {
-                    uiState = uiState.copy(
-                        deleteListingDialogState = dialogState.copy(isDeleting = false),
-                        toast = ListingToastState(e.message ?: "Failed to delete listing", isError = true)
-                    )
+                    uiState =
+                            uiState.copy(
+                                    deleteListingDialogState = dialogState.copy(isDeleting = false),
+                                    toast =
+                                            ListingToastState(
+                                                    e.message ?: "Failed to delete listing",
+                                                    isError = true
+                                            )
+                            )
                 }
             }
         }

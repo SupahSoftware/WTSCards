@@ -51,8 +51,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -100,6 +104,7 @@ fun ListingScreen(
         onConfirmDeleteListing: () -> Unit,
         onShowCopyToast: (String) -> Unit,
         onClearToast: () -> Unit,
+        onClearFocusSearchFlag: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -146,7 +151,8 @@ fun ListingScreen(
                 onDismissRemoveCardDialog = onDismissRemoveCardDialog,
                 onConfirmRemoveCard = onConfirmRemoveCard,
                 onDismissDeleteListingDialog = onDismissDeleteListingDialog,
-                onConfirmDeleteListing = onConfirmDeleteListing
+                onConfirmDeleteListing = onConfirmDeleteListing,
+                onClearFocusSearchFlag = onClearFocusSearchFlag
         )
 
         uiState.toast?.let { toast ->
@@ -607,7 +613,8 @@ private fun ListingDialogs(
         onDismissRemoveCardDialog: () -> Unit,
         onConfirmRemoveCard: () -> Unit,
         onDismissDeleteListingDialog: () -> Unit,
-        onConfirmDeleteListing: () -> Unit
+        onConfirmDeleteListing: () -> Unit,
+        onClearFocusSearchFlag: () -> Unit
 ) {
     if (uiState.showCreateDialog) {
         CreateListingDialog(
@@ -635,7 +642,8 @@ private fun ListingDialogs(
                 onDismiss = onDismissAddCardsDialog,
                 onSearchChanged = onAddCardsSearchChanged,
                 onToggleCardSelection = onToggleCardSelection,
-                onConfirm = onConfirmAddCards
+                onConfirm = onConfirmAddCards,
+                onClearFocusSearchFlag = onClearFocusSearchFlag
         )
     }
 
@@ -772,7 +780,8 @@ private fun AddCardsDialog(
         onDismiss: () -> Unit,
         onSearchChanged: (String) -> Unit,
         onToggleCardSelection: (String) -> Unit,
-        onConfirm: () -> Unit
+        onConfirm: () -> Unit,
+        onClearFocusSearchFlag: () -> Unit
 ) {
     val cardsToShow = availableCards.filter { it.id !in existingCardIds }
     val filteredCards =
@@ -784,14 +793,37 @@ private fun AddCardsDialog(
                 }
             }
 
+    val focusRequester = remember { FocusRequester() }
+    var textFieldValue by remember { mutableStateOf(TextFieldValue(dialogState.searchQuery)) }
+
+    // Sync textFieldValue with dialogState changes
+    LaunchedEffect(dialogState.searchQuery) {
+        if (textFieldValue.text != dialogState.searchQuery) {
+            textFieldValue = TextFieldValue(dialogState.searchQuery)
+        }
+    }
+
+    LaunchedEffect(dialogState.shouldFocusSearch) {
+        if (dialogState.shouldFocusSearch) {
+            // Select all text
+            textFieldValue =
+                    textFieldValue.copy(selection = TextRange(0, textFieldValue.text.length))
+            focusRequester.requestFocus()
+            onClearFocusSearchFlag()
+        }
+    }
+
     AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text("Add Cards", color = textPrimary) },
             text = {
                 Column(modifier = Modifier.width(400.dp).height(400.dp)) {
                     OutlinedTextField(
-                            value = dialogState.searchQuery,
-                            onValueChange = onSearchChanged,
+                            value = textFieldValue,
+                            onValueChange = { newValue ->
+                                textFieldValue = newValue
+                                onSearchChanged(newValue.text)
+                            },
                             placeholder = { Text("Search cards...") },
                             leadingIcon = {
                                 Icon(
@@ -801,7 +833,7 @@ private fun AddCardsDialog(
                                 )
                             },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                             colors =
                                     OutlinedTextFieldDefaults.colors(
                                             focusedTextColor = textPrimary,
