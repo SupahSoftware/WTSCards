@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Card
 import com.wtscards.data.model.Listing
@@ -335,9 +336,14 @@ private fun ListingCard(
             Spacer(modifier = Modifier.weight(1f))
 
             if (listing.cards.isNotEmpty()) {
-                val totalPrice = listing.cards.sumOf { card ->
-                    calculateListingPrice(card.priceInPennies, listing.discount, listing.nicePrices)
-                }
+                val totalPrice =
+                        listing.cards.sumOf { card ->
+                            calculateListingPrice(
+                                    card.priceInPennies,
+                                    listing.discount,
+                                    listing.nicePrices
+                            )
+                        }
                 Text(
                         text = formatPrice(totalPrice),
                         style = MaterialTheme.typography.titleMedium,
@@ -431,11 +437,7 @@ private fun ListingOverflowMenu(
                         onEdit()
                     },
                     leadingIcon = {
-                        Icon(
-                                Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = accentPrimary
-                        )
+                        Icon(Icons.Default.Edit, contentDescription = null, tint = accentPrimary)
                     }
             )
             DropdownMenuItem(
@@ -493,16 +495,22 @@ private fun ListingOverflowMenu(
 @Composable
 private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRemove: () -> Unit) {
     val adjustedPrice = calculateListingPrice(card.priceInPennies, discountPercent, nicePrices)
+    val isSold = card.priceSold != null && card.priceSold > 0
+    val textColor = if (isSold) textTertiary else textPrimary
+    val textDecoration = if (isSold) TextDecoration.LineThrough else null
 
-    Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
                 text = card.name,
                 style = MaterialTheme.typography.bodyMedium,
-                color = textPrimary,
+                color = textColor,
+                textDecoration = textDecoration
         )
+
+        if (isSold) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(text = "[SOLD]", style = MaterialTheme.typography.bodyMedium, color = textTertiary)
+        }
 
         Spacer(modifier = Modifier.width(8.dp))
 
@@ -513,7 +521,7 @@ private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRe
                     color = successColor
             )
         }
-        
+
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
@@ -530,7 +538,7 @@ private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRe
                                 }
                                 .padding(horizontal = 2.dp, vertical = 2.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(8.dp))
 
         Text(
@@ -541,13 +549,11 @@ private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRe
                 modifier =
                         Modifier.clip(RoundedCornerShape(4.dp))
                                 .clickable {
-                                    UrlUtils.openInBrowser(
-                                            UrlUtils.getSportsCardProUrl(card.name)
-                                    )
+                                    UrlUtils.openInBrowser(UrlUtils.getSportsCardProUrl(card.name))
                                 }
                                 .padding(horizontal = 2.dp, vertical = 2.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(4.dp))
 
         Icon(
@@ -555,8 +561,7 @@ private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRe
                 contentDescription = "Remove card",
                 tint = errorColor,
                 modifier =
-                        Modifier
-                                .size(24.dp)
+                        Modifier.size(24.dp)
                                 .padding(4.dp)
                                 .clip(RoundedCornerShape(4.dp))
                                 .clickable(onClick = onRemove)
@@ -653,7 +658,9 @@ private fun CreateListingDialog(
 ) {
     AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text(if (isEditing) "Edit Listing" else "Create Listing", color = textPrimary) },
+            title = {
+                Text(if (isEditing) "Edit Listing" else "Create Listing", color = textPrimary)
+            },
             text = {
                 Column {
                     if (!isEditing) {
@@ -983,7 +990,11 @@ private fun buildFullBody(preBodyText: String, body: String, postBodyText: Strin
     }
 }
 
-private fun calculateListingPrice(priceInPennies: Long, discountPercent: Int, nicePrices: Boolean): Long {
+private fun calculateListingPrice(
+        priceInPennies: Long,
+        discountPercent: Int,
+        nicePrices: Boolean
+): Long {
     if (priceInPennies <= 0) return priceInPennies
     val discounted = (priceInPennies * (100 - discountPercent) / 100.0)
     val rounded = kotlin.math.ceil(discounted).toLong()
@@ -995,7 +1006,11 @@ private fun calculateListingPrice(priceInPennies: Long, discountPercent: Int, ni
     }
 }
 
-private fun generateMarkdownBody(cards: List<Card>, discountPercent: Int, nicePrices: Boolean): String {
+private fun generateMarkdownBody(
+        cards: List<Card>,
+        discountPercent: Int,
+        nicePrices: Boolean
+): String {
     if (cards.isEmpty()) return ""
     return cards.joinToString("\n") { card ->
         val adjustedPrice = calculateListingPrice(card.priceInPennies, discountPercent, nicePrices)
@@ -1007,7 +1022,9 @@ private fun generateMarkdownBody(cards: List<Card>, discountPercent: Int, nicePr
                 }
         val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
         val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-        "- ${card.name} - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
+        val isSold = card.priceSold != null && card.priceSold > 0
+        val cardText = if (isSold) "~~${card.name}~~ [SOLD]" else card.name
+        "- $cardText - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
     }
 }
 
