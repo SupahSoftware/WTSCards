@@ -1126,7 +1126,7 @@ private fun OrderCard(
                                     }
                             )
                             DropdownMenuItem(
-                                    text = { Text("Copy order", color = textPrimary) },
+                                    text = { Text("Copy details", color = textPrimary) },
                                     onClick = {
                                         showOverflowMenu = false
                                         val text =

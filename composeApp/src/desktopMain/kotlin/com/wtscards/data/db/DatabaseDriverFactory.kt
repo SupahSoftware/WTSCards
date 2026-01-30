@@ -7,7 +7,9 @@ import java.io.File
 
 object DatabaseDriverFactory {
     private const val DATABASE_NAME = "wtscards.db"
-    private const val SCHEMA_VERSION = 14 // Increment this to force recreation
+
+    // DO NOT EVER CHANGE THIS WITHOUT A DB UPGRADE IN PLACE
+    private const val SCHEMA_VERSION = 14
 
     fun createDriver(): SqlDriver {
         val appDataDir = getAppDataDirectory()

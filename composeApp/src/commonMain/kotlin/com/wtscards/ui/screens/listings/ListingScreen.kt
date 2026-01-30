@@ -317,21 +317,6 @@ private fun ListingCard(
                     color = textPrimary
             )
 
-            IconButton(
-                    onClick = {
-                        copyToClipboard(listing.title)
-                        onShowCopyToast("Title copied to clipboard")
-                    },
-                    modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copy title",
-                        tint = accentPrimary,
-                        modifier = Modifier.size(18.dp)
-                )
-            }
-
             Spacer(modifier = Modifier.weight(1f))
 
             Box(
@@ -352,39 +337,21 @@ private fun ListingCard(
 
             ListingOverflowMenu(
                     onAddCards = onShowAddCardsDialog,
-                    onDelete = onShowDeleteListingDialog
+                    onDelete = onShowDeleteListingDialog,
+                    onCopyTitle = {
+                        copyToClipboard(listing.title)
+                        onShowCopyToast("Title copied to clipboard")
+                    },
+                    onCopyBody = {
+                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText)
+                        copyToClipboard(fullBody)
+                        onShowCopyToast("Body copied to clipboard")
+                    }
             )
         }
 
         if (listing.cards.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                Text(
-                        text = markdownBody,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textSecondary,
-                        modifier = Modifier.weight(1f)
-                )
-
-                IconButton(
-                        onClick = {
-                            val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText)
-                            copyToClipboard(fullBody)
-                            onShowCopyToast("Body copied to clipboard")
-                        },
-                        modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = "Copy body",
-                            tint = accentPrimary,
-                            modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             listing.cards.forEach { card ->
                 CardItem(card = card, onRemove = { onShowRemoveCardDialog(card.id, card.name) })
@@ -401,7 +368,12 @@ private fun ListingCard(
 }
 
 @Composable
-private fun ListingOverflowMenu(onAddCards: () -> Unit, onDelete: () -> Unit) {
+private fun ListingOverflowMenu(
+        onAddCards: () -> Unit,
+        onDelete: () -> Unit,
+        onCopyTitle: () -> Unit,
+        onCopyBody: () -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Box {
@@ -418,6 +390,34 @@ private fun ListingOverflowMenu(onAddCards: () -> Unit, onDelete: () -> Unit) {
                 onDismissRequest = { expanded = false },
                 modifier = Modifier.background(bgSecondary)
         ) {
+            DropdownMenuItem(
+                    text = { Text("Copy title", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onCopyTitle()
+                    },
+                    leadingIcon = {
+                        Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                tint = accentPrimary
+                        )
+                    }
+            )
+            DropdownMenuItem(
+                    text = { Text("Copy body", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onCopyBody()
+                    },
+                    leadingIcon = {
+                        Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                tint = accentPrimary
+                        )
+                    }
+            )
             DropdownMenuItem(
                     text = { Text("Add cards", color = textPrimary) },
                     onClick = {
@@ -445,15 +445,16 @@ private fun ListingOverflowMenu(onAddCards: () -> Unit, onDelete: () -> Unit) {
 @Composable
 private fun CardItem(card: Card, onRemove: () -> Unit) {
     Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
                 text = card.name,
                 style = MaterialTheme.typography.bodyMedium,
                 color = textPrimary,
-                modifier = Modifier.weight(1f)
         )
+
+        Spacer(modifier = Modifier.width(8.dp))
 
         if (card.priceInPennies > 0) {
             Text(
@@ -463,14 +464,47 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
             )
         }
 
-        IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Remove card",
-                    tint = errorColor,
-                    modifier = Modifier.size(18.dp)
-            )
-        }
+        Text(
+                text = "EBAY",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accentPrimary,
+                modifier =
+                        Modifier.clip(RoundedCornerShape(4.dp))
+                                .clickable {
+                                    UrlUtils.openInBrowser(
+                                            UrlUtils.getEbaySoldListingsUrl(card.name)
+                                    )
+                                }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+
+        Text(
+                text = "SCP",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = accentPrimary,
+                modifier =
+                        Modifier.clip(RoundedCornerShape(4.dp))
+                                .clickable {
+                                    UrlUtils.openInBrowser(
+                                            UrlUtils.getSportsCardProUrl(card.name)
+                                    )
+                                }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+        )
+
+        Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Remove card",
+                tint = errorColor,
+                modifier =
+                        Modifier
+                                .padding(4.dp)
+                                .size(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable(onClick = onRemove)
+        )
     }
 }
 
