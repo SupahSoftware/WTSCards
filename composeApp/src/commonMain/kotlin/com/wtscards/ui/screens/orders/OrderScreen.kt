@@ -149,6 +149,7 @@ fun OrderScreen(
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
             HeaderRow(
+                    orders = uiState.orders,
                     statusFilters = uiState.statusFilters,
                     onStatusFilterToggled = onStatusFilterToggled
             )
@@ -238,13 +239,32 @@ private fun ToastAutoCloseEffect(toast: ToastState?, onClearToast: () -> Unit) {
 }
 
 @Composable
-private fun HeaderRow(statusFilters: Set<String>, onStatusFilterToggled: (String) -> Unit) {
+private fun HeaderRow(orders: List<Order>, statusFilters: Set<String>, onStatusFilterToggled: (String) -> Unit) {
     Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "Orders", style = MaterialTheme.typography.headlineMedium, color = textPrimary)
+        Row {
+            Text(
+                    text = "Orders",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = textPrimary,
+                    modifier = Modifier.alignByBaseline()
+            )
+            val totalSold = orders.sumOf { order ->
+                order.cards.sumOf { it.priceSold ?: 0L } + order.shippingCost
+            }
+            if (totalSold > 0) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                        text = "Total sold orders ${formatPrice(totalSold)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = successColor,
+                        modifier = Modifier.alignByBaseline()
+                )
+            }
+        }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             OrderStatus.allStatuses.forEach { status ->

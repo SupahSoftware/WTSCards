@@ -109,7 +109,7 @@ fun ListingScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            ListingScreenHeader()
+            ListingScreenHeader(listings = uiState.listings)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -166,8 +166,35 @@ fun ListingScreen(
 }
 
 @Composable
-private fun ListingScreenHeader() {
-    Text(text = "Listings", style = MaterialTheme.typography.headlineMedium, color = textPrimary)
+private fun ListingScreenHeader(listings: List<Listing>) {
+    Row {
+        Text(
+                text = "Listings",
+                style = MaterialTheme.typography.headlineMedium,
+                color = textPrimary,
+                modifier = Modifier.alignByBaseline()
+        )
+        val totalValue = listings.sumOf { listing ->
+            listing.cards
+                    .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                    .sumOf { card ->
+                        calculateListingPrice(
+                                card.priceInPennies,
+                                listing.discount,
+                                listing.nicePrices
+                        )
+                    }
+        }
+        if (totalValue > 0) {
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                    text = "Total listings value ${formatPrice(totalValue)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = successColor,
+                    modifier = Modifier.alignByBaseline()
+            )
+        }
+    }
 }
 
 @Composable
