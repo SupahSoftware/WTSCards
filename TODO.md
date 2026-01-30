@@ -1,1 +1,0 @@
-1. For some reason the 'add card screen' clicks arean't working. I can't click on anything on the screen at all. I can't click to select an input or click the button. I can however tab select to an input and start typing tab to select the button then enter to trigger the click
