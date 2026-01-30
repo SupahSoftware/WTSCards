@@ -64,7 +64,9 @@ class ListingViewModel(
             .onEach { settings ->
                 uiState = uiState.copy(
                     preBodyText = settings[SettingsViewModel.KEY_PRE_BODY_TEXT] ?: "",
-                    postBodyText = settings[SettingsViewModel.KEY_POST_BODY_TEXT] ?: ""
+                    postBodyText = settings[SettingsViewModel.KEY_POST_BODY_TEXT] ?: "",
+                    listingNicePricesDefault = settings[SettingsViewModel.KEY_LISTING_NICE_PRICES_ENABLED] == "true",
+                    listingDefaultDiscount = settings[SettingsViewModel.KEY_LISTING_DEFAULT_DISCOUNT] ?: "0"
                 )
             }
             .catch { }
@@ -76,19 +78,52 @@ class ListingViewModel(
     }
 
     fun onShowCreateDialog() {
-        uiState = uiState.copy(showCreateDialog = true)
+        uiState = uiState.copy(
+            showCreateDialog = true,
+            editingListingId = null,
+            createFormState = CreateListingFormState(
+                discount = uiState.listingDefaultDiscount,
+                nicePrices = uiState.listingNicePricesDefault
+            )
+        )
     }
 
     fun onDismissCreateDialog() {
         uiState = uiState.copy(
             showCreateDialog = false,
+            editingListingId = null,
             createFormState = CreateListingFormState()
+        )
+    }
+
+    fun onEditListing(listing: Listing) {
+        uiState = uiState.copy(
+            showCreateDialog = true,
+            editingListingId = listing.id,
+            createFormState = CreateListingFormState(
+                title = listing.title,
+                discount = listing.discount.toString(),
+                nicePrices = listing.nicePrices
+            )
         )
     }
 
     fun onTitleChanged(title: String) {
         uiState = uiState.copy(
             createFormState = uiState.createFormState.copy(title = title)
+        )
+    }
+
+    fun onDiscountChanged(value: String) {
+        val filtered = value.filter { it.isDigit() }
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(discount = filtered)
+        )
+    }
+
+    fun onNicePricesChanged(enabled: Boolean) {
+        uiState = uiState.copy(
+            createFormState = uiState.createFormState.copy(nicePrices = enabled)
         )
     }
 
@@ -99,25 +134,46 @@ class ListingViewModel(
             createFormState = uiState.createFormState.copy(isSaving = true)
         )
 
+        val editingId = uiState.editingListingId
+        val discount = uiState.createFormState.discount.toIntOrNull() ?: 0
+        val nicePrices = uiState.createFormState.nicePrices
+
         coroutineScope.launch {
             try {
-                val listing = Listing(
-                    id = UUID.randomUUID().toString(),
-                    title = uiState.createFormState.title.trim(),
-                    createdAt = System.currentTimeMillis(),
-                    cards = emptyList()
-                )
-                listingUseCase.createListing(listing)
-
-                uiState = uiState.copy(
-                    showCreateDialog = false,
-                    createFormState = CreateListingFormState(),
-                    toast = ListingToastState("Listing created", isError = false)
-                )
+                if (editingId != null) {
+                    listingUseCase.updateListing(
+                        listingId = editingId,
+                        title = uiState.createFormState.title.trim(),
+                        discount = discount,
+                        nicePrices = nicePrices
+                    )
+                    uiState = uiState.copy(
+                        showCreateDialog = false,
+                        editingListingId = null,
+                        createFormState = CreateListingFormState(),
+                        toast = ListingToastState("Listing updated", isError = false)
+                    )
+                } else {
+                    val listing = Listing(
+                        id = UUID.randomUUID().toString(),
+                        title = uiState.createFormState.title.trim(),
+                        createdAt = System.currentTimeMillis(),
+                        cards = emptyList(),
+                        discount = discount,
+                        nicePrices = nicePrices
+                    )
+                    listingUseCase.createListing(listing)
+                    uiState = uiState.copy(
+                        showCreateDialog = false,
+                        editingListingId = null,
+                        createFormState = CreateListingFormState(),
+                        toast = ListingToastState("Listing created", isError = false)
+                    )
+                }
             } catch (e: Exception) {
                 uiState = uiState.copy(
                     createFormState = uiState.createFormState.copy(isSaving = false),
-                    toast = ListingToastState(e.message ?: "Failed to create listing", isError = true)
+                    toast = ListingToastState(e.message ?: "Failed to save listing", isError = true)
                 )
             }
         }

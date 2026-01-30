@@ -55,6 +55,8 @@ fun SettingsScreen(
         uiState: SettingsUiState,
         onPreBodyTextChanged: (String) -> Unit,
         onPostBodyTextChanged: (String) -> Unit,
+        onListingNicePricesEnabledChanged: (Boolean) -> Unit,
+        onListingDefaultDiscountChanged: (String) -> Unit,
         onFreeShippingEnabledChanged: (Boolean) -> Unit,
         onFreeShippingThresholdChanged: (String) -> Unit,
         onNicePricesEnabledChanged: (Boolean) -> Unit,
@@ -141,6 +143,28 @@ fun SettingsScreen(
                                                         "This text will be automatically inserted after your listed cards when you click copy body",
                                                 value = uiState.postBodyText,
                                                 onValueChange = onPostBodyTextChanged
+                                        )
+
+                                        Spacer(modifier = Modifier.height(20.dp))
+
+                                        SettingToggle(
+                                                label = "Nice prices",
+                                                description =
+                                                        "Round card prices up to the nearest dollar on new listings",
+                                                checked = uiState.listingNicePricesEnabled,
+                                                onCheckedChange = onListingNicePricesEnabledChanged
+                                        )
+
+                                        Spacer(modifier = Modifier.height(20.dp))
+
+                                        SettingSingleLineTextField(
+                                                label = "Default discount percentage",
+                                                description =
+                                                        "Default discount to apply to new listings. Enter as a whole number (e.g. 5 for 5%)",
+                                                value = uiState.listingDefaultDiscount,
+                                                onValueChange = onListingDefaultDiscountChanged,
+                                                placeholder = "0",
+                                                suffix = "%"
                                         )
 
                                         Spacer(modifier = Modifier.height(24.dp))

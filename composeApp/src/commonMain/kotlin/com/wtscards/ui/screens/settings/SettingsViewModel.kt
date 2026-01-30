@@ -33,6 +33,8 @@ class SettingsViewModel(
                     uiState = uiState.copy(
                         preBodyText = settings[KEY_PRE_BODY_TEXT] ?: "",
                         postBodyText = settings[KEY_POST_BODY_TEXT] ?: "",
+                        listingNicePricesEnabled = settings[KEY_LISTING_NICE_PRICES_ENABLED] == "true",
+                        listingDefaultDiscount = settings[KEY_LISTING_DEFAULT_DISCOUNT] ?: "0",
                         freeShippingEnabled = settings[KEY_FREE_SHIPPING_ENABLED] == "true",
                         freeShippingThreshold = settings[KEY_FREE_SHIPPING_THRESHOLD] ?: "",
                         nicePricesEnabled = settings[KEY_NICE_PRICES_ENABLED] == "true",
@@ -60,6 +62,18 @@ class SettingsViewModel(
 
     fun onPostBodyTextChanged(value: String) {
         uiState = uiState.copy(postBodyText = value)
+    }
+
+    fun onListingNicePricesEnabledChanged(enabled: Boolean) {
+        uiState = uiState.copy(listingNicePricesEnabled = enabled)
+        coroutineScope.launch {
+            settingUseCase.setSetting(KEY_LISTING_NICE_PRICES_ENABLED, enabled.toString())
+        }
+    }
+
+    fun onListingDefaultDiscountChanged(value: String) {
+        val filtered = value.filter { it.isDigit() }
+        uiState = uiState.copy(listingDefaultDiscount = filtered)
     }
 
     fun onFreeShippingEnabledChanged(enabled: Boolean) {
@@ -164,6 +178,8 @@ class SettingsViewModel(
             try {
                 settingUseCase.setSetting(KEY_PRE_BODY_TEXT, uiState.preBodyText)
                 settingUseCase.setSetting(KEY_POST_BODY_TEXT, uiState.postBodyText)
+                settingUseCase.setSetting(KEY_LISTING_NICE_PRICES_ENABLED, uiState.listingNicePricesEnabled.toString())
+                settingUseCase.setSetting(KEY_LISTING_DEFAULT_DISCOUNT, uiState.listingDefaultDiscount)
                 settingUseCase.setSetting(KEY_FREE_SHIPPING_ENABLED, uiState.freeShippingEnabled.toString())
                 settingUseCase.setSetting(KEY_FREE_SHIPPING_THRESHOLD, uiState.freeShippingThreshold)
                 settingUseCase.setSetting(KEY_NICE_PRICES_ENABLED, uiState.nicePricesEnabled.toString())
@@ -269,6 +285,8 @@ class SettingsViewModel(
     companion object {
         const val KEY_PRE_BODY_TEXT = "listing_pre_body_text"
         const val KEY_POST_BODY_TEXT = "listing_post_body_text"
+        const val KEY_LISTING_NICE_PRICES_ENABLED = "listing_nice_prices_enabled"
+        const val KEY_LISTING_DEFAULT_DISCOUNT = "listing_default_discount"
         const val KEY_FREE_SHIPPING_ENABLED = "order_free_shipping_enabled"
         const val KEY_FREE_SHIPPING_THRESHOLD = "order_free_shipping_threshold"
         const val KEY_NICE_PRICES_ENABLED = "order_nice_prices_enabled"

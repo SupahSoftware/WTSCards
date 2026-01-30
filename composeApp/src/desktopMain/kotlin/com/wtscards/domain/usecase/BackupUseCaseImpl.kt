@@ -69,7 +69,9 @@ data class BackupOrderCard(
 data class BackupListing(
     val id: String,
     val title: String,
-    val createdAt: Long
+    val createdAt: Long,
+    val discount: Long = 0,
+    val nicePrices: Long = 0
 )
 
 @Serializable
@@ -215,7 +217,9 @@ class BackupUseCaseImpl(
             BackupListing(
                 id = listing.id,
                 title = listing.title,
-                createdAt = listing.createdAt
+                createdAt = listing.createdAt,
+                discount = listing.discount,
+                nicePrices = listing.nicePrices
             )
         }
 
@@ -309,7 +313,9 @@ class BackupUseCaseImpl(
                 database.listingQueries.insert(
                     id = listing.id,
                     title = listing.title,
-                    createdAt = listing.createdAt
+                    createdAt = listing.createdAt,
+                    discount = listing.discount,
+                    nicePrices = listing.nicePrices
                 )
             }
 

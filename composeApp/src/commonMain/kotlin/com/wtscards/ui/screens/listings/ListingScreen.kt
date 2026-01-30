@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -37,6 +38,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -78,7 +81,10 @@ fun ListingScreen(
         onShowCreateDialog: () -> Unit,
         onDismissCreateDialog: () -> Unit,
         onTitleChanged: (String) -> Unit,
+        onDiscountChanged: (String) -> Unit,
+        onNicePricesChanged: (Boolean) -> Unit,
         onCreateListing: () -> Unit,
+        onEditListing: (Listing) -> Unit,
         onShowAddCardsDialog: (String) -> Unit,
         onDismissAddCardsDialog: () -> Unit,
         onAddCardsSearchChanged: (String) -> Unit,
@@ -109,6 +115,7 @@ fun ListingScreen(
 
             ContentArea(
                     uiState = uiState,
+                    onEditListing = onEditListing,
                     onShowAddCardsDialog = onShowAddCardsDialog,
                     onShowDeleteListingDialog = onShowDeleteListingDialog,
                     onShowRemoveCardDialog = onShowRemoveCardDialog,
@@ -127,6 +134,8 @@ fun ListingScreen(
                 uiState = uiState,
                 onDismissCreateDialog = onDismissCreateDialog,
                 onTitleChanged = onTitleChanged,
+                onDiscountChanged = onDiscountChanged,
+                onNicePricesChanged = onNicePricesChanged,
                 onCreateListing = onCreateListing,
                 onDismissAddCardsDialog = onDismissAddCardsDialog,
                 onAddCardsSearchChanged = onAddCardsSearchChanged,
@@ -199,6 +208,7 @@ private fun SearchRow(searchQuery: String, onSearchQueryChanged: (String) -> Uni
 @Composable
 private fun ContentArea(
         uiState: ListingUiState,
+        onEditListing: (Listing) -> Unit,
         onShowAddCardsDialog: (String) -> Unit,
         onShowDeleteListingDialog: (String, String) -> Unit,
         onShowRemoveCardDialog: (String, String, String) -> Unit,
@@ -244,6 +254,7 @@ private fun ContentArea(
             else -> {
                 ListingList(
                         listings = uiState.filteredListings,
+                        onEditListing = onEditListing,
                         onShowAddCardsDialog = onShowAddCardsDialog,
                         onShowDeleteListingDialog = onShowDeleteListingDialog,
                         onShowRemoveCardDialog = onShowRemoveCardDialog,
@@ -259,6 +270,7 @@ private fun ContentArea(
 @Composable
 private fun ListingList(
         listings: List<Listing>,
+        onEditListing: (Listing) -> Unit,
         onShowAddCardsDialog: (String) -> Unit,
         onShowDeleteListingDialog: (String, String) -> Unit,
         onShowRemoveCardDialog: (String, String, String) -> Unit,
@@ -276,6 +288,7 @@ private fun ListingList(
         items(items = listings, key = { it.id }) { listing ->
             ListingCard(
                     listing = listing,
+                    onEditListing = { onEditListing(listing) },
                     onShowAddCardsDialog = { onShowAddCardsDialog(listing.id) },
                     onShowDeleteListingDialog = {
                         onShowDeleteListingDialog(listing.id, listing.title)
@@ -294,6 +307,7 @@ private fun ListingList(
 @Composable
 private fun ListingCard(
         listing: Listing,
+        onEditListing: () -> Unit,
         onShowAddCardsDialog: () -> Unit,
         onShowDeleteListingDialog: () -> Unit,
         onShowRemoveCardDialog: (String, String) -> Unit,
@@ -301,7 +315,7 @@ private fun ListingCard(
         preBodyText: String,
         postBodyText: String
 ) {
-    val markdownBody = generateMarkdownBody(listing.cards)
+    val markdownBody = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
 
     Column(
             modifier =
@@ -320,8 +334,11 @@ private fun ListingCard(
             Spacer(modifier = Modifier.weight(1f))
 
             if (listing.cards.isNotEmpty()) {
+                val totalPrice = listing.cards.sumOf { card ->
+                    calculateListingPrice(card.priceInPennies, listing.discount, listing.nicePrices)
+                }
                 Text(
-                        text = formatPrice(listing.cards.sumOf { it.priceInPennies }),
+                        text = formatPrice(totalPrice),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = successColor
@@ -345,6 +362,7 @@ private fun ListingCard(
             }
 
             ListingOverflowMenu(
+                    onEdit = onEditListing,
                     onAddCards = onShowAddCardsDialog,
                     onDelete = onShowDeleteListingDialog,
                     onCopyTitle = {
@@ -363,7 +381,12 @@ private fun ListingCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             listing.cards.forEach { card ->
-                CardItem(card = card, onRemove = { onShowRemoveCardDialog(card.id, card.name) })
+                CardItem(
+                        card = card,
+                        discountPercent = listing.discount,
+                        nicePrices = listing.nicePrices,
+                        onRemove = { onShowRemoveCardDialog(card.id, card.name) }
+                )
             }
         } else {
             Spacer(modifier = Modifier.height(8.dp))
@@ -378,6 +401,7 @@ private fun ListingCard(
 
 @Composable
 private fun ListingOverflowMenu(
+        onEdit: () -> Unit,
         onAddCards: () -> Unit,
         onDelete: () -> Unit,
         onCopyTitle: () -> Unit,
@@ -399,6 +423,20 @@ private fun ListingOverflowMenu(
                 onDismissRequest = { expanded = false },
                 modifier = Modifier.background(bgSecondary)
         ) {
+            DropdownMenuItem(
+                    text = { Text("Edit listing", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onEdit()
+                    },
+                    leadingIcon = {
+                        Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = accentPrimary
+                        )
+                    }
+            )
             DropdownMenuItem(
                     text = { Text("Copy title", color = textPrimary) },
                     onClick = {
@@ -452,7 +490,9 @@ private fun ListingOverflowMenu(
 }
 
 @Composable
-private fun CardItem(card: Card, onRemove: () -> Unit) {
+private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRemove: () -> Unit) {
+    val adjustedPrice = calculateListingPrice(card.priceInPennies, discountPercent, nicePrices)
+
     Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -465,9 +505,9 @@ private fun CardItem(card: Card, onRemove: () -> Unit) {
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        if (card.priceInPennies > 0) {
+        if (adjustedPrice > 0) {
             Text(
-                    text = formatPrice(card.priceInPennies),
+                    text = formatPrice(adjustedPrice),
                     style = MaterialTheme.typography.bodyMedium,
                     color = successColor
             )
@@ -539,6 +579,8 @@ private fun ListingDialogs(
         uiState: ListingUiState,
         onDismissCreateDialog: () -> Unit,
         onTitleChanged: (String) -> Unit,
+        onDiscountChanged: (String) -> Unit,
+        onNicePricesChanged: (Boolean) -> Unit,
         onCreateListing: () -> Unit,
         onDismissAddCardsDialog: () -> Unit,
         onAddCardsSearchChanged: (String) -> Unit,
@@ -552,8 +594,11 @@ private fun ListingDialogs(
     if (uiState.showCreateDialog) {
         CreateListingDialog(
                 formState = uiState.createFormState,
+                isEditing = uiState.editingListingId != null,
                 onDismiss = onDismissCreateDialog,
                 onTitleChanged = onTitleChanged,
+                onDiscountChanged = onDiscountChanged,
+                onNicePricesChanged = onNicePricesChanged,
                 onCreate = onCreateListing
         )
     }
@@ -598,21 +643,26 @@ private fun ListingDialogs(
 @Composable
 private fun CreateListingDialog(
         formState: CreateListingFormState,
+        isEditing: Boolean,
         onDismiss: () -> Unit,
         onTitleChanged: (String) -> Unit,
+        onDiscountChanged: (String) -> Unit,
+        onNicePricesChanged: (Boolean) -> Unit,
         onCreate: () -> Unit
 ) {
     AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Create Listing", color = textPrimary) },
+            title = { Text(if (isEditing) "Edit Listing" else "Create Listing", color = textPrimary) },
             text = {
                 Column {
-                    Text(
-                            text = "You will add cards after you create the listing.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = textSecondary
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    if (!isEditing) {
+                        Text(
+                                text = "You will add cards after you create the listing.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = textSecondary
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                     OutlinedTextField(
                             value = formState.title,
                             onValueChange = onTitleChanged,
@@ -633,6 +683,60 @@ private fun CreateListingDialog(
                                     ),
                             shape = RoundedCornerShape(8.dp)
                     )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                            value = formState.discount,
+                            onValueChange = onDiscountChanged,
+                            label = { Text("Discount") },
+                            singleLine = true,
+                            modifier = Modifier.width(200.dp),
+                            suffix = { Text("%", color = textPrimary) },
+                            colors =
+                                    OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = textPrimary,
+                                            unfocusedTextColor = textPrimary,
+                                            focusedBorderColor = accentPrimary,
+                                            unfocusedBorderColor = textTertiary,
+                                            cursorColor = accentPrimary,
+                                            focusedLabelColor = accentPrimary,
+                                            unfocusedLabelColor = textTertiary,
+                                            focusedContainerColor = bgSecondary,
+                                            unfocusedContainerColor = bgSecondary
+                                    ),
+                            shape = RoundedCornerShape(8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                    text = "Nice prices",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = textPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                    text = "Round up to the next dollar amount",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = textSecondary
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Switch(
+                                checked = formState.nicePrices,
+                                onCheckedChange = onNicePricesChanged,
+                                colors =
+                                        SwitchDefaults.colors(
+                                                checkedThumbColor = textOnAccent,
+                                                checkedTrackColor = accentPrimary,
+                                                uncheckedThumbColor = textTertiary,
+                                                uncheckedTrackColor = bgSecondary
+                                        )
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -647,7 +751,16 @@ private fun CreateListingDialog(
                                         disabledContentColor = textTertiary
                                 ),
                         shape = RoundedCornerShape(8.dp)
-                ) { Text(if (formState.isSaving) "Creating..." else "Create") }
+                ) {
+                    Text(
+                            when {
+                                formState.isSaving && isEditing -> "Updating..."
+                                formState.isSaving -> "Creating..."
+                                isEditing -> "Update"
+                                else -> "Create"
+                            }
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) { Text("Cancel", color = textSecondary) }
@@ -894,12 +1007,25 @@ private fun buildFullBody(preBodyText: String, body: String, postBodyText: Strin
     }
 }
 
-private fun generateMarkdownBody(cards: List<Card>): String {
+private fun calculateListingPrice(priceInPennies: Long, discountPercent: Int, nicePrices: Boolean): Long {
+    if (priceInPennies <= 0) return priceInPennies
+    val discounted = (priceInPennies * (100 - discountPercent) / 100.0)
+    val rounded = kotlin.math.ceil(discounted).toLong()
+    return if (nicePrices) {
+        val remainder = rounded % 100
+        if (remainder == 0L) rounded else rounded + (100 - remainder)
+    } else {
+        rounded
+    }
+}
+
+private fun generateMarkdownBody(cards: List<Card>, discountPercent: Int, nicePrices: Boolean): String {
     if (cards.isEmpty()) return ""
     return cards.joinToString("\n") { card ->
+        val adjustedPrice = calculateListingPrice(card.priceInPennies, discountPercent, nicePrices)
         val priceStr =
-                if (card.priceInPennies > 0) {
-                    "$${String.format("%.2f", card.priceInPennies / 100.0)}"
+                if (adjustedPrice > 0) {
+                    "$${String.format("%.2f", adjustedPrice / 100.0)}"
                 } else {
                     "$0.00"
                 }

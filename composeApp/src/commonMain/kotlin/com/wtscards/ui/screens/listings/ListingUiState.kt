@@ -9,6 +9,7 @@ data class ListingUiState(
     val error: String? = null,
     val searchQuery: String = "",
     val showCreateDialog: Boolean = false,
+    val editingListingId: String? = null,
     val createFormState: CreateListingFormState = CreateListingFormState(),
     val addCardsDialogState: ListingAddCardsDialogState? = null,
     val removeCardDialogState: ListingRemoveCardDialogState? = null,
@@ -16,7 +17,9 @@ data class ListingUiState(
     val availableCards: List<Card> = emptyList(),
     val toast: ListingToastState? = null,
     val preBodyText: String = "",
-    val postBodyText: String = ""
+    val postBodyText: String = "",
+    val listingNicePricesDefault: Boolean = false,
+    val listingDefaultDiscount: String = "0"
 ) {
     val filteredListings: List<Listing>
         get() {
@@ -36,6 +39,8 @@ data class ListingToastState(
 
 data class CreateListingFormState(
     val title: String = "",
+    val discount: String = "0",
+    val nicePrices: Boolean = false,
     val isSaving: Boolean = false
 ) {
     fun isValid(): Boolean = title.isNotBlank() && !isSaving

@@ -51,7 +51,9 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
         listingQueries.insert(
             id = listing.id,
             title = listing.title,
-            createdAt = listing.createdAt
+            createdAt = listing.createdAt,
+            discount = listing.discount.toLong(),
+            nicePrices = if (listing.nicePrices) 1L else 0L
         )
     }
 
@@ -64,8 +66,13 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
         }
     }
 
-    suspend fun updateTitle(listingId: String, title: String) = withContext(Dispatchers.IO) {
-        listingQueries.updateTitle(title = title, id = listingId)
+    suspend fun updateListing(listingId: String, title: String, discount: Int, nicePrices: Boolean) = withContext(Dispatchers.IO) {
+        listingQueries.updateListing(
+            title = title,
+            discount = discount.toLong(),
+            nicePrices = if (nicePrices) 1L else 0L,
+            id = listingId
+        )
     }
 
     suspend fun deleteListing(id: String) = withContext(Dispatchers.IO) {
@@ -102,7 +109,9 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
             id = id,
             title = title,
             createdAt = createdAt,
-            cards = cards
+            cards = cards,
+            discount = discount.toInt(),
+            nicePrices = nicePrices != 0L
         )
     }
 

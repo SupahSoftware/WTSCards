@@ -5,6 +5,8 @@ import com.wtscards.domain.model.BackupInfo
 data class SettingsUiState(
     val preBodyText: String = "",
     val postBodyText: String = "",
+    val listingNicePricesEnabled: Boolean = false,
+    val listingDefaultDiscount: String = "0",
     val freeShippingEnabled: Boolean = false,
     val freeShippingThreshold: String = "",
     val nicePricesEnabled: Boolean = false,

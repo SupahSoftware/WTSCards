@@ -24,8 +24,8 @@ class ListingUseCaseImpl(
         listingLocalDataSource.insertListing(listing)
     }
 
-    override suspend fun updateTitle(listingId: String, title: String) {
-        listingLocalDataSource.updateTitle(listingId, title)
+    override suspend fun updateListing(listingId: String, title: String, discount: Int, nicePrices: Boolean) {
+        listingLocalDataSource.updateListing(listingId, title, discount, nicePrices)
     }
 
     override suspend fun deleteListing(id: String) {
