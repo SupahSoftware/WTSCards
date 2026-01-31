@@ -109,7 +109,7 @@ fun ListingScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            ListingScreenHeader(listings = uiState.listings)
+            ListingScreenHeader(listings = uiState.listings, onShowCopyToast = onShowCopyToast)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -166,8 +166,8 @@ fun ListingScreen(
 }
 
 @Composable
-private fun ListingScreenHeader(listings: List<Listing>) {
-    Row {
+private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (String) -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
                 text = "Listings",
                 style = MaterialTheme.typography.headlineMedium,
@@ -192,6 +192,52 @@ private fun ListingScreenHeader(listings: List<Listing>) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = successColor,
                     modifier = Modifier.alignByBaseline()
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        ListingScreenHeaderMenu(
+                onCopyAllListings = {
+                    val text = buildAllListingsText(listings)
+                    copyToClipboard(text)
+                    onShowCopyToast("All listings copied to clipboard")
+                }
+        )
+    }
+}
+
+@Composable
+private fun ListingScreenHeaderMenu(onCopyAllListings: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(36.dp)) {
+            Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "More options",
+                    tint = textSecondary
+            )
+        }
+
+        DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(bgSecondary)
+        ) {
+            DropdownMenuItem(
+                    text = { Text("Copy all listings to clipboard", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onCopyAllListings()
+                    },
+                    leadingIcon = {
+                        Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                tint = accentPrimary
+                        )
+                    }
             )
         }
     }
@@ -1047,7 +1093,7 @@ private fun buildFullBody(preBodyText: String, body: String, postBodyText: Strin
     return buildString {
         if (preBodyText.isNotBlank()) {
             append(preBodyText)
-            append("\n")
+            append("\n\n")
         }
         append(body)
         if (postBodyText.isNotBlank()) {
@@ -1142,6 +1188,13 @@ private fun generateMarkdownBody(
     }
 
     return sections.joinToString("\n\n")
+}
+
+private fun buildAllListingsText(listings: List<Listing>): String {
+    return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
+        val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
+        "# ${listing.title}\n\n$body"
+    }
 }
 
 private fun formatPrice(priceInPennies: Long): String {
