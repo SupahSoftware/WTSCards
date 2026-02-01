@@ -1881,7 +1881,7 @@ private fun generateMarkdownBody(
                                 }
                         val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
                         val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-                        "- ${card.name} - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
+                        "- ${card.name} - $priceStr {Compare on [EBAY]($ebayUrl), [SportsCardPro]($scpUrl)}"
                     }
             )
         }
@@ -1907,7 +1907,7 @@ private fun generateMarkdownBody(
                                 }
                         val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
                         val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-                        "- ~~${card.name}~~ - $priceStr ([EBAY]($ebayUrl)) ([SportsCardPro]($scpUrl))"
+                        "- ~~${card.name}~~ - $priceStr {Compare on [EBAY]($ebayUrl), [SportsCardPro]($scpUrl)}"
                     }
             )
         }
