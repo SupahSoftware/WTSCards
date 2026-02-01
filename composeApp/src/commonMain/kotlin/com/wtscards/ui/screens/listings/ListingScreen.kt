@@ -62,10 +62,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Card
 import com.wtscards.data.model.Listing
+import com.wtscards.ui.components.AppDropdown
 import com.wtscards.ui.components.AppTextField
 import com.wtscards.ui.components.ScrollableList
 import com.wtscards.ui.theme.accentPrimary
 import com.wtscards.ui.theme.bgDropdown
+import com.wtscards.ui.theme.bgPrimary
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.errorColor
@@ -74,6 +76,7 @@ import com.wtscards.ui.theme.textOnAccent
 import com.wtscards.ui.theme.textPrimary
 import com.wtscards.ui.theme.textSecondary
 import com.wtscards.ui.theme.textTertiary
+import com.wtscards.ui.theme.warningColor
 import com.wtscards.util.UrlUtils
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
@@ -110,6 +113,28 @@ fun ListingScreen(
         onShowCopyToast: (String) -> Unit,
         onClearToast: () -> Unit,
         onClearFocusSearchFlag: () -> Unit,
+        onShowCreateOrderFromListing: (String) -> Unit,
+        onDismissCreateOrderFromListing: () -> Unit,
+        onCreateOrderSearchChanged: (String) -> Unit,
+        onToggleCreateOrderCardSelection: (String) -> Unit,
+        onProceedToCreateOrderPriceConfirmation: () -> Unit,
+        onCreateOrderCardPriceChanged: (String, String) -> Unit,
+        onProceedToCreateOrderForm: () -> Unit,
+        onCreateOrderNameChanged: (String) -> Unit,
+        onCreateOrderStreetAddressChanged: (String) -> Unit,
+        onCreateOrderCityChanged: (String) -> Unit,
+        onCreateOrderStateChanged: (String) -> Unit,
+        onCreateOrderZipcodeChanged: (String) -> Unit,
+        onCreateOrderShippingTypeChanged: (String) -> Unit,
+        onCreateOrderShippingPriceChanged: (String) -> Unit,
+        onCreateOrderTrackingNumberChanged: (String) -> Unit,
+        onCreateOrderDiscountChanged: (String) -> Unit,
+        onCreateOrderLengthChanged: (String) -> Unit,
+        onCreateOrderWidthChanged: (String) -> Unit,
+        onCreateOrderHeightChanged: (String) -> Unit,
+        onCreateOrderPoundsChanged: (String) -> Unit,
+        onCreateOrderOuncesChanged: (String) -> Unit,
+        onConfirmCreateOrderFromListing: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -133,6 +158,7 @@ fun ListingScreen(
                     onShowRemoveCardDialog = onShowRemoveCardDialog,
                     onShowImageUrlDialog = onShowImageUrlDialog,
                     onShowCopyToast = onShowCopyToast,
+                    onShowCreateOrderFromListing = onShowCreateOrderFromListing,
                     preBodyText = uiState.preBodyText,
                     postBodyText = uiState.postBodyText
             )
@@ -161,7 +187,28 @@ fun ListingScreen(
                 onDismissImageUrlDialog = onDismissImageUrlDialog,
                 onImageUrlChanged = onImageUrlChanged,
                 onConfirmImageUrl = onConfirmImageUrl,
-                onClearFocusSearchFlag = onClearFocusSearchFlag
+                onClearFocusSearchFlag = onClearFocusSearchFlag,
+                onDismissCreateOrderFromListing = onDismissCreateOrderFromListing,
+                onCreateOrderSearchChanged = onCreateOrderSearchChanged,
+                onToggleCreateOrderCardSelection = onToggleCreateOrderCardSelection,
+                onProceedToCreateOrderPriceConfirmation = onProceedToCreateOrderPriceConfirmation,
+                onCreateOrderCardPriceChanged = onCreateOrderCardPriceChanged,
+                onProceedToCreateOrderForm = onProceedToCreateOrderForm,
+                onCreateOrderNameChanged = onCreateOrderNameChanged,
+                onCreateOrderStreetAddressChanged = onCreateOrderStreetAddressChanged,
+                onCreateOrderCityChanged = onCreateOrderCityChanged,
+                onCreateOrderStateChanged = onCreateOrderStateChanged,
+                onCreateOrderZipcodeChanged = onCreateOrderZipcodeChanged,
+                onCreateOrderShippingTypeChanged = onCreateOrderShippingTypeChanged,
+                onCreateOrderShippingPriceChanged = onCreateOrderShippingPriceChanged,
+                onCreateOrderTrackingNumberChanged = onCreateOrderTrackingNumberChanged,
+                onCreateOrderDiscountChanged = onCreateOrderDiscountChanged,
+                onCreateOrderLengthChanged = onCreateOrderLengthChanged,
+                onCreateOrderWidthChanged = onCreateOrderWidthChanged,
+                onCreateOrderHeightChanged = onCreateOrderHeightChanged,
+                onCreateOrderPoundsChanged = onCreateOrderPoundsChanged,
+                onCreateOrderOuncesChanged = onCreateOrderOuncesChanged,
+                onConfirmCreateOrderFromListing = onConfirmCreateOrderFromListing
         )
 
         uiState.toast?.let { toast ->
@@ -304,6 +351,7 @@ private fun ContentArea(
         onShowRemoveCardDialog: (String, String, String) -> Unit,
         onShowImageUrlDialog: (String, String?) -> Unit,
         onShowCopyToast: (String) -> Unit,
+        onShowCreateOrderFromListing: (String) -> Unit,
         preBodyText: String,
         postBodyText: String
 ) {
@@ -351,6 +399,7 @@ private fun ContentArea(
                         onShowRemoveCardDialog = onShowRemoveCardDialog,
                         onShowImageUrlDialog = onShowImageUrlDialog,
                         onShowCopyToast = onShowCopyToast,
+                        onShowCreateOrderFromListing = onShowCreateOrderFromListing,
                         preBodyText = preBodyText,
                         postBodyText = postBodyText
                 )
@@ -368,6 +417,7 @@ private fun ListingList(
         onShowRemoveCardDialog: (String, String, String) -> Unit,
         onShowImageUrlDialog: (String, String?) -> Unit,
         onShowCopyToast: (String) -> Unit,
+        onShowCreateOrderFromListing: (String) -> Unit,
         preBodyText: String,
         postBodyText: String
 ) {
@@ -393,6 +443,7 @@ private fun ListingList(
                         onShowImageUrlDialog(listing.id, listing.imageUrl)
                     },
                     onShowCopyToast = onShowCopyToast,
+                    onShowCreateOrderFromListing = { onShowCreateOrderFromListing(listing.id) },
                     preBodyText = preBodyText,
                     postBodyText = postBodyText
             )
@@ -409,6 +460,7 @@ private fun ListingCard(
         onShowRemoveCardDialog: (String, String) -> Unit,
         onShowImageUrlDialog: () -> Unit,
         onShowCopyToast: (String) -> Unit,
+        onShowCreateOrderFromListing: () -> Unit,
         preBodyText: String,
         postBodyText: String
 ) {
@@ -475,6 +527,8 @@ private fun ListingCard(
                 }
             }
 
+            Spacer(modifier = Modifier.width(8.dp))
+
             Box(
                     modifier =
                             Modifier.clip(RoundedCornerShape(4.dp))
@@ -503,7 +557,8 @@ private fun ListingCard(
                         val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText, listing.imageUrl)
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
-                    }
+                    },
+                    onCreateOrder = onShowCreateOrderFromListing
             )
         }
 
@@ -543,7 +598,8 @@ private fun ListingOverflowMenu(
         onAddCards: () -> Unit,
         onDelete: () -> Unit,
         onCopyTitle: () -> Unit,
-        onCopyBody: () -> Unit
+        onCopyBody: () -> Unit,
+        onCreateOrder: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -604,6 +660,16 @@ private fun ListingOverflowMenu(
                     onClick = {
                         expanded = false
                         onAddCards()
+                    },
+                    leadingIcon = {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = accentPrimary)
+                    }
+            )
+            DropdownMenuItem(
+                    text = { Text("Create order for", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onCreateOrder()
                     },
                     leadingIcon = {
                         Icon(Icons.Default.Add, contentDescription = null, tint = accentPrimary)
@@ -730,7 +796,28 @@ private fun ListingDialogs(
         onDismissImageUrlDialog: () -> Unit,
         onImageUrlChanged: (String) -> Unit,
         onConfirmImageUrl: () -> Unit,
-        onClearFocusSearchFlag: () -> Unit
+        onClearFocusSearchFlag: () -> Unit,
+        onDismissCreateOrderFromListing: () -> Unit,
+        onCreateOrderSearchChanged: (String) -> Unit,
+        onToggleCreateOrderCardSelection: (String) -> Unit,
+        onProceedToCreateOrderPriceConfirmation: () -> Unit,
+        onCreateOrderCardPriceChanged: (String, String) -> Unit,
+        onProceedToCreateOrderForm: () -> Unit,
+        onCreateOrderNameChanged: (String) -> Unit,
+        onCreateOrderStreetAddressChanged: (String) -> Unit,
+        onCreateOrderCityChanged: (String) -> Unit,
+        onCreateOrderStateChanged: (String) -> Unit,
+        onCreateOrderZipcodeChanged: (String) -> Unit,
+        onCreateOrderShippingTypeChanged: (String) -> Unit,
+        onCreateOrderShippingPriceChanged: (String) -> Unit,
+        onCreateOrderTrackingNumberChanged: (String) -> Unit,
+        onCreateOrderDiscountChanged: (String) -> Unit,
+        onCreateOrderLengthChanged: (String) -> Unit,
+        onCreateOrderWidthChanged: (String) -> Unit,
+        onCreateOrderHeightChanged: (String) -> Unit,
+        onCreateOrderPoundsChanged: (String) -> Unit,
+        onCreateOrderOuncesChanged: (String) -> Unit,
+        onConfirmCreateOrderFromListing: () -> Unit
 ) {
     if (uiState.showCreateDialog) {
         CreateListingDialog(
@@ -788,6 +875,37 @@ private fun ListingDialogs(
                 onImageUrlChanged = onImageUrlChanged,
                 onConfirm = onConfirmImageUrl
         )
+    }
+
+    uiState.createOrderFromListingState?.let { state ->
+        val listing = uiState.listings.find { it.id == state.listingId }
+        if (listing != null) {
+            CreateOrderFromListingDialog(
+                    state = state,
+                    listingCards = listing.cards,
+                    onDismiss = onDismissCreateOrderFromListing,
+                    onSearchChanged = onCreateOrderSearchChanged,
+                    onToggleCardSelection = onToggleCreateOrderCardSelection,
+                    onProceedToPriceConfirmation = onProceedToCreateOrderPriceConfirmation,
+                    onCardPriceChanged = onCreateOrderCardPriceChanged,
+                    onProceedToOrderForm = onProceedToCreateOrderForm,
+                    onNameChanged = onCreateOrderNameChanged,
+                    onStreetAddressChanged = onCreateOrderStreetAddressChanged,
+                    onCityChanged = onCreateOrderCityChanged,
+                    onStateChanged = onCreateOrderStateChanged,
+                    onZipcodeChanged = onCreateOrderZipcodeChanged,
+                    onShippingTypeChanged = onCreateOrderShippingTypeChanged,
+                    onShippingPriceChanged = onCreateOrderShippingPriceChanged,
+                    onTrackingNumberChanged = onCreateOrderTrackingNumberChanged,
+                    onDiscountChanged = onCreateOrderDiscountChanged,
+                    onLengthChanged = onCreateOrderLengthChanged,
+                    onWidthChanged = onCreateOrderWidthChanged,
+                    onHeightChanged = onCreateOrderHeightChanged,
+                    onPoundsChanged = onCreateOrderPoundsChanged,
+                    onOuncesChanged = onCreateOrderOuncesChanged,
+                    onConfirm = onConfirmCreateOrderFromListing
+            )
+        }
     }
 }
 
@@ -1182,6 +1300,492 @@ private fun ImageUrlDialog(
             containerColor = bgSurface,
             shape = RoundedCornerShape(12.dp)
     )
+}
+
+private val shippingTypeOptions = listOf("Bubble mailer", "Envelope", "Box", "Other")
+
+@Composable
+private fun CreateOrderFromListingDialog(
+        state: CreateOrderFromListingState,
+        listingCards: List<Card>,
+        onDismiss: () -> Unit,
+        onSearchChanged: (String) -> Unit,
+        onToggleCardSelection: (String) -> Unit,
+        onProceedToPriceConfirmation: () -> Unit,
+        onCardPriceChanged: (String, String) -> Unit,
+        onProceedToOrderForm: () -> Unit,
+        onNameChanged: (String) -> Unit,
+        onStreetAddressChanged: (String) -> Unit,
+        onCityChanged: (String) -> Unit,
+        onStateChanged: (String) -> Unit,
+        onZipcodeChanged: (String) -> Unit,
+        onShippingTypeChanged: (String) -> Unit,
+        onShippingPriceChanged: (String) -> Unit,
+        onTrackingNumberChanged: (String) -> Unit,
+        onDiscountChanged: (String) -> Unit,
+        onLengthChanged: (String) -> Unit,
+        onWidthChanged: (String) -> Unit,
+        onHeightChanged: (String) -> Unit,
+        onPoundsChanged: (String) -> Unit,
+        onOuncesChanged: (String) -> Unit,
+        onConfirm: () -> Unit
+) {
+    AlertDialog(
+            onDismissRequest = { if (!state.isSaving) onDismiss() },
+            title = {
+                Text(
+                        text = when (state.step) {
+                            CreateOrderFromListingStep.SELECT_CARDS -> "Select Cards"
+                            CreateOrderFromListingStep.CONFIRM_PRICES -> "Confirm Prices"
+                            CreateOrderFromListingStep.CREATE_ORDER -> "Create Order"
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                )
+            },
+            text = {
+                when (state.step) {
+                    CreateOrderFromListingStep.SELECT_CARDS -> {
+                        CreateOrderCardSelectionContent(
+                                searchQuery = state.searchQuery,
+                                listingCards = listingCards,
+                                selectedCardIds = state.selectedCardIds,
+                                onSearchChanged = onSearchChanged,
+                                onToggleCardSelection = onToggleCardSelection
+                        )
+                    }
+                    CreateOrderFromListingStep.CONFIRM_PRICES -> {
+                        CreateOrderPriceConfirmationContent(
+                                selectedCards = listingCards.filter { it.id in state.selectedCardIds },
+                                cardPrices = state.cardPrices,
+                                onCardPriceChanged = onCardPriceChanged
+                        )
+                    }
+                    CreateOrderFromListingStep.CREATE_ORDER -> {
+                        CreateOrderFormContent(
+                                state = state,
+                                onNameChanged = onNameChanged,
+                                onStreetAddressChanged = onStreetAddressChanged,
+                                onCityChanged = onCityChanged,
+                                onStateChanged = onStateChanged,
+                                onZipcodeChanged = onZipcodeChanged,
+                                onShippingTypeChanged = onShippingTypeChanged,
+                                onShippingPriceChanged = onShippingPriceChanged,
+                                onTrackingNumberChanged = onTrackingNumberChanged,
+                                onDiscountChanged = onDiscountChanged,
+                                onLengthChanged = onLengthChanged,
+                                onWidthChanged = onWidthChanged,
+                                onHeightChanged = onHeightChanged,
+                                onPoundsChanged = onPoundsChanged,
+                                onOuncesChanged = onOuncesChanged
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                        onClick = {
+                            when (state.step) {
+                                CreateOrderFromListingStep.SELECT_CARDS -> onProceedToPriceConfirmation()
+                                CreateOrderFromListingStep.CONFIRM_PRICES -> onProceedToOrderForm()
+                                CreateOrderFromListingStep.CREATE_ORDER -> onConfirm()
+                            }
+                        },
+                        enabled = when (state.step) {
+                            CreateOrderFromListingStep.SELECT_CARDS ->
+                                state.selectedCardIds.isNotEmpty() && !state.isSaving
+                            CreateOrderFromListingStep.CONFIRM_PRICES -> {
+                                val selectedCards = listingCards.filter { it.id in state.selectedCardIds }
+                                selectedCards.all { card ->
+                                    val price = state.cardPrices[card.id]
+                                    price != null && price.isNotBlank()
+                                } && !state.isSaving
+                            }
+                            CreateOrderFromListingStep.CREATE_ORDER ->
+                                state.isOrderValid()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                                containerColor = accentPrimary,
+                                contentColor = textOnAccent,
+                                disabledContainerColor = bgSecondary,
+                                disabledContentColor = textTertiary
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                            when (state.step) {
+                                CreateOrderFromListingStep.SELECT_CARDS -> "Next"
+                                CreateOrderFromListingStep.CONFIRM_PRICES -> "Next"
+                                CreateOrderFromListingStep.CREATE_ORDER ->
+                                    if (state.isSaving) "Creating..." else "Create Order"
+                            }
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss, enabled = !state.isSaving) {
+                    Text("Cancel", color = textSecondary)
+                }
+            },
+            containerColor = bgSurface,
+            shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun CreateOrderCardSelectionContent(
+        searchQuery: String,
+        listingCards: List<Card>,
+        selectedCardIds: Set<String>,
+        onSearchChanged: (String) -> Unit,
+        onToggleCardSelection: (String) -> Unit
+) {
+    val listState = rememberLazyListState()
+
+    Column(modifier = Modifier.fillMaxWidth().height(500.dp)) {
+        OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchChanged,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search cards...", color = textTertiary) },
+                leadingIcon = {
+                    Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = textTertiary
+                    )
+                },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = textPrimary,
+                        unfocusedTextColor = textPrimary,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = accentPrimary,
+                        focusedContainerColor = bgSecondary,
+                        unfocusedContainerColor = bgSecondary
+                ),
+                shape = RoundedCornerShape(8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val filteredCards = if (searchQuery.isBlank()) {
+            listingCards
+        } else {
+            listingCards.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
+
+        ScrollableList(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                scrollbarPadding = 16.dp
+        ) {
+            items(items = filteredCards, key = { it.id }) { card ->
+                Row(
+                        modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(
+                                        if (card.id in selectedCardIds)
+                                            accentPrimary.copy(alpha = 0.1f)
+                                        else bgPrimary
+                                )
+                                .clickable { onToggleCardSelection(card.id) }
+                                .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                            checked = card.id in selectedCardIds,
+                            onCheckedChange = { onToggleCardSelection(card.id) },
+                            colors = CheckboxDefaults.colors(
+                                    checkedColor = accentPrimary,
+                                    uncheckedColor = textTertiary,
+                                    checkmarkColor = textOnAccent
+                            )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                            text = card.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textPrimary,
+                            modifier = Modifier.weight(1f)
+                    )
+                    if (card.priceInPennies > 0) {
+                        Text(
+                                text = formatPrice(card.priceInPennies),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = successColor
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateOrderPriceConfirmationContent(
+        selectedCards: List<Card>,
+        cardPrices: Map<String, String>,
+        onCardPriceChanged: (String, String) -> Unit
+) {
+    val listState = rememberLazyListState()
+
+    Column(modifier = Modifier.fillMaxWidth().height(500.dp)) {
+        ScrollableList(
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                scrollbarPadding = 16.dp
+        ) {
+            items(items = selectedCards, key = { it.id }) { card ->
+                Row(
+                        modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(bgPrimary)
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                            text = card.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = textPrimary,
+                            modifier = Modifier.weight(1f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedTextField(
+                            value = cardPrices[card.id] ?: "",
+                            onValueChange = { value ->
+                                val filtered = value.filter { it.isDigit() || it == '.' }
+                                if (filtered.count { it == '.' } <= 1) {
+                                    onCardPriceChanged(card.id, filtered)
+                                }
+                            },
+                            modifier = Modifier.width(120.dp),
+                            placeholder = { Text("0.00", color = textTertiary) },
+                            prefix = { Text("$", color = textPrimary) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = textPrimary,
+                                    unfocusedTextColor = textPrimary,
+                                    focusedBorderColor = Color.Transparent,
+                                    unfocusedBorderColor = Color.Transparent,
+                                    cursorColor = accentPrimary,
+                                    focusedContainerColor = bgSecondary,
+                                    unfocusedContainerColor = bgSecondary
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CreateOrderFormContent(
+        state: CreateOrderFromListingState,
+        onNameChanged: (String) -> Unit,
+        onStreetAddressChanged: (String) -> Unit,
+        onCityChanged: (String) -> Unit,
+        onStateChanged: (String) -> Unit,
+        onZipcodeChanged: (String) -> Unit,
+        onShippingTypeChanged: (String) -> Unit,
+        onShippingPriceChanged: (String) -> Unit,
+        onTrackingNumberChanged: (String) -> Unit,
+        onDiscountChanged: (String) -> Unit,
+        onLengthChanged: (String) -> Unit,
+        onWidthChanged: (String) -> Unit,
+        onHeightChanged: (String) -> Unit,
+        onPoundsChanged: (String) -> Unit,
+        onOuncesChanged: (String) -> Unit
+) {
+    Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        AppTextField(
+                containerColor = bgSecondary,
+                value = state.orderName,
+                onValueChange = onNameChanged,
+                label = "Name",
+                placeholder = "Customer name",
+                borderColor = if (state.orderName.isBlank()) errorColor else Color.Transparent
+        )
+
+        AppTextField(
+                containerColor = bgSecondary,
+                value = state.orderStreetAddress,
+                onValueChange = onStreetAddressChanged,
+                label = "Street Address",
+                placeholder = "123 Main St",
+                secondaryLabel = "All fields marked in yellow can be updated later",
+                secondaryLabelColor = warningColor,
+                borderColor = if (state.orderStreetAddress.isBlank()) warningColor else Color.Transparent
+        )
+
+        Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderCity,
+                    onValueChange = onCityChanged,
+                    label = "City",
+                    placeholder = "City",
+                    modifier = Modifier.weight(1f),
+                    borderColor = if (state.orderCity.isBlank()) warningColor else Color.Transparent
+            )
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderState,
+                    onValueChange = onStateChanged,
+                    label = "State",
+                    placeholder = "CA",
+                    modifier = Modifier.width(80.dp),
+                    borderColor = if (state.orderState.isBlank()) warningColor else Color.Transparent
+            )
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderZipcode,
+                    onValueChange = onZipcodeChanged,
+                    label = "Zip",
+                    placeholder = "12345",
+                    modifier = Modifier.width(100.dp),
+                    borderColor = if (state.orderZipcode.isBlank()) warningColor else Color.Transparent
+            )
+        }
+
+        Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ListingShippingTypeDropdown(
+                    selectedType = state.orderShippingType,
+                    onTypeSelected = onShippingTypeChanged,
+                    modifier = Modifier.weight(1f)
+            )
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderShippingPrice,
+                    onValueChange = onShippingPriceChanged,
+                    label = "Shipping Price",
+                    placeholder = "0.00",
+                    prefix = "$",
+                    modifier = Modifier.weight(1f)
+            )
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderDiscount,
+                    onValueChange = onDiscountChanged,
+                    label = "Discount",
+                    placeholder = "0",
+                    suffix = "%",
+                    modifier = Modifier.width(80.dp)
+            )
+        }
+
+        Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderLength,
+                    onValueChange = onLengthChanged,
+                    label = "Length",
+                    placeholder = "0",
+                    suffix = "in",
+                    modifier = Modifier.weight(1f)
+            )
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderWidth,
+                    onValueChange = onWidthChanged,
+                    label = "Width",
+                    placeholder = "0",
+                    suffix = "in",
+                    modifier = Modifier.weight(1f)
+            )
+
+            val showHeight = state.orderShippingType == "Box" || state.orderShippingType == "Other"
+            if (showHeight) {
+                AppTextField(
+                        containerColor = bgSecondary,
+                        value = state.orderHeight,
+                        onValueChange = onHeightChanged,
+                        label = "Height",
+                        placeholder = "0",
+                        suffix = "in",
+                        modifier = Modifier.weight(1f)
+                )
+            }
+
+            val weightEmpty = (state.orderPounds.toIntOrNull() ?: 0) == 0 &&
+                    (state.orderOunces.toIntOrNull() ?: 0) == 0
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderPounds,
+                    onValueChange = onPoundsChanged,
+                    label = "Pounds",
+                    placeholder = "0",
+                    suffix = "lbs",
+                    modifier = Modifier.weight(1f),
+                    borderColor = if (weightEmpty) warningColor else Color.Transparent
+            )
+
+            AppTextField(
+                    containerColor = bgSecondary,
+                    value = state.orderOunces,
+                    onValueChange = onOuncesChanged,
+                    label = "Ounces",
+                    placeholder = "0",
+                    suffix = "oz",
+                    modifier = Modifier.weight(1f),
+                    borderColor = if (weightEmpty) warningColor else Color.Transparent
+            )
+        }
+
+        AppTextField(
+                containerColor = bgSecondary,
+                value = state.orderTrackingNumber,
+                onValueChange = onTrackingNumberChanged,
+                label = "Tracking Number",
+                placeholder = "1Z12345678901234567890",
+                secondaryLabel = "Optional, you can add this later",
+                borderColor = if (state.orderTrackingNumber.isBlank()) warningColor else Color.Transparent
+        )
+    }
+}
+
+@Composable
+private fun ListingShippingTypeDropdown(
+        selectedType: String,
+        onTypeSelected: (String) -> Unit,
+        modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+                text = "Package Type",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textPrimary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        AppDropdown(
+                selectedValue = selectedType,
+                options = shippingTypeOptions,
+                onOptionSelected = onTypeSelected
+        )
+    }
 }
 
 @Composable

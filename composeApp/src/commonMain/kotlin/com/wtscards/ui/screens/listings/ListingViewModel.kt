@@ -4,8 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.wtscards.data.model.Listing
+import com.wtscards.data.model.Order
+import com.wtscards.data.model.OrderStatus
 import com.wtscards.domain.usecase.CardUseCase
 import com.wtscards.domain.usecase.ListingUseCase
+import com.wtscards.domain.usecase.OrderUseCase
 import com.wtscards.domain.usecase.SettingUseCase
 import com.wtscards.ui.screens.settings.SettingsViewModel
 import java.util.UUID
@@ -20,6 +23,7 @@ class ListingViewModel(
         private val listingUseCase: ListingUseCase,
         private val cardUseCase: CardUseCase,
         private val settingUseCase: SettingUseCase,
+        private val orderUseCase: OrderUseCase,
         private val coroutineScope: CoroutineScope
 ) {
     var uiState by mutableStateOf(ListingUiState())
@@ -60,6 +64,7 @@ class ListingViewModel(
         settingUseCase
                 .getAllSettingsFlow()
                 .onEach { settings ->
+                    val defaultDiscount = (settings[SettingsViewModel.KEY_DEFAULT_DISCOUNT] ?: "0").toIntOrNull() ?: 0
                     uiState =
                             uiState.copy(
                                     preBodyText = settings[SettingsViewModel.KEY_PRE_BODY_TEXT]
@@ -73,7 +78,18 @@ class ListingViewModel(
                                                     "true",
                                     listingDefaultDiscount =
                                             settings[SettingsViewModel.KEY_LISTING_DEFAULT_DISCOUNT]
-                                                    ?: "0"
+                                                    ?: "0",
+                                    defaultDiscount = defaultDiscount,
+                                    defaultEnvelopeCost = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_COST] ?: "1.00",
+                                    defaultEnvelopeLength = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_LENGTH] ?: "3.5",
+                                    defaultEnvelopeWidth = settings[SettingsViewModel.KEY_SHIPPING_ENVELOPE_WIDTH] ?: "6.5",
+                                    defaultBubbleMailerCost = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_COST] ?: "7.00",
+                                    defaultBubbleMailerLength = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_LENGTH] ?: "6",
+                                    defaultBubbleMailerWidth = settings[SettingsViewModel.KEY_SHIPPING_BUBBLE_MAILER_WIDTH] ?: "9",
+                                    defaultBoxCost = settings[SettingsViewModel.KEY_SHIPPING_BOX_COST] ?: "10.00",
+                                    defaultBoxLength = settings[SettingsViewModel.KEY_SHIPPING_BOX_LENGTH] ?: "6",
+                                    defaultBoxWidth = settings[SettingsViewModel.KEY_SHIPPING_BOX_WIDTH] ?: "9",
+                                    defaultBoxHeight = settings[SettingsViewModel.KEY_SHIPPING_BOX_HEIGHT] ?: "6"
                             )
                 }
                 .catch {}
@@ -418,6 +434,269 @@ class ListingViewModel(
                             )
                 }
             }
+        }
+    }
+
+    // Create order from listing flow
+
+    fun onShowCreateOrderFromListing(listingId: String) {
+        uiState = uiState.copy(
+                createOrderFromListingState = CreateOrderFromListingState(
+                        listingId = listingId,
+                        orderShippingPrice = uiState.defaultBubbleMailerCost,
+                        orderDiscount = uiState.defaultDiscount.toString(),
+                        orderLength = uiState.defaultBubbleMailerLength,
+                        orderWidth = uiState.defaultBubbleMailerWidth
+                )
+        )
+    }
+
+    fun onDismissCreateOrderFromListing() {
+        uiState = uiState.copy(createOrderFromListingState = null)
+    }
+
+    fun onCreateOrderSearchChanged(query: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(searchQuery = query))
+        }
+    }
+
+    fun onToggleCreateOrderCardSelection(cardId: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            val newSelection = if (cardId in state.selectedCardIds) {
+                state.selectedCardIds - cardId
+            } else {
+                state.selectedCardIds + cardId
+            }
+            uiState = uiState.copy(createOrderFromListingState = state.copy(selectedCardIds = newSelection))
+        }
+    }
+
+    fun onProceedToCreateOrderPriceConfirmation() {
+        uiState.createOrderFromListingState?.let { state ->
+            val listing = uiState.listings.find { it.id == state.listingId } ?: return@let
+            val cardPrices = mutableMapOf<String, String>()
+            listing.cards.filter { it.id in state.selectedCardIds }.forEach { card ->
+                val adjustedPrice = calculateListingPrice(card.priceInPennies, listing.discount, listing.nicePrices)
+                cardPrices[card.id] = if (adjustedPrice > 0) String.format("%.2f", adjustedPrice / 100.0) else ""
+            }
+            uiState = uiState.copy(
+                    createOrderFromListingState = state.copy(
+                            step = CreateOrderFromListingStep.CONFIRM_PRICES,
+                            cardPrices = cardPrices
+                    )
+            )
+        }
+    }
+
+    fun onCreateOrderCardPriceChanged(cardId: String, price: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(
+                    createOrderFromListingState = state.copy(
+                            cardPrices = state.cardPrices + (cardId to price)
+                    )
+            )
+        }
+    }
+
+    fun onProceedToCreateOrderForm() {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(
+                    createOrderFromListingState = state.copy(
+                            step = CreateOrderFromListingStep.CREATE_ORDER
+                    )
+            )
+        }
+    }
+
+    fun onCreateOrderNameChanged(name: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderName = name))
+        }
+    }
+
+    fun onCreateOrderStreetAddressChanged(address: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderStreetAddress = address))
+        }
+    }
+
+    fun onCreateOrderCityChanged(city: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderCity = city))
+        }
+    }
+
+    fun onCreateOrderStateChanged(stateValue: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderState = stateValue))
+        }
+    }
+
+    fun onCreateOrderZipcodeChanged(zipcode: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderZipcode = zipcode))
+        }
+    }
+
+    fun onCreateOrderShippingTypeChanged(type: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            val defaultPrice = getDefaultShippingPrice(type)
+            val (defaultLength, defaultWidth, defaultHeight) = getDefaultDimensions(type)
+            uiState = uiState.copy(
+                    createOrderFromListingState = state.copy(
+                            orderShippingType = type,
+                            orderShippingPrice = defaultPrice,
+                            orderLength = defaultLength,
+                            orderWidth = defaultWidth,
+                            orderHeight = defaultHeight
+                    )
+            )
+        }
+    }
+
+    fun onCreateOrderShippingPriceChanged(price: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderShippingPrice = price))
+        }
+    }
+
+    fun onCreateOrderTrackingNumberChanged(trackingNumber: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderTrackingNumber = trackingNumber))
+        }
+    }
+
+    fun onCreateOrderDiscountChanged(discount: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            val filtered = discount.filter { it.isDigit() }
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderDiscount = filtered))
+        }
+    }
+
+    fun onCreateOrderLengthChanged(length: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderLength = length))
+        }
+    }
+
+    fun onCreateOrderWidthChanged(width: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderWidth = width))
+        }
+    }
+
+    fun onCreateOrderHeightChanged(height: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderHeight = height))
+        }
+    }
+
+    fun onCreateOrderPoundsChanged(pounds: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderPounds = pounds))
+        }
+    }
+
+    fun onCreateOrderOuncesChanged(ounces: String) {
+        uiState.createOrderFromListingState?.let { state ->
+            uiState = uiState.copy(createOrderFromListingState = state.copy(orderOunces = ounces))
+        }
+    }
+
+    fun onConfirmCreateOrderFromListing() {
+        uiState.createOrderFromListingState?.let { state ->
+            if (!state.isOrderValid()) return@let
+
+            uiState = uiState.copy(createOrderFromListingState = state.copy(isSaving = true))
+
+            coroutineScope.launch {
+                try {
+                    val shippingCostInPennies = ((state.orderShippingPrice.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    val trackingNumber = state.orderTrackingNumber.trim().takeIf { it.isNotBlank() }
+                    val discount = state.orderDiscount.toIntOrNull() ?: 0
+                    val length = state.orderLength.toDoubleOrNull() ?: 0.0
+                    val width = state.orderWidth.toDoubleOrNull() ?: 0.0
+                    val height = state.orderHeight.toDoubleOrNull() ?: 0.0
+                    val pounds = state.orderPounds.toIntOrNull() ?: 0
+                    val ounces = state.orderOunces.toIntOrNull() ?: 0
+
+                    val orderId = UUID.randomUUID().toString()
+                    val order = Order(
+                            id = orderId,
+                            name = state.orderName.toTitleCase(),
+                            streetAddress = state.orderStreetAddress.toTitleCase(),
+                            city = state.orderCity.toTitleCase(),
+                            state = state.orderState.uppercase(),
+                            zipcode = state.orderZipcode,
+                            shippingType = state.orderShippingType,
+                            shippingCost = shippingCostInPennies,
+                            status = OrderStatus.NEW,
+                            createdAt = System.currentTimeMillis(),
+                            trackingNumber = trackingNumber,
+                            discount = discount,
+                            cards = emptyList(),
+                            length = length,
+                            width = width,
+                            height = height,
+                            pounds = pounds,
+                            ounces = ounces
+                    )
+                    orderUseCase.createOrder(order)
+
+                    val cardPrices = state.cardPrices.mapValues { (_, priceStr) ->
+                        ((priceStr.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    }
+                    orderUseCase.addCardsToOrder(orderId, cardPrices)
+
+                    uiState = uiState.copy(
+                            createOrderFromListingState = null,
+                            toast = ListingToastState("Order created with ${state.selectedCardIds.size} card${if (state.selectedCardIds.size != 1) "s" else ""}", isError = false)
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                            createOrderFromListingState = state.copy(isSaving = false),
+                            toast = ListingToastState(e.message ?: "Failed to create order", isError = true)
+                    )
+                }
+            }
+        }
+    }
+
+    private fun getDefaultShippingPrice(shippingType: String): String {
+        return when (shippingType) {
+            "Envelope" -> uiState.defaultEnvelopeCost
+            "Bubble mailer" -> uiState.defaultBubbleMailerCost
+            "Box" -> uiState.defaultBoxCost
+            "Other" -> "0.00"
+            else -> "0.00"
+        }
+    }
+
+    private fun getDefaultDimensions(shippingType: String): Triple<String, String, String> {
+        return when (shippingType) {
+            "Envelope" -> Triple(uiState.defaultEnvelopeLength, uiState.defaultEnvelopeWidth, "0")
+            "Bubble mailer" -> Triple(uiState.defaultBubbleMailerLength, uiState.defaultBubbleMailerWidth, "0")
+            "Box" -> Triple(uiState.defaultBoxLength, uiState.defaultBoxWidth, uiState.defaultBoxHeight)
+            else -> Triple("0", "0", "0")
+        }
+    }
+
+    private fun calculateListingPrice(priceInPennies: Long, discountPercent: Int, nicePrices: Boolean): Long {
+        if (priceInPennies <= 0) return priceInPennies
+        val discounted = (priceInPennies * (100 - discountPercent) / 100.0)
+        val rounded = kotlin.math.ceil(discounted).toLong()
+        return if (nicePrices) {
+            val remainder = rounded % 100
+            if (remainder == 0L) rounded else rounded + (100 - remainder)
+        } else {
+            rounded
+        }
+    }
+
+    private fun String.toTitleCase(): String {
+        return split(" ").joinToString(" ") { word ->
+            word.lowercase().replaceFirstChar { it.uppercase() }
         }
     }
 

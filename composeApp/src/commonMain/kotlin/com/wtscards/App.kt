@@ -83,6 +83,7 @@ fun MainScreen(
                 dependencies.listingUseCase,
                 dependencies.cardUseCase,
                 dependencies.settingUseCase,
+                dependencies.orderUseCase,
                 dependencies.coroutineScope
         )
     }
@@ -169,6 +170,28 @@ fun MainScreen(
                         onShowCopyToast = listingViewModel::showCopyToast,
                         onClearToast = listingViewModel::clearToast,
                         onClearFocusSearchFlag = listingViewModel::onClearFocusSearchFlag,
+                        onShowCreateOrderFromListing = listingViewModel::onShowCreateOrderFromListing,
+                        onDismissCreateOrderFromListing = listingViewModel::onDismissCreateOrderFromListing,
+                        onCreateOrderSearchChanged = listingViewModel::onCreateOrderSearchChanged,
+                        onToggleCreateOrderCardSelection = listingViewModel::onToggleCreateOrderCardSelection,
+                        onProceedToCreateOrderPriceConfirmation = listingViewModel::onProceedToCreateOrderPriceConfirmation,
+                        onCreateOrderCardPriceChanged = listingViewModel::onCreateOrderCardPriceChanged,
+                        onProceedToCreateOrderForm = listingViewModel::onProceedToCreateOrderForm,
+                        onCreateOrderNameChanged = listingViewModel::onCreateOrderNameChanged,
+                        onCreateOrderStreetAddressChanged = listingViewModel::onCreateOrderStreetAddressChanged,
+                        onCreateOrderCityChanged = listingViewModel::onCreateOrderCityChanged,
+                        onCreateOrderStateChanged = listingViewModel::onCreateOrderStateChanged,
+                        onCreateOrderZipcodeChanged = listingViewModel::onCreateOrderZipcodeChanged,
+                        onCreateOrderShippingTypeChanged = listingViewModel::onCreateOrderShippingTypeChanged,
+                        onCreateOrderShippingPriceChanged = listingViewModel::onCreateOrderShippingPriceChanged,
+                        onCreateOrderTrackingNumberChanged = listingViewModel::onCreateOrderTrackingNumberChanged,
+                        onCreateOrderDiscountChanged = listingViewModel::onCreateOrderDiscountChanged,
+                        onCreateOrderLengthChanged = listingViewModel::onCreateOrderLengthChanged,
+                        onCreateOrderWidthChanged = listingViewModel::onCreateOrderWidthChanged,
+                        onCreateOrderHeightChanged = listingViewModel::onCreateOrderHeightChanged,
+                        onCreateOrderPoundsChanged = listingViewModel::onCreateOrderPoundsChanged,
+                        onCreateOrderOuncesChanged = listingViewModel::onCreateOrderOuncesChanged,
+                        onConfirmCreateOrderFromListing = listingViewModel::onConfirmCreateOrderFromListing,
                         modifier = Modifier.padding(paddingValues)
                 )
             }
