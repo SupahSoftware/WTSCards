@@ -553,8 +553,14 @@ private fun ListingCard(
                         copyToClipboard(listing.title)
                         onShowCopyToast("Title copied to clipboard")
                     },
-                    onCopyBody = {
+                    onCopyBodyWithLinks = {
                         val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText, listing.imageUrl)
+                        copyToClipboard(fullBody)
+                        onShowCopyToast("Body copied to clipboard")
+                    },
+                    onCopyBodyNoLinks = {
+                        val noLinksBody = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices, includeLinks = false)
+                        val fullBody = buildFullBody(preBodyText, noLinksBody, postBodyText, listing.imageUrl)
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     },
@@ -598,7 +604,8 @@ private fun ListingOverflowMenu(
         onAddCards: () -> Unit,
         onDelete: () -> Unit,
         onCopyTitle: () -> Unit,
-        onCopyBody: () -> Unit,
+        onCopyBodyWithLinks: () -> Unit,
+        onCopyBodyNoLinks: () -> Unit,
         onCreateOrder: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -642,10 +649,24 @@ private fun ListingOverflowMenu(
                     }
             )
             DropdownMenuItem(
-                    text = { Text("Copy body", color = textPrimary) },
+                    text = { Text("Copy with links", color = textPrimary) },
                     onClick = {
                         expanded = false
-                        onCopyBody()
+                        onCopyBodyWithLinks()
+                    },
+                    leadingIcon = {
+                        Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                tint = accentPrimary
+                        )
+                    }
+            )
+            DropdownMenuItem(
+                    text = { Text("Copy no links", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onCopyBodyNoLinks()
                     },
                     leadingIcon = {
                         Icon(
@@ -1853,7 +1874,8 @@ private fun calculateListingPrice(
 private fun generateMarkdownBody(
         cards: List<Card>,
         discountPercent: Int,
-        nicePrices: Boolean
+        nicePrices: Boolean,
+        includeLinks: Boolean = true
 ): String {
     if (cards.isEmpty()) return ""
 
@@ -1879,9 +1901,13 @@ private fun generateMarkdownBody(
                                 } else {
                                     "$0.00"
                                 }
-                        val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
-                        val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-                        "- ${card.name} - $priceStr {Compare on [EBAY]($ebayUrl), [SportsCardPro]($scpUrl)}"
+                        if (includeLinks) {
+                            val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
+                            val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
+                            "- ${card.name} - $priceStr {Compare on [EBAY]($ebayUrl), [SportsCardPro]($scpUrl)}"
+                        } else {
+                            "- ${card.name} - $priceStr"
+                        }
                     }
             )
         }
@@ -1905,9 +1931,13 @@ private fun generateMarkdownBody(
                                 } else {
                                     "$0.00"
                                 }
-                        val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
-                        val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
-                        "- ~~${card.name}~~ - $priceStr {Compare on [EBAY]($ebayUrl), [SportsCardPro]($scpUrl)}"
+                        if (includeLinks) {
+                            val scpUrl = UrlUtils.getSportsCardProUrl(card.name)
+                            val ebayUrl = UrlUtils.getEbaySoldListingsUrl(card.name)
+                            "- ~~${card.name}~~ - $priceStr {Compare on [EBAY]($ebayUrl), [SportsCardPro]($scpUrl)}"
+                        } else {
+                            "- ~~${card.name}~~ - $priceStr"
+                        }
                     }
             )
         }
