@@ -53,7 +53,8 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
             title = listing.title,
             createdAt = listing.createdAt,
             discount = listing.discount.toLong(),
-            nicePrices = if (listing.nicePrices) 1L else 0L
+            nicePrices = if (listing.nicePrices) 1L else 0L,
+            imageUrl = listing.imageUrl
         )
     }
 
@@ -73,6 +74,10 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
             nicePrices = if (nicePrices) 1L else 0L,
             id = listingId
         )
+    }
+
+    suspend fun updateImageUrl(listingId: String, imageUrl: String?) = withContext(Dispatchers.IO) {
+        listingQueries.updateImageUrl(imageUrl = imageUrl, id = listingId)
     }
 
     suspend fun deleteListing(id: String) = withContext(Dispatchers.IO) {
@@ -111,7 +116,8 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
             createdAt = createdAt,
             cards = cards,
             discount = discount.toInt(),
-            nicePrices = nicePrices != 0L
+            nicePrices = nicePrices != 0L,
+            imageUrl = imageUrl
         )
     }
 

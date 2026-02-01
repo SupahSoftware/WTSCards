@@ -28,6 +28,10 @@ class ListingUseCaseImpl(
         listingLocalDataSource.updateListing(listingId, title, discount, nicePrices)
     }
 
+    override suspend fun updateImageUrl(listingId: String, imageUrl: String?) {
+        listingLocalDataSource.updateImageUrl(listingId, imageUrl)
+    }
+
     override suspend fun deleteListing(id: String) {
         listingLocalDataSource.deleteListing(id)
     }

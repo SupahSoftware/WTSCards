@@ -162,6 +162,10 @@ fun MainScreen(
                         onDismissDeleteListingDialog =
                                 listingViewModel::onDismissDeleteListingDialog,
                         onConfirmDeleteListing = listingViewModel::onConfirmDeleteListing,
+                        onShowImageUrlDialog = listingViewModel::onShowImageUrlDialog,
+                        onDismissImageUrlDialog = listingViewModel::onDismissImageUrlDialog,
+                        onImageUrlChanged = listingViewModel::onImageUrlChanged,
+                        onConfirmImageUrl = listingViewModel::onConfirmImageUrl,
                         onShowCopyToast = listingViewModel::showCopyToast,
                         onClearToast = listingViewModel::clearToast,
                         onClearFocusSearchFlag = listingViewModel::onClearFocusSearchFlag,

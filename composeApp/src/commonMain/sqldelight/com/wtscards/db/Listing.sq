@@ -3,7 +3,8 @@ CREATE TABLE ListingEntity (
     title TEXT NOT NULL,
     createdAt INTEGER NOT NULL,
     discount INTEGER NOT NULL DEFAULT 0,
-    nicePrices INTEGER NOT NULL DEFAULT 0
+    nicePrices INTEGER NOT NULL DEFAULT 0,
+    imageUrl TEXT
 );
 
 CREATE TABLE ListingCardEntity (
@@ -29,8 +30,8 @@ INNER JOIN ListingCardEntity lc ON c.id = lc.cardId
 WHERE lc.listingId = ?;
 
 insert:
-INSERT INTO ListingEntity (id, title, createdAt, discount, nicePrices)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO ListingEntity (id, title, createdAt, discount, nicePrices, imageUrl)
+VALUES (?, ?, ?, ?, ?, ?);
 
 insertListingCard:
 INSERT OR IGNORE INTO ListingCardEntity (listingId, cardId)
@@ -39,6 +40,11 @@ VALUES (?, ?);
 updateListing:
 UPDATE ListingEntity
 SET title = ?, discount = ?, nicePrices = ?
+WHERE id = ?;
+
+updateImageUrl:
+UPDATE ListingEntity
+SET imageUrl = ?
 WHERE id = ?;
 
 deleteById:

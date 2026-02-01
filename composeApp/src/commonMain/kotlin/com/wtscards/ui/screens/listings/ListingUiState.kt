@@ -16,6 +16,7 @@ data class ListingUiState(
         val deleteListingDialogState: DeleteListingDialogState? = null,
         val availableCards: List<Card> = emptyList(),
         val toast: ListingToastState? = null,
+        val imageUrlDialogState: ImageUrlDialogState? = null,
         val preBodyText: String = "",
         val postBodyText: String = "",
         val listingNicePricesDefault: Boolean = false,
@@ -62,4 +63,10 @@ data class DeleteListingDialogState(
         val listingId: String,
         val listingTitle: String,
         val isDeleting: Boolean = false
+)
+
+data class ImageUrlDialogState(
+        val listingId: String,
+        val imageUrl: String = "",
+        val isSaving: Boolean = false
 )

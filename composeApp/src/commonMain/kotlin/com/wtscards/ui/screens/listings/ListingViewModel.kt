@@ -362,6 +362,65 @@ class ListingViewModel(
         }
     }
 
+    fun onShowImageUrlDialog(listingId: String, currentImageUrl: String?) {
+        uiState =
+                uiState.copy(
+                        imageUrlDialogState =
+                                ImageUrlDialogState(
+                                        listingId = listingId,
+                                        imageUrl = currentImageUrl ?: ""
+                                )
+                )
+    }
+
+    fun onDismissImageUrlDialog() {
+        uiState = uiState.copy(imageUrlDialogState = null)
+    }
+
+    fun onImageUrlChanged(imageUrl: String) {
+        uiState.imageUrlDialogState?.let { dialogState ->
+            uiState =
+                    uiState.copy(
+                            imageUrlDialogState = dialogState.copy(imageUrl = imageUrl)
+                    )
+        }
+    }
+
+    fun onConfirmImageUrl() {
+        uiState.imageUrlDialogState?.let { dialogState ->
+            uiState =
+                    uiState.copy(
+                            imageUrlDialogState = dialogState.copy(isSaving = true)
+                    )
+
+            coroutineScope.launch {
+                try {
+                    val imageUrl = dialogState.imageUrl.trim().ifBlank { null }
+                    listingUseCase.updateImageUrl(dialogState.listingId, imageUrl)
+                    uiState =
+                            uiState.copy(
+                                    imageUrlDialogState = null,
+                                    toast =
+                                            ListingToastState(
+                                                    "Image URL updated",
+                                                    isError = false
+                                            )
+                            )
+                } catch (e: Exception) {
+                    uiState =
+                            uiState.copy(
+                                    imageUrlDialogState = dialogState.copy(isSaving = false),
+                                    toast =
+                                            ListingToastState(
+                                                    e.message ?: "Failed to update image URL",
+                                                    isError = true
+                                            )
+                            )
+                }
+            }
+        }
+    }
+
     fun showCopyToast(message: String) {
         uiState = uiState.copy(toast = ListingToastState(message, isError = false))
     }

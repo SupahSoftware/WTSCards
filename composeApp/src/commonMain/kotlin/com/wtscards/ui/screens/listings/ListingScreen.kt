@@ -65,6 +65,7 @@ import com.wtscards.data.model.Listing
 import com.wtscards.ui.components.AppTextField
 import com.wtscards.ui.components.ScrollableList
 import com.wtscards.ui.theme.accentPrimary
+import com.wtscards.ui.theme.bgDropdown
 import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.errorColor
@@ -102,6 +103,10 @@ fun ListingScreen(
         onShowDeleteListingDialog: (String, String) -> Unit,
         onDismissDeleteListingDialog: () -> Unit,
         onConfirmDeleteListing: () -> Unit,
+        onShowImageUrlDialog: (String, String?) -> Unit,
+        onDismissImageUrlDialog: () -> Unit,
+        onImageUrlChanged: (String) -> Unit,
+        onConfirmImageUrl: () -> Unit,
         onShowCopyToast: (String) -> Unit,
         onClearToast: () -> Unit,
         onClearFocusSearchFlag: () -> Unit,
@@ -126,6 +131,7 @@ fun ListingScreen(
                     onShowAddCardsDialog = onShowAddCardsDialog,
                     onShowDeleteListingDialog = onShowDeleteListingDialog,
                     onShowRemoveCardDialog = onShowRemoveCardDialog,
+                    onShowImageUrlDialog = onShowImageUrlDialog,
                     onShowCopyToast = onShowCopyToast,
                     preBodyText = uiState.preBodyText,
                     postBodyText = uiState.postBodyText
@@ -152,6 +158,9 @@ fun ListingScreen(
                 onConfirmRemoveCard = onConfirmRemoveCard,
                 onDismissDeleteListingDialog = onDismissDeleteListingDialog,
                 onConfirmDeleteListing = onConfirmDeleteListing,
+                onDismissImageUrlDialog = onDismissImageUrlDialog,
+                onImageUrlChanged = onImageUrlChanged,
+                onConfirmImageUrl = onConfirmImageUrl,
                 onClearFocusSearchFlag = onClearFocusSearchFlag
         )
 
@@ -293,6 +302,7 @@ private fun ContentArea(
         onShowAddCardsDialog: (String) -> Unit,
         onShowDeleteListingDialog: (String, String) -> Unit,
         onShowRemoveCardDialog: (String, String, String) -> Unit,
+        onShowImageUrlDialog: (String, String?) -> Unit,
         onShowCopyToast: (String) -> Unit,
         preBodyText: String,
         postBodyText: String
@@ -339,6 +349,7 @@ private fun ContentArea(
                         onShowAddCardsDialog = onShowAddCardsDialog,
                         onShowDeleteListingDialog = onShowDeleteListingDialog,
                         onShowRemoveCardDialog = onShowRemoveCardDialog,
+                        onShowImageUrlDialog = onShowImageUrlDialog,
                         onShowCopyToast = onShowCopyToast,
                         preBodyText = preBodyText,
                         postBodyText = postBodyText
@@ -355,6 +366,7 @@ private fun ListingList(
         onShowAddCardsDialog: (String) -> Unit,
         onShowDeleteListingDialog: (String, String) -> Unit,
         onShowRemoveCardDialog: (String, String, String) -> Unit,
+        onShowImageUrlDialog: (String, String?) -> Unit,
         onShowCopyToast: (String) -> Unit,
         preBodyText: String,
         postBodyText: String
@@ -377,6 +389,9 @@ private fun ListingList(
                     onShowRemoveCardDialog = { cardId, cardName ->
                         onShowRemoveCardDialog(listing.id, cardId, cardName)
                     },
+                    onShowImageUrlDialog = {
+                        onShowImageUrlDialog(listing.id, listing.imageUrl)
+                    },
                     onShowCopyToast = onShowCopyToast,
                     preBodyText = preBodyText,
                     postBodyText = postBodyText
@@ -392,6 +407,7 @@ private fun ListingCard(
         onShowAddCardsDialog: () -> Unit,
         onShowDeleteListingDialog: () -> Unit,
         onShowRemoveCardDialog: (String, String) -> Unit,
+        onShowImageUrlDialog: () -> Unit,
         onShowCopyToast: (String) -> Unit,
         preBodyText: String,
         postBodyText: String
@@ -411,6 +427,30 @@ private fun ListingCard(
                     style = MaterialTheme.typography.titleLarge,
                     color = textPrimary
             )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Row(
+                    modifier =
+                            Modifier.clip(RoundedCornerShape(8.dp))
+                                    .background(bgDropdown)
+                                    .clickable { onShowImageUrlDialog() }
+                                    .padding(vertical = 8.dp, horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit image URL",
+                        tint = textPrimary,
+                        modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                        text = listing.imageUrl ?: "Listing images",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (listing.imageUrl != null) textPrimary else textTertiary
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -460,7 +500,7 @@ private fun ListingCard(
                         onShowCopyToast("Title copied to clipboard")
                     },
                     onCopyBody = {
-                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText)
+                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText, listing.imageUrl)
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     }
@@ -687,6 +727,9 @@ private fun ListingDialogs(
         onConfirmRemoveCard: () -> Unit,
         onDismissDeleteListingDialog: () -> Unit,
         onConfirmDeleteListing: () -> Unit,
+        onDismissImageUrlDialog: () -> Unit,
+        onImageUrlChanged: (String) -> Unit,
+        onConfirmImageUrl: () -> Unit,
         onClearFocusSearchFlag: () -> Unit
 ) {
     if (uiState.showCreateDialog) {
@@ -735,6 +778,15 @@ private fun ListingDialogs(
                 isDeleting = dialogState.isDeleting,
                 onDismiss = onDismissDeleteListingDialog,
                 onConfirm = onConfirmDeleteListing
+        )
+    }
+
+    uiState.imageUrlDialogState?.let { dialogState ->
+        ImageUrlDialog(
+                dialogState = dialogState,
+                onDismiss = onDismissImageUrlDialog,
+                onImageUrlChanged = onImageUrlChanged,
+                onConfirm = onConfirmImageUrl
         )
     }
 }
@@ -1066,6 +1118,73 @@ private fun DeleteListingDialog(
 }
 
 @Composable
+private fun ImageUrlDialog(
+        dialogState: ImageUrlDialogState,
+        onDismiss: () -> Unit,
+        onImageUrlChanged: (String) -> Unit,
+        onConfirm: () -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    AlertDialog(
+            onDismissRequest = { if (!dialogState.isSaving) onDismiss() },
+            title = {
+                Text(
+                        text = "Listing Images",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                )
+            },
+            text = {
+                OutlinedTextField(
+                        value = dialogState.imageUrl,
+                        onValueChange = onImageUrlChanged,
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                        placeholder = { Text("Enter image URL", color = textTertiary) },
+                        singleLine = true,
+                        enabled = !dialogState.isSaving,
+                        colors =
+                                OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = textPrimary,
+                                        unfocusedTextColor = textPrimary,
+                                        focusedBorderColor = accentPrimary,
+                                        unfocusedBorderColor = textTertiary,
+                                        cursorColor = accentPrimary,
+                                        focusedContainerColor = bgSecondary,
+                                        unfocusedContainerColor = bgSecondary
+                                ),
+                        shape = RoundedCornerShape(8.dp)
+                )
+            },
+            confirmButton = {
+                Button(
+                        onClick = onConfirm,
+                        enabled = !dialogState.isSaving,
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        containerColor = accentPrimary,
+                                        contentColor = textOnAccent,
+                                        disabledContainerColor = bgSecondary,
+                                        disabledContentColor = textTertiary
+                                ),
+                        shape = RoundedCornerShape(8.dp)
+                ) { Text(if (dialogState.isSaving) "Saving..." else "Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss, enabled = !dialogState.isSaving) {
+                    Text("Cancel", color = textSecondary)
+                }
+            },
+            containerColor = bgSurface,
+            shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
 private fun ToastMessage(
         message: String,
         isError: Boolean,
@@ -1089,10 +1208,14 @@ private fun ToastMessage(
     ) { Text(text = message, color = textOnAccent, style = MaterialTheme.typography.bodyMedium) }
 }
 
-private fun buildFullBody(preBodyText: String, body: String, postBodyText: String): String {
+private fun buildFullBody(preBodyText: String, body: String, postBodyText: String, imageUrl: String? = null): String {
     return buildString {
         if (preBodyText.isNotBlank()) {
             append(preBodyText)
+            append("\n\n")
+        }
+        if (!imageUrl.isNullOrBlank()) {
+            append("Listing images $imageUrl")
             append("\n\n")
         }
         append(body)
@@ -1193,7 +1316,8 @@ private fun generateMarkdownBody(
 private fun buildAllListingsText(listings: List<Listing>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
         val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
-        "# ${listing.title}\n\n$body"
+        val imagesSuffix = if (!listing.imageUrl.isNullOrBlank()) " [Listing images](${listing.imageUrl})" else ""
+        "# ${listing.title}$imagesSuffix\n\n$body"
     }
 }
 

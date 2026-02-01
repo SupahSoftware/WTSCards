@@ -6,5 +6,6 @@ data class Listing(
     val createdAt: Long,
     val cards: List<Card> = emptyList(),
     val discount: Int = 0,
-    val nicePrices: Boolean = false
+    val nicePrices: Boolean = false,
+    val imageUrl: String? = null
 )

@@ -71,7 +71,8 @@ data class BackupListing(
     val title: String,
     val createdAt: Long,
     val discount: Long = 0,
-    val nicePrices: Long = 0
+    val nicePrices: Long = 0,
+    val imageUrl: String? = null
 )
 
 @Serializable
@@ -219,7 +220,8 @@ class BackupUseCaseImpl(
                 title = listing.title,
                 createdAt = listing.createdAt,
                 discount = listing.discount,
-                nicePrices = listing.nicePrices
+                nicePrices = listing.nicePrices,
+                imageUrl = listing.imageUrl
             )
         }
 
@@ -315,7 +317,8 @@ class BackupUseCaseImpl(
                     title = listing.title,
                     createdAt = listing.createdAt,
                     discount = listing.discount,
-                    nicePrices = listing.nicePrices
+                    nicePrices = listing.nicePrices,
+                    imageUrl = listing.imageUrl
                 )
             }
 
