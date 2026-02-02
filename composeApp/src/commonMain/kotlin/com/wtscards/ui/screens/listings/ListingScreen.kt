@@ -135,6 +135,10 @@ fun ListingScreen(
         onCreateOrderPoundsChanged: (String) -> Unit,
         onCreateOrderOuncesChanged: (String) -> Unit,
         onConfirmCreateOrderFromListing: () -> Unit,
+        onShowLotPriceOverrideDialog: (String, Long?) -> Unit,
+        onDismissLotPriceOverrideDialog: () -> Unit,
+        onLotPriceOverrideChanged: (String) -> Unit,
+        onConfirmLotPriceOverride: () -> Unit,
         modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -159,6 +163,7 @@ fun ListingScreen(
                     onShowImageUrlDialog = onShowImageUrlDialog,
                     onShowCopyToast = onShowCopyToast,
                     onShowCreateOrderFromListing = onShowCreateOrderFromListing,
+                    onShowLotPriceOverrideDialog = onShowLotPriceOverrideDialog,
                     preBodyText = uiState.preBodyText,
                     postBodyText = uiState.postBodyText
             )
@@ -208,7 +213,10 @@ fun ListingScreen(
                 onCreateOrderHeightChanged = onCreateOrderHeightChanged,
                 onCreateOrderPoundsChanged = onCreateOrderPoundsChanged,
                 onCreateOrderOuncesChanged = onCreateOrderOuncesChanged,
-                onConfirmCreateOrderFromListing = onConfirmCreateOrderFromListing
+                onConfirmCreateOrderFromListing = onConfirmCreateOrderFromListing,
+                onDismissLotPriceOverrideDialog = onDismissLotPriceOverrideDialog,
+                onLotPriceOverrideChanged = onLotPriceOverrideChanged,
+                onConfirmLotPriceOverride = onConfirmLotPriceOverride
         )
 
         uiState.toast?.let { toast ->
@@ -352,6 +360,7 @@ private fun ContentArea(
         onShowImageUrlDialog: (String, String?) -> Unit,
         onShowCopyToast: (String) -> Unit,
         onShowCreateOrderFromListing: (String) -> Unit,
+        onShowLotPriceOverrideDialog: (String, Long?) -> Unit,
         preBodyText: String,
         postBodyText: String
 ) {
@@ -400,6 +409,7 @@ private fun ContentArea(
                         onShowImageUrlDialog = onShowImageUrlDialog,
                         onShowCopyToast = onShowCopyToast,
                         onShowCreateOrderFromListing = onShowCreateOrderFromListing,
+                        onShowLotPriceOverrideDialog = onShowLotPriceOverrideDialog,
                         preBodyText = preBodyText,
                         postBodyText = postBodyText
                 )
@@ -418,6 +428,7 @@ private fun ListingList(
         onShowImageUrlDialog: (String, String?) -> Unit,
         onShowCopyToast: (String) -> Unit,
         onShowCreateOrderFromListing: (String) -> Unit,
+        onShowLotPriceOverrideDialog: (String, Long?) -> Unit,
         preBodyText: String,
         postBodyText: String
 ) {
@@ -444,6 +455,9 @@ private fun ListingList(
                     },
                     onShowCopyToast = onShowCopyToast,
                     onShowCreateOrderFromListing = { onShowCreateOrderFromListing(listing.id) },
+                    onShowLotPriceOverrideDialog = {
+                        onShowLotPriceOverrideDialog(listing.id, listing.lotPriceOverride)
+                    },
                     preBodyText = preBodyText,
                     postBodyText = postBodyText
             )
@@ -461,6 +475,7 @@ private fun ListingCard(
         onShowImageUrlDialog: () -> Unit,
         onShowCopyToast: (String) -> Unit,
         onShowCreateOrderFromListing: () -> Unit,
+        onShowLotPriceOverrideDialog: () -> Unit,
         preBodyText: String,
         postBodyText: String
 ) {
@@ -554,13 +569,13 @@ private fun ListingCard(
                         onShowCopyToast("Title copied to clipboard")
                     },
                     onCopyBodyWithLinks = {
-                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText, listing.imageUrl)
+                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText, listing.imageUrl, listing.title, listing.lotPriceOverride)
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     },
                     onCopyBodyNoLinks = {
                         val noLinksBody = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices, includeLinks = false)
-                        val fullBody = buildFullBody(preBodyText, noLinksBody, postBodyText, listing.imageUrl)
+                        val fullBody = buildFullBody(preBodyText, noLinksBody, postBodyText, listing.imageUrl, listing.title, listing.lotPriceOverride)
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     },
@@ -585,6 +600,25 @@ private fun ListingCard(
                         discountPercent = listing.discount,
                         nicePrices = listing.nicePrices,
                         onRemove = { onShowRemoveCardDialog(card.id, card.name) }
+                )
+            }
+
+            val totalPrice =
+                    listing.cards
+                            .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                            .sumOf { card ->
+                                calculateListingPrice(
+                                        card.priceInPennies,
+                                        listing.discount,
+                                        listing.nicePrices
+                                )
+                            }
+            if (totalPrice > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                ListingTotalDisplayRow(
+                        total = totalPrice,
+                        lotPriceOverride = listing.lotPriceOverride,
+                        onClick = onShowLotPriceOverrideDialog
                 )
             }
         } else {
@@ -788,6 +822,120 @@ private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRe
 }
 
 @Composable
+private fun ListingTotalDisplayRow(
+        total: Long,
+        lotPriceOverride: Long?,
+        onClick: () -> Unit
+) {
+    Row(
+            modifier =
+                    Modifier.clip(RoundedCornerShape(8.dp))
+                            .background(bgDropdown)
+                            .clickable { onClick() }
+                            .padding(vertical = 8.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit lot price override",
+                tint = successColor,
+                modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+                text = "Total ",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = successColor
+        )
+        if (lotPriceOverride != null) {
+            Text(
+                    text = formatPrice(total),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = successColor,
+                    textDecoration = TextDecoration.LineThrough
+            )
+            Text(
+                    text = " ${formatPrice(lotPriceOverride)}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = successColor
+            )
+        } else {
+            Text(
+                    text = formatPrice(total),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = successColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun LotPriceOverrideDialog(
+        dialogState: LotPriceOverrideDialogState,
+        onDismiss: () -> Unit,
+        onValueChanged: (String) -> Unit,
+        onConfirm: () -> Unit
+) {
+    AlertDialog(
+            onDismissRequest = { if (!dialogState.isSaving) onDismiss() },
+            title = {
+                Text(
+                        text = "Override lot price",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                )
+            },
+            text = {
+                OutlinedTextField(
+                        value = dialogState.lotPriceOverride,
+                        onValueChange = onValueChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Enter price", color = textTertiary) },
+                        leadingIcon = { Text("$", color = textPrimary) },
+                        singleLine = true,
+                        enabled = !dialogState.isSaving,
+                        colors =
+                                OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = textPrimary,
+                                        unfocusedTextColor = textPrimary,
+                                        focusedBorderColor = accentPrimary,
+                                        unfocusedBorderColor = textTertiary,
+                                        cursorColor = accentPrimary,
+                                        focusedContainerColor = bgSecondary,
+                                        unfocusedContainerColor = bgSecondary
+                                ),
+                        shape = RoundedCornerShape(8.dp)
+                )
+            },
+            confirmButton = {
+                Button(
+                        onClick = onConfirm,
+                        enabled = !dialogState.isSaving,
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        containerColor = accentPrimary,
+                                        contentColor = textOnAccent,
+                                        disabledContainerColor = bgSecondary,
+                                        disabledContentColor = textTertiary
+                                ),
+                        shape = RoundedCornerShape(8.dp)
+                ) { Text(if (dialogState.isSaving) "Saving..." else "Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss, enabled = !dialogState.isSaving) {
+                    Text("Cancel", color = textSecondary)
+                }
+            },
+            containerColor = bgSurface,
+            shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
 private fun BoxScope.CreateListingFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     FloatingActionButton(onClick = onClick, modifier = modifier, containerColor = accentPrimary) {
         Icon(
@@ -838,7 +986,10 @@ private fun ListingDialogs(
         onCreateOrderHeightChanged: (String) -> Unit,
         onCreateOrderPoundsChanged: (String) -> Unit,
         onCreateOrderOuncesChanged: (String) -> Unit,
-        onConfirmCreateOrderFromListing: () -> Unit
+        onConfirmCreateOrderFromListing: () -> Unit,
+        onDismissLotPriceOverrideDialog: () -> Unit,
+        onLotPriceOverrideChanged: (String) -> Unit,
+        onConfirmLotPriceOverride: () -> Unit
 ) {
     if (uiState.showCreateDialog) {
         CreateListingDialog(
@@ -927,6 +1078,15 @@ private fun ListingDialogs(
                     onConfirm = onConfirmCreateOrderFromListing
             )
         }
+    }
+
+    uiState.lotPriceOverrideDialogState?.let { dialogState ->
+        LotPriceOverrideDialog(
+                dialogState = dialogState,
+                onDismiss = onDismissLotPriceOverrideDialog,
+                onValueChanged = onLotPriceOverrideChanged,
+                onConfirm = onConfirmLotPriceOverride
+        )
     }
 }
 
@@ -1833,8 +1993,12 @@ private fun ToastMessage(
     ) { Text(text = message, color = textOnAccent, style = MaterialTheme.typography.bodyMedium) }
 }
 
-private fun buildFullBody(preBodyText: String, body: String, postBodyText: String, imageUrl: String? = null): String {
+private fun buildFullBody(preBodyText: String, body: String, postBodyText: String, imageUrl: String? = null, title: String? = null, lotPriceOverride: Long? = null): String {
     return buildString {
+        if (title != null && lotPriceOverride != null) {
+            append("# $title ${formatPrice(lotPriceOverride)}")
+            append("\n\n")
+        }
         if (preBodyText.isNotBlank()) {
             append(preBodyText)
             append("\n\n")
@@ -1950,8 +2114,9 @@ private fun generateMarkdownBody(
 private fun buildAllListingsText(listings: List<Listing>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
         val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
+        val priceSuffix = if (listing.lotPriceOverride != null) " ${formatPrice(listing.lotPriceOverride)}" else ""
         val imagesSuffix = if (!listing.imageUrl.isNullOrBlank()) " [Listing images](${listing.imageUrl})" else ""
-        "# ${listing.title}$imagesSuffix\n\n$body"
+        "# ${listing.title}$priceSuffix$imagesSuffix\n\n$body"
     }
 }
 

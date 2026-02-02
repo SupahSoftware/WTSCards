@@ -13,4 +13,5 @@ interface ListingUseCase {
     suspend fun deleteListing(id: String)
     suspend fun addCardsToListing(listingId: String, cardIds: List<String>)
     suspend fun removeCardFromListing(listingId: String, cardId: String)
+    suspend fun updateLotPriceOverride(listingId: String, lotPriceOverride: Long?)
 }

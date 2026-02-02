@@ -21,6 +21,7 @@ data class ListingUiState(
         val postBodyText: String = "",
         val listingNicePricesDefault: Boolean = false,
         val listingDefaultDiscount: String = "0",
+        val lotPriceOverrideDialogState: LotPriceOverrideDialogState? = null,
         val createOrderFromListingState: CreateOrderFromListingState? = null,
         val defaultDiscount: Int = 0,
         val defaultEnvelopeCost: String = "1.00",
@@ -80,6 +81,12 @@ data class DeleteListingDialogState(
 data class ImageUrlDialogState(
         val listingId: String,
         val imageUrl: String = "",
+        val isSaving: Boolean = false
+)
+
+data class LotPriceOverrideDialogState(
+        val listingId: String,
+        val lotPriceOverride: String = "",
         val isSaving: Boolean = false
 )
 

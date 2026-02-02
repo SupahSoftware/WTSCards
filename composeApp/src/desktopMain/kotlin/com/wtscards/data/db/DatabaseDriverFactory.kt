@@ -9,7 +9,7 @@ object DatabaseDriverFactory {
     private const val DATABASE_NAME = "wtscards.db"
 
     // DO NOT EVER CHANGE THIS WITHOUT A MIGRATION IN PLACE
-    private const val SCHEMA_VERSION = 17
+    private const val SCHEMA_VERSION = 18
 
     fun createDriver(): SqlDriver {
         val appDataDir = getAppDataDirectory()

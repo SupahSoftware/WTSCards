@@ -192,6 +192,10 @@ fun MainScreen(
                         onCreateOrderPoundsChanged = listingViewModel::onCreateOrderPoundsChanged,
                         onCreateOrderOuncesChanged = listingViewModel::onCreateOrderOuncesChanged,
                         onConfirmCreateOrderFromListing = listingViewModel::onConfirmCreateOrderFromListing,
+                        onShowLotPriceOverrideDialog = listingViewModel::onShowLotPriceOverrideDialog,
+                        onDismissLotPriceOverrideDialog = listingViewModel::onDismissLotPriceOverrideDialog,
+                        onLotPriceOverrideChanged = listingViewModel::onLotPriceOverrideChanged,
+                        onConfirmLotPriceOverride = listingViewModel::onConfirmLotPriceOverride,
                         modifier = Modifier.padding(paddingValues)
                 )
             }

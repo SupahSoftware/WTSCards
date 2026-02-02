@@ -7,5 +7,6 @@ data class Listing(
     val cards: List<Card> = emptyList(),
     val discount: Int = 0,
     val nicePrices: Boolean = false,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val lotPriceOverride: Long? = null
 )

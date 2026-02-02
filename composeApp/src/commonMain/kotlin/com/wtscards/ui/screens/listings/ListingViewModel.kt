@@ -437,6 +437,72 @@ class ListingViewModel(
         }
     }
 
+    // Lot price override
+
+    fun onShowLotPriceOverrideDialog(listingId: String, currentOverride: Long?) {
+        val displayValue = if (currentOverride != null) {
+            String.format("%.2f", currentOverride / 100.0)
+        } else {
+            ""
+        }
+        uiState = uiState.copy(
+                lotPriceOverrideDialogState = LotPriceOverrideDialogState(
+                        listingId = listingId,
+                        lotPriceOverride = displayValue
+                )
+        )
+    }
+
+    fun onDismissLotPriceOverrideDialog() {
+        uiState = uiState.copy(lotPriceOverrideDialogState = null)
+    }
+
+    fun onLotPriceOverrideChanged(value: String) {
+        uiState.lotPriceOverrideDialogState?.let { dialogState ->
+            val filtered = value.filter { it.isDigit() || it == '.' }
+            if (filtered.count { it == '.' } <= 1) {
+                uiState = uiState.copy(
+                        lotPriceOverrideDialogState = dialogState.copy(lotPriceOverride = filtered)
+                )
+            }
+        }
+    }
+
+    fun onConfirmLotPriceOverride() {
+        uiState.lotPriceOverrideDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                    lotPriceOverrideDialogState = dialogState.copy(isSaving = true)
+            )
+
+            coroutineScope.launch {
+                try {
+                    val overrideValue = dialogState.lotPriceOverride.trim()
+                    val pennies = if (overrideValue.isBlank()) {
+                        null
+                    } else {
+                        ((overrideValue.toDoubleOrNull() ?: 0.0) * 100).toLong().takeIf { it > 0 }
+                    }
+                    listingUseCase.updateLotPriceOverride(dialogState.listingId, pennies)
+                    uiState = uiState.copy(
+                            lotPriceOverrideDialogState = null,
+                            toast = ListingToastState(
+                                    if (pennies != null) "Lot price override set" else "Lot price override cleared",
+                                    isError = false
+                            )
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                            lotPriceOverrideDialogState = dialogState.copy(isSaving = false),
+                            toast = ListingToastState(
+                                    e.message ?: "Failed to update lot price override",
+                                    isError = true
+                            )
+                    )
+                }
+            }
+        }
+    }
+
     // Create order from listing flow
 
     fun onShowCreateOrderFromListing(listingId: String) {

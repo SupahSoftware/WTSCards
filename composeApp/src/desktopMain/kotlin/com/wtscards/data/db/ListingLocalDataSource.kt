@@ -54,7 +54,8 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
             createdAt = listing.createdAt,
             discount = listing.discount.toLong(),
             nicePrices = if (listing.nicePrices) 1L else 0L,
-            imageUrl = listing.imageUrl
+            imageUrl = listing.imageUrl,
+            lotPriceOverride = listing.lotPriceOverride
         )
     }
 
@@ -78,6 +79,10 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
 
     suspend fun updateImageUrl(listingId: String, imageUrl: String?) = withContext(Dispatchers.IO) {
         listingQueries.updateImageUrl(imageUrl = imageUrl, id = listingId)
+    }
+
+    suspend fun updateLotPriceOverride(listingId: String, lotPriceOverride: Long?) = withContext(Dispatchers.IO) {
+        listingQueries.updateLotPriceOverride(lotPriceOverride = lotPriceOverride, id = listingId)
     }
 
     suspend fun deleteListing(id: String) = withContext(Dispatchers.IO) {
@@ -117,7 +122,8 @@ class ListingLocalDataSource(private val database: WTSCardsDatabase) {
             cards = cards,
             discount = discount.toInt(),
             nicePrices = nicePrices != 0L,
-            imageUrl = imageUrl
+            imageUrl = imageUrl,
+            lotPriceOverride = lotPriceOverride
         )
     }
 

@@ -4,7 +4,8 @@ CREATE TABLE ListingEntity (
     createdAt INTEGER NOT NULL,
     discount INTEGER NOT NULL DEFAULT 0,
     nicePrices INTEGER NOT NULL DEFAULT 0,
-    imageUrl TEXT
+    imageUrl TEXT,
+    lotPriceOverride INTEGER
 );
 
 CREATE TABLE ListingCardEntity (
@@ -30,8 +31,8 @@ INNER JOIN ListingCardEntity lc ON c.id = lc.cardId
 WHERE lc.listingId = ?;
 
 insert:
-INSERT INTO ListingEntity (id, title, createdAt, discount, nicePrices, imageUrl)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO ListingEntity (id, title, createdAt, discount, nicePrices, imageUrl, lotPriceOverride)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 insertListingCard:
 INSERT OR IGNORE INTO ListingCardEntity (listingId, cardId)
@@ -40,6 +41,11 @@ VALUES (?, ?);
 updateListing:
 UPDATE ListingEntity
 SET title = ?, discount = ?, nicePrices = ?
+WHERE id = ?;
+
+updateLotPriceOverride:
+UPDATE ListingEntity
+SET lotPriceOverride = ?
 WHERE id = ?;
 
 updateImageUrl:

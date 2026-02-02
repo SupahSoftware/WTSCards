@@ -43,4 +43,8 @@ class ListingUseCaseImpl(
     override suspend fun removeCardFromListing(listingId: String, cardId: String) {
         listingLocalDataSource.removeCardFromListing(listingId, cardId)
     }
+
+    override suspend fun updateLotPriceOverride(listingId: String, lotPriceOverride: Long?) {
+        listingLocalDataSource.updateLotPriceOverride(listingId, lotPriceOverride)
+    }
 }
