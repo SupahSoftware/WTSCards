@@ -238,17 +238,18 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
                 color = textPrimary,
                 modifier = Modifier.alignByBaseline()
         )
-        val totalValue = listings.sumOf { listing ->
-            listing.cards
-                    .filter { card -> card.priceSold == null || card.priceSold <= 0 }
-                    .sumOf { card ->
-                        calculateListingPrice(
-                                card.priceInPennies,
-                                listing.discount,
-                                listing.nicePrices
-                        )
-                    }
-        }
+        val totalValue =
+                listings.sumOf { listing ->
+                    listing.cards
+                            .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                            .sumOf { card ->
+                                calculateListingPrice(
+                                        card.priceInPennies,
+                                        listing.discount,
+                                        listing.nicePrices
+                                )
+                            }
+                }
         if (totalValue > 0) {
             Spacer(modifier = Modifier.width(12.dp))
             Text(
@@ -450,9 +451,7 @@ private fun ListingList(
                     onShowRemoveCardDialog = { cardId, cardName ->
                         onShowRemoveCardDialog(listing.id, cardId, cardName)
                     },
-                    onShowImageUrlDialog = {
-                        onShowImageUrlDialog(listing.id, listing.imageUrl)
-                    },
+                    onShowImageUrlDialog = { onShowImageUrlDialog(listing.id, listing.imageUrl) },
                     onShowCopyToast = onShowCopyToast,
                     onShowCreateOrderFromListing = { onShowCreateOrderFromListing(listing.id) },
                     onShowLotPriceOverrideDialog = {
@@ -569,13 +568,61 @@ private fun ListingCard(
                         onShowCopyToast("Title copied to clipboard")
                     },
                     onCopyBodyWithLinks = {
-                        val fullBody = buildFullBody(preBodyText, markdownBody, postBodyText, listing.imageUrl, listing.title, listing.lotPriceOverride)
+                        val totalPrice =
+                                listing.cards
+                                        .filter { card ->
+                                            card.priceSold == null || card.priceSold <= 0
+                                        }
+                                        .sumOf { card ->
+                                            calculateListingPrice(
+                                                    card.priceInPennies,
+                                                    listing.discount,
+                                                    listing.nicePrices
+                                            )
+                                        }
+                        val fullBody =
+                                buildFullBody(
+                                        preBodyText,
+                                        markdownBody,
+                                        postBodyText,
+                                        listing.imageUrl,
+                                        listing.title,
+                                        listing.lotPriceOverride,
+                                        totalPrice
+                                )
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     },
                     onCopyBodyNoLinks = {
-                        val noLinksBody = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices, includeLinks = false)
-                        val fullBody = buildFullBody(preBodyText, noLinksBody, postBodyText, listing.imageUrl, listing.title, listing.lotPriceOverride)
+                        val noLinksBody =
+                                generateMarkdownBody(
+                                        listing.cards,
+                                        listing.discount,
+                                        listing.nicePrices,
+                                        includeLinks = false
+                                )
+                        val totalPrice =
+                                listing.cards
+                                        .filter { card ->
+                                            card.priceSold == null || card.priceSold <= 0
+                                        }
+                                        .sumOf { card ->
+                                            calculateListingPrice(
+                                                    card.priceInPennies,
+                                                    listing.discount,
+                                                    listing.nicePrices
+                                            )
+                                        }
+                        val fullBody =
+                                buildFullBody(
+                                        preBodyText,
+                                        noLinksBody,
+                                        postBodyText,
+                                        listing.imageUrl,
+                                        listing.title,
+                                        listing.lotPriceOverride,
+                                        totalPrice
+                                )
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
                     },
@@ -822,11 +869,7 @@ private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRe
 }
 
 @Composable
-private fun ListingTotalDisplayRow(
-        total: Long,
-        lotPriceOverride: Long?,
-        onClick: () -> Unit
-) {
+private fun ListingTotalDisplayRow(total: Long, lotPriceOverride: Long?, onClick: () -> Unit) {
     Row(
             modifier =
                     Modifier.clip(RoundedCornerShape(8.dp))
@@ -1425,9 +1468,7 @@ private fun ImageUrlDialog(
 ) {
     val focusRequester = remember { FocusRequester() }
 
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     AlertDialog(
             onDismissRequest = { if (!dialogState.isSaving) onDismiss() },
@@ -1515,11 +1556,12 @@ private fun CreateOrderFromListingDialog(
             onDismissRequest = { if (!state.isSaving) onDismiss() },
             title = {
                 Text(
-                        text = when (state.step) {
-                            CreateOrderFromListingStep.SELECT_CARDS -> "Select Cards"
-                            CreateOrderFromListingStep.CONFIRM_PRICES -> "Confirm Prices"
-                            CreateOrderFromListingStep.CREATE_ORDER -> "Create Order"
-                        },
+                        text =
+                                when (state.step) {
+                                    CreateOrderFromListingStep.SELECT_CARDS -> "Select Cards"
+                                    CreateOrderFromListingStep.CONFIRM_PRICES -> "Confirm Prices"
+                                    CreateOrderFromListingStep.CREATE_ORDER -> "Create Order"
+                                },
                         style = MaterialTheme.typography.titleLarge,
                         color = textPrimary
                 )
@@ -1537,7 +1579,8 @@ private fun CreateOrderFromListingDialog(
                     }
                     CreateOrderFromListingStep.CONFIRM_PRICES -> {
                         CreateOrderPriceConfirmationContent(
-                                selectedCards = listingCards.filter { it.id in state.selectedCardIds },
+                                selectedCards =
+                                        listingCards.filter { it.id in state.selectedCardIds },
                                 cardPrices = state.cardPrices,
                                 onCardPriceChanged = onCardPriceChanged
                         )
@@ -1567,30 +1610,35 @@ private fun CreateOrderFromListingDialog(
                 Button(
                         onClick = {
                             when (state.step) {
-                                CreateOrderFromListingStep.SELECT_CARDS -> onProceedToPriceConfirmation()
+                                CreateOrderFromListingStep.SELECT_CARDS ->
+                                        onProceedToPriceConfirmation()
                                 CreateOrderFromListingStep.CONFIRM_PRICES -> onProceedToOrderForm()
                                 CreateOrderFromListingStep.CREATE_ORDER -> onConfirm()
                             }
                         },
-                        enabled = when (state.step) {
-                            CreateOrderFromListingStep.SELECT_CARDS ->
-                                state.selectedCardIds.isNotEmpty() && !state.isSaving
-                            CreateOrderFromListingStep.CONFIRM_PRICES -> {
-                                val selectedCards = listingCards.filter { it.id in state.selectedCardIds }
-                                selectedCards.all { card ->
-                                    val price = state.cardPrices[card.id]
-                                    price != null && price.isNotBlank()
-                                } && !state.isSaving
-                            }
-                            CreateOrderFromListingStep.CREATE_ORDER ->
-                                state.isOrderValid()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                                containerColor = accentPrimary,
-                                contentColor = textOnAccent,
-                                disabledContainerColor = bgSecondary,
-                                disabledContentColor = textTertiary
-                        ),
+                        enabled =
+                                when (state.step) {
+                                    CreateOrderFromListingStep.SELECT_CARDS ->
+                                            state.selectedCardIds.isNotEmpty() && !state.isSaving
+                                    CreateOrderFromListingStep.CONFIRM_PRICES -> {
+                                        val selectedCards =
+                                                listingCards.filter {
+                                                    it.id in state.selectedCardIds
+                                                }
+                                        selectedCards.all { card ->
+                                            val price = state.cardPrices[card.id]
+                                            price != null && price.isNotBlank()
+                                        } && !state.isSaving
+                                    }
+                                    CreateOrderFromListingStep.CREATE_ORDER -> state.isOrderValid()
+                                },
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        containerColor = accentPrimary,
+                                        contentColor = textOnAccent,
+                                        disabledContainerColor = bgSecondary,
+                                        disabledContentColor = textTertiary
+                                ),
                         shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
@@ -1598,7 +1646,7 @@ private fun CreateOrderFromListingDialog(
                                 CreateOrderFromListingStep.SELECT_CARDS -> "Next"
                                 CreateOrderFromListingStep.CONFIRM_PRICES -> "Next"
                                 CreateOrderFromListingStep.CREATE_ORDER ->
-                                    if (state.isSaving) "Creating..." else "Create Order"
+                                        if (state.isSaving) "Creating..." else "Create Order"
                             }
                     )
                 }
@@ -1637,25 +1685,27 @@ private fun CreateOrderCardSelectionContent(
                     )
                 },
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = textPrimary,
-                        unfocusedTextColor = textPrimary,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = accentPrimary,
-                        focusedContainerColor = bgSecondary,
-                        unfocusedContainerColor = bgSecondary
-                ),
+                colors =
+                        OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = textPrimary,
+                                unfocusedTextColor = textPrimary,
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                cursorColor = accentPrimary,
+                                focusedContainerColor = bgSecondary,
+                                unfocusedContainerColor = bgSecondary
+                        ),
                 shape = RoundedCornerShape(8.dp)
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        val filteredCards = if (searchQuery.isBlank()) {
-            listingCards
-        } else {
-            listingCards.filter { it.name.contains(searchQuery, ignoreCase = true) }
-        }
+        val filteredCards =
+                if (searchQuery.isBlank()) {
+                    listingCards
+                } else {
+                    listingCards.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                }
 
         ScrollableList(
                 modifier = Modifier.fillMaxWidth().weight(1f),
@@ -1665,25 +1715,27 @@ private fun CreateOrderCardSelectionContent(
         ) {
             items(items = filteredCards, key = { it.id }) { card ->
                 Row(
-                        modifier = Modifier.fillMaxWidth()
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(
-                                        if (card.id in selectedCardIds)
-                                            accentPrimary.copy(alpha = 0.1f)
-                                        else bgPrimary
-                                )
-                                .clickable { onToggleCardSelection(card.id) }
-                                .padding(8.dp),
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(
+                                                if (card.id in selectedCardIds)
+                                                        accentPrimary.copy(alpha = 0.1f)
+                                                else bgPrimary
+                                        )
+                                        .clickable { onToggleCardSelection(card.id) }
+                                        .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
                             checked = card.id in selectedCardIds,
                             onCheckedChange = { onToggleCardSelection(card.id) },
-                            colors = CheckboxDefaults.colors(
-                                    checkedColor = accentPrimary,
-                                    uncheckedColor = textTertiary,
-                                    checkmarkColor = textOnAccent
-                            )
+                            colors =
+                                    CheckboxDefaults.colors(
+                                            checkedColor = accentPrimary,
+                                            uncheckedColor = textTertiary,
+                                            checkmarkColor = textOnAccent
+                                    )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -1722,10 +1774,11 @@ private fun CreateOrderPriceConfirmationContent(
         ) {
             items(items = selectedCards, key = { it.id }) { card ->
                 Row(
-                        modifier = Modifier.fillMaxWidth()
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(bgPrimary)
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier =
+                                Modifier.fillMaxWidth()
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(bgPrimary)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -1748,15 +1801,16 @@ private fun CreateOrderPriceConfirmationContent(
                             placeholder = { Text("0.00", color = textTertiary) },
                             prefix = { Text("$", color = textPrimary) },
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = textPrimary,
-                                    unfocusedTextColor = textPrimary,
-                                    focusedBorderColor = Color.Transparent,
-                                    unfocusedBorderColor = Color.Transparent,
-                                    cursorColor = accentPrimary,
-                                    focusedContainerColor = bgSecondary,
-                                    unfocusedContainerColor = bgSecondary
-                            ),
+                            colors =
+                                    OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = textPrimary,
+                                            unfocusedTextColor = textPrimary,
+                                            focusedBorderColor = Color.Transparent,
+                                            unfocusedBorderColor = Color.Transparent,
+                                            cursorColor = accentPrimary,
+                                            focusedContainerColor = bgSecondary,
+                                            unfocusedContainerColor = bgSecondary
+                                    ),
                             shape = RoundedCornerShape(8.dp)
                     )
                 }
@@ -1783,10 +1837,7 @@ private fun CreateOrderFormContent(
         onPoundsChanged: (String) -> Unit,
         onOuncesChanged: (String) -> Unit
 ) {
-    Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AppTextField(
                 containerColor = bgSecondary,
                 value = state.orderName,
@@ -1804,7 +1855,8 @@ private fun CreateOrderFormContent(
                 placeholder = "123 Main St",
                 secondaryLabel = "All fields marked in yellow can be updated later",
                 secondaryLabelColor = warningColor,
-                borderColor = if (state.orderStreetAddress.isBlank()) warningColor else Color.Transparent
+                borderColor =
+                        if (state.orderStreetAddress.isBlank()) warningColor else Color.Transparent
         )
 
         Row(
@@ -1828,7 +1880,8 @@ private fun CreateOrderFormContent(
                     label = "State",
                     placeholder = "CA",
                     modifier = Modifier.width(80.dp),
-                    borderColor = if (state.orderState.isBlank()) warningColor else Color.Transparent
+                    borderColor =
+                            if (state.orderState.isBlank()) warningColor else Color.Transparent
             )
 
             AppTextField(
@@ -1838,7 +1891,8 @@ private fun CreateOrderFormContent(
                     label = "Zip",
                     placeholder = "12345",
                     modifier = Modifier.width(100.dp),
-                    borderColor = if (state.orderZipcode.isBlank()) warningColor else Color.Transparent
+                    borderColor =
+                            if (state.orderZipcode.isBlank()) warningColor else Color.Transparent
             )
         }
 
@@ -1910,8 +1964,9 @@ private fun CreateOrderFormContent(
                 )
             }
 
-            val weightEmpty = (state.orderPounds.toIntOrNull() ?: 0) == 0 &&
-                    (state.orderOunces.toIntOrNull() ?: 0) == 0
+            val weightEmpty =
+                    (state.orderPounds.toIntOrNull()
+                            ?: 0) == 0 && (state.orderOunces.toIntOrNull() ?: 0) == 0
 
             AppTextField(
                     containerColor = bgSecondary,
@@ -1943,7 +1998,8 @@ private fun CreateOrderFormContent(
                 label = "Tracking Number",
                 placeholder = "1Z12345678901234567890",
                 secondaryLabel = "Optional, you can add this later",
-                borderColor = if (state.orderTrackingNumber.isBlank()) warningColor else Color.Transparent
+                borderColor =
+                        if (state.orderTrackingNumber.isBlank()) warningColor else Color.Transparent
         )
     }
 }
@@ -1993,10 +2049,21 @@ private fun ToastMessage(
     ) { Text(text = message, color = textOnAccent, style = MaterialTheme.typography.bodyMedium) }
 }
 
-private fun buildFullBody(preBodyText: String, body: String, postBodyText: String, imageUrl: String? = null, title: String? = null, lotPriceOverride: Long? = null): String {
+private fun buildFullBody(
+        preBodyText: String,
+        body: String,
+        postBodyText: String,
+        imageUrl: String? = null,
+        title: String? = null,
+        lotPriceOverride: Long? = null,
+        totalPrice: Long? = null
+): String {
     return buildString {
-        if (title != null && lotPriceOverride != null) {
-            append("# $title ${formatPrice(lotPriceOverride)}")
+        if (title != null && lotPriceOverride != null && totalPrice != null) {
+            append("# $title")
+            append(
+                    " - Lot value ${formatPrice(totalPrice)}, whole lot for ${formatPrice(lotPriceOverride)} or priced individually"
+            )
             append("\n\n")
         }
         if (preBodyText.isNotBlank()) {
@@ -2114,8 +2181,23 @@ private fun generateMarkdownBody(
 private fun buildAllListingsText(listings: List<Listing>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
         val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
-        val priceSuffix = if (listing.lotPriceOverride != null) " ${formatPrice(listing.lotPriceOverride)}" else ""
-        val imagesSuffix = if (!listing.imageUrl.isNullOrBlank()) " [Listing images](${listing.imageUrl})" else ""
+        val totalPrice =
+                listing.cards
+                        .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                        .sumOf { card ->
+                            calculateListingPrice(
+                                    card.priceInPennies,
+                                    listing.discount,
+                                    listing.nicePrices
+                            )
+                        }
+        val priceSuffix =
+                if (listing.lotPriceOverride != null)
+                        " - Lot value ${formatPrice(totalPrice)}, whole lot for ${formatPrice(listing.lotPriceOverride)} or priced individually"
+                else ""
+        val imagesSuffix =
+                if (!listing.imageUrl.isNullOrBlank()) " [Listing images](${listing.imageUrl})"
+                else ""
         "# ${listing.title}$priceSuffix$imagesSuffix\n\n$body"
     }
 }
