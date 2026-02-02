@@ -28,6 +28,7 @@ data class OrderUiState(
     val upgradeShippingDialogState: UpgradeShippingDialogState? = null,
     val splitOrderDialogState: SplitOrderDialogState? = null,
     val trackingNumberDialogState: TrackingNumberDialogState? = null,
+    val totalOverrideDialogState: TotalOverrideDialogState? = null,
     val availableCards: List<Card> = emptyList(),
     val toast: ToastState? = null,
     val freeShippingEnabled: Boolean = false,
@@ -70,10 +71,10 @@ data class OrderUiState(
                 OrderSortOption.DATE_DESC -> result.sortedByDescending { it.createdAt }
                 OrderSortOption.DATE_ASC -> result.sortedBy { it.createdAt }
                 OrderSortOption.TOTAL_DESC -> result.sortedByDescending { order ->
-                    order.cards.sumOf { it.priceSold ?: 0 } + order.shippingCost
+                    order.totalOverride ?: (order.cards.sumOf { it.priceSold ?: 0 } + order.shippingCost)
                 }
                 OrderSortOption.TOTAL_ASC -> result.sortedBy { order ->
-                    order.cards.sumOf { it.priceSold ?: 0 } + order.shippingCost
+                    order.totalOverride ?: (order.cards.sumOf { it.priceSold ?: 0 } + order.shippingCost)
                 }
             }
 
@@ -150,5 +151,11 @@ data class SplitOrderDialogState(
 data class TrackingNumberDialogState(
     val orderId: String,
     val trackingNumber: String = "",
+    val isSaving: Boolean = false
+)
+
+data class TotalOverrideDialogState(
+    val orderId: String,
+    val totalOverride: String = "",
     val isSaving: Boolean = false
 )

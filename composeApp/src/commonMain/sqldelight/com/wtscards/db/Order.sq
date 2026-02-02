@@ -15,7 +15,8 @@ CREATE TABLE OrderEntity (
     width REAL NOT NULL DEFAULT 0,
     height REAL NOT NULL DEFAULT 0,
     pounds INTEGER NOT NULL DEFAULT 0,
-    ounces INTEGER NOT NULL DEFAULT 0
+    ounces INTEGER NOT NULL DEFAULT 0,
+    totalOverride INTEGER
 );
 
 CREATE TABLE OrderCardEntity (
@@ -41,8 +42,8 @@ INNER JOIN OrderCardEntity oc ON c.id = oc.cardId
 WHERE oc.orderId = ?;
 
 insert:
-INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, status, createdAt, trackingNumber, discount, length, width, height, pounds, ounces)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO OrderEntity (id, name, streetAddress, city, state, zipcode, shippingType, shippingCost, status, createdAt, trackingNumber, discount, length, width, height, pounds, ounces, totalOverride)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrderCard:
 INSERT INTO OrderCardEntity (orderId, cardId)
@@ -50,7 +51,7 @@ VALUES (?, ?);
 
 updateOrder:
 UPDATE OrderEntity
-SET name = ?, streetAddress = ?, city = ?, state = ?, zipcode = ?, shippingType = ?, shippingCost = ?, trackingNumber = ?, discount = ?, length = ?, width = ?, height = ?, pounds = ?, ounces = ?
+SET name = ?, streetAddress = ?, city = ?, state = ?, zipcode = ?, shippingType = ?, shippingCost = ?, trackingNumber = ?, discount = ?, length = ?, width = ?, height = ?, pounds = ?, ounces = ?, totalOverride = ?
 WHERE id = ?;
 
 updateStatus:
@@ -84,4 +85,9 @@ WHERE id = ?;
 updateTrackingNumber:
 UPDATE OrderEntity
 SET trackingNumber = ?
+WHERE id = ?;
+
+updateTotalOverride:
+UPDATE OrderEntity
+SET totalOverride = ?
 WHERE id = ?;

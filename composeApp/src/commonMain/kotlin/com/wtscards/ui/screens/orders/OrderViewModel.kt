@@ -660,6 +660,63 @@ class OrderViewModel(
         }
     }
 
+    fun onShowTotalOverrideDialog(orderId: String, currentTotalOverride: Long?) {
+        val valueStr = if (currentTotalOverride != null) {
+            String.format("%.2f", currentTotalOverride / 100.0)
+        } else {
+            ""
+        }
+        uiState = uiState.copy(
+            totalOverrideDialogState = TotalOverrideDialogState(
+                orderId = orderId,
+                totalOverride = valueStr
+            )
+        )
+    }
+
+    fun onDismissTotalOverrideDialog() {
+        uiState = uiState.copy(totalOverrideDialogState = null)
+    }
+
+    fun onTotalOverrideChanged(value: String) {
+        uiState.totalOverrideDialogState?.let { dialogState ->
+            val filtered = value.filter { it.isDigit() || it == '.' }
+            if (filtered.count { it == '.' } <= 1) {
+                uiState = uiState.copy(
+                    totalOverrideDialogState = dialogState.copy(totalOverride = filtered)
+                )
+            }
+        }
+    }
+
+    fun onConfirmTotalOverride() {
+        uiState.totalOverrideDialogState?.let { dialogState ->
+            uiState = uiState.copy(
+                totalOverrideDialogState = dialogState.copy(isSaving = true)
+            )
+
+            coroutineScope.launch {
+                try {
+                    val totalOverride = if (dialogState.totalOverride.isBlank()) {
+                        null
+                    } else {
+                        ((dialogState.totalOverride.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    }
+                    orderUseCase.updateTotalOverride(dialogState.orderId, totalOverride)
+                    uiState = uiState.copy(
+                        totalOverrideDialogState = null,
+                        toast = ToastState("Total override updated", isError = false)
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                        totalOverrideDialogState = dialogState.copy(isSaving = false),
+                        toast = ToastState(e.message ?: "Failed to update total override", isError = true)
+                    )
+                }
+            }
+        }
+    }
+
     fun onShowTrackingNumberDialog(orderId: String, currentTrackingNumber: String?) {
         uiState = uiState.copy(
             trackingNumberDialogState = TrackingNumberDialogState(

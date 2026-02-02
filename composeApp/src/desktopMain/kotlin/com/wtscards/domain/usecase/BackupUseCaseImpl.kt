@@ -56,7 +56,8 @@ data class BackupOrder(
     val width: Double = 0.0,
     val height: Double = 0.0,
     val pounds: Long = 0,
-    val ounces: Long = 0
+    val ounces: Long = 0,
+    val totalOverride: Long? = null
 )
 
 @Serializable
@@ -206,7 +207,8 @@ class BackupUseCaseImpl(
                 width = order.width,
                 height = order.height,
                 pounds = order.pounds,
-                ounces = order.ounces
+                ounces = order.ounces,
+                totalOverride = order.totalOverride
             )
         }
 
@@ -298,7 +300,8 @@ class BackupUseCaseImpl(
                     width = order.width,
                     height = order.height,
                     pounds = order.pounds,
-                    ounces = order.ounces
+                    ounces = order.ounces,
+                    totalOverride = order.totalOverride
                 )
             }
 

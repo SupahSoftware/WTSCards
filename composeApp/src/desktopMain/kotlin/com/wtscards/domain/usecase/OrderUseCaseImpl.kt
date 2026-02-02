@@ -89,6 +89,10 @@ class OrderUseCaseImpl(
         }
     }
 
+    override suspend fun updateTotalOverride(orderId: String, totalOverride: Long?) {
+        orderLocalDataSource.updateTotalOverride(orderId, totalOverride)
+    }
+
     private fun createSplitOrder(originalOrder: Order, cards: List<com.wtscards.data.model.Card>): Order {
         return Order(
             id = java.util.UUID.randomUUID().toString(),

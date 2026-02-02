@@ -10,6 +10,7 @@ object DatabaseMigrations {
             when (version) {
                 14 -> migrateFrom14To15(driver)
                 15 -> migrateFrom15To16(driver)
+                16 -> migrateFrom16To17(driver)
             }
             version++
         }
@@ -22,5 +23,9 @@ object DatabaseMigrations {
 
     private fun migrateFrom15To16(driver: SqlDriver) {
         driver.execute(null, "ALTER TABLE ListingEntity ADD COLUMN imageUrl TEXT", 0)
+    }
+
+    private fun migrateFrom16To17(driver: SqlDriver) {
+        driver.execute(null, "ALTER TABLE OrderEntity ADD COLUMN totalOverride INTEGER", 0)
     }
 }

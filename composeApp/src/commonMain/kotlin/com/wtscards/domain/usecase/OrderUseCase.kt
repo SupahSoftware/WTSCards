@@ -16,4 +16,5 @@ interface OrderUseCase {
     suspend fun updateShippingType(orderId: String, shippingType: String, shippingCost: Long)
     suspend fun updateTrackingNumber(orderId: String, trackingNumber: String?)
     suspend fun splitOrder(orderId: String, splitCount: Int)
+    suspend fun updateTotalOverride(orderId: String, totalOverride: Long?)
 }

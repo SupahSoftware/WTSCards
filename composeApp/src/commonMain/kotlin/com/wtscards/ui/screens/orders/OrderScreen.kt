@@ -67,6 +67,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.wtscards.data.model.Order
 import com.wtscards.data.model.OrderStatus
@@ -139,6 +140,10 @@ fun OrderScreen(
         onDismissTrackingNumberDialog: () -> Unit,
         onTrackingNumberChanged: (String) -> Unit,
         onConfirmTrackingNumber: () -> Unit,
+        onShowTotalOverrideDialog: (String, Long?) -> Unit,
+        onDismissTotalOverrideDialog: () -> Unit,
+        onTotalOverrideChanged: (String) -> Unit,
+        onConfirmTotalOverride: () -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
         onClearToast: () -> Unit,
@@ -170,6 +175,7 @@ fun OrderScreen(
                     onUpgradeShipping = onShowUpgradeShippingDialog,
                     onSplitOrder = onShowSplitOrderDialog,
                     onShowTrackingNumberDialog = onShowTrackingNumberDialog,
+                    onShowTotalOverrideDialog = onShowTotalOverrideDialog,
                     onDeleteOrder = onDeleteOrder,
                     onShowToast = onShowToast,
                     freeShippingEnabled = uiState.freeShippingEnabled,
@@ -221,7 +227,10 @@ fun OrderScreen(
                 onExportShippingLabels = onExportShippingLabels,
                 onDismissTrackingNumberDialog = onDismissTrackingNumberDialog,
                 onTrackingNumberChanged = onTrackingNumberChanged,
-                onConfirmTrackingNumber = onConfirmTrackingNumber
+                onConfirmTrackingNumber = onConfirmTrackingNumber,
+                onDismissTotalOverrideDialog = onDismissTotalOverrideDialog,
+                onTotalOverrideChanged = onTotalOverrideChanged,
+                onConfirmTotalOverride = onConfirmTotalOverride
         )
 
         OrderToast(toast = uiState.toast)
@@ -253,7 +262,7 @@ private fun HeaderRow(orders: List<Order>, statusFilters: Set<String>, onStatusF
                     modifier = Modifier.alignByBaseline()
             )
             val totalSold = orders.sumOf { order ->
-                order.cards.sumOf { it.priceSold ?: 0L } + order.shippingCost
+                order.totalOverride ?: (order.cards.sumOf { it.priceSold ?: 0L } + order.shippingCost)
             }
             if (totalSold > 0) {
                 Spacer(modifier = Modifier.width(12.dp))
@@ -364,6 +373,7 @@ private fun ContentArea(
         onUpgradeShipping: (String, Int) -> Unit,
         onSplitOrder: (String, Int) -> Unit,
         onShowTrackingNumberDialog: (String, String?) -> Unit,
+        onShowTotalOverrideDialog: (String, Long?) -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
         freeShippingEnabled: Boolean,
@@ -415,6 +425,7 @@ private fun ContentArea(
                         onUpgradeShipping = onUpgradeShipping,
                         onSplitOrder = onSplitOrder,
                         onShowTrackingNumberDialog = onShowTrackingNumberDialog,
+                        onShowTotalOverrideDialog = onShowTotalOverrideDialog,
                         onDeleteOrder = onDeleteOrder,
                         onShowToast = onShowToast,
                         freeShippingEnabled = freeShippingEnabled,
@@ -560,7 +571,10 @@ private fun OrderDialogs(
         onExportShippingLabels: (List<Order>) -> Unit,
         onDismissTrackingNumberDialog: () -> Unit,
         onTrackingNumberChanged: (String) -> Unit,
-        onConfirmTrackingNumber: () -> Unit
+        onConfirmTrackingNumber: () -> Unit,
+        onDismissTotalOverrideDialog: () -> Unit,
+        onTotalOverrideChanged: (String) -> Unit,
+        onConfirmTotalOverride: () -> Unit
 ) {
     if (uiState.showCreateDialog) {
         CreateOrderDialog(
@@ -638,6 +652,15 @@ private fun OrderDialogs(
                 onConfirm = onConfirmTrackingNumber
         )
     }
+
+    uiState.totalOverrideDialogState?.let { dialogState ->
+        TotalOverrideDialog(
+                dialogState = dialogState,
+                onDismiss = onDismissTotalOverrideDialog,
+                onTotalOverrideChanged = onTotalOverrideChanged,
+                onConfirm = onConfirmTotalOverride
+        )
+    }
 }
 
 @Composable
@@ -662,6 +685,68 @@ private fun TrackingNumberDialog(
                         onValueChange = onTrackingNumberChanged,
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Enter tracking number", color = textTertiary) },
+                        singleLine = true,
+                        enabled = !dialogState.isSaving,
+                        colors =
+                                OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = textPrimary,
+                                        unfocusedTextColor = textPrimary,
+                                        focusedBorderColor = accentPrimary,
+                                        unfocusedBorderColor = borderInput,
+                                        cursorColor = accentPrimary,
+                                        focusedContainerColor = bgSecondary,
+                                        unfocusedContainerColor = bgSecondary
+                                ),
+                        shape = RoundedCornerShape(8.dp)
+                )
+            },
+            confirmButton = {
+                Button(
+                        onClick = onConfirm,
+                        enabled = !dialogState.isSaving,
+                        colors =
+                                ButtonDefaults.buttonColors(
+                                        containerColor = accentPrimary,
+                                        contentColor = textOnAccent,
+                                        disabledContainerColor = bgSecondary,
+                                        disabledContentColor = textTertiary
+                                ),
+                        shape = RoundedCornerShape(8.dp)
+                ) { Text(if (dialogState.isSaving) "Saving..." else "Confirm") }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss, enabled = !dialogState.isSaving) {
+                    Text("Cancel", color = textSecondary)
+                }
+            },
+            containerColor = bgSurface,
+            shape = RoundedCornerShape(12.dp)
+    )
+}
+
+@Composable
+private fun TotalOverrideDialog(
+        dialogState: TotalOverrideDialogState,
+        onDismiss: () -> Unit,
+        onTotalOverrideChanged: (String) -> Unit,
+        onConfirm: () -> Unit
+) {
+    AlertDialog(
+            onDismissRequest = { if (!dialogState.isSaving) onDismiss() },
+            title = {
+                Text(
+                        text = "Override order total",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = textPrimary
+                )
+            },
+            text = {
+                OutlinedTextField(
+                        value = dialogState.totalOverride,
+                        onValueChange = onTotalOverrideChanged,
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Enter total", color = textTertiary) },
+                        leadingIcon = { Text("$", color = textPrimary) },
                         singleLine = true,
                         enabled = !dialogState.isSaving,
                         colors =
@@ -967,6 +1052,7 @@ private fun OrderList(
         onUpgradeShipping: (String, Int) -> Unit,
         onSplitOrder: (String, Int) -> Unit,
         onShowTrackingNumberDialog: (String, String?) -> Unit,
+        onShowTotalOverrideDialog: (String, Long?) -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
         freeShippingEnabled: Boolean,
@@ -990,6 +1076,7 @@ private fun OrderList(
                     onUpgradeShipping = onUpgradeShipping,
                     onSplitOrder = onSplitOrder,
                     onShowTrackingNumberDialog = onShowTrackingNumberDialog,
+                    onShowTotalOverrideDialog = onShowTotalOverrideDialog,
                     onDeleteOrder = onDeleteOrder,
                     onShowToast = onShowToast,
                     freeShippingEnabled = freeShippingEnabled,
@@ -1010,6 +1097,7 @@ private fun OrderCard(
         onUpgradeShipping: (String, Int) -> Unit,
         onSplitOrder: (String, Int) -> Unit,
         onShowTrackingNumberDialog: (String, String?) -> Unit,
+        onShowTotalOverrideDialog: (String, Long?) -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
         freeShippingEnabled: Boolean,
@@ -1323,20 +1411,18 @@ private fun OrderCard(
             Spacer(modifier = Modifier.height(8.dp))
             val effectiveShipping = if (qualifiesForFreeShipping) 0L else order.shippingCost
             val total = cardsTotal - discountAmount + effectiveShipping
-            Text(
-                    text = "Total ${formatPrice(total)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    color = successColor
+            TotalDisplayRow(
+                    total = total,
+                    totalOverride = order.totalOverride,
+                    onShowTotalOverrideDialog = { onShowTotalOverrideDialog(order.id, order.totalOverride) }
             )
         } else {
             Spacer(modifier = Modifier.height(8.dp))
             val total = order.shippingCost
-            Text(
-                    text = "Total ${formatPrice(total)}",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    color = successColor
+            TotalDisplayRow(
+                    total = total,
+                    totalOverride = order.totalOverride,
+                    onShowTotalOverrideDialog = { onShowTotalOverrideDialog(order.id, order.totalOverride) }
             )
         }
 
@@ -1345,6 +1431,58 @@ private fun OrderCard(
                 onUpgradeShipping = onUpgradeShipping,
                 onSplitOrder = onSplitOrder
         )
+    }
+}
+
+@Composable
+private fun TotalDisplayRow(
+        total: Long,
+        totalOverride: Long?,
+        onShowTotalOverrideDialog: () -> Unit
+) {
+    Row(
+            modifier =
+                    Modifier.clip(RoundedCornerShape(8.dp))
+                            .background(bgDropdown)
+                            .clickable { onShowTotalOverrideDialog() }
+                            .padding(vertical = 8.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = "Edit total override",
+                tint = successColor,
+                modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+                text = "Total ",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = successColor
+        )
+        if (totalOverride != null) {
+            Text(
+                    text = formatPrice(total),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = successColor,
+                    textDecoration = TextDecoration.LineThrough
+            )
+            Text(
+                    text = " ${formatPrice(totalOverride)}",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = successColor
+            )
+        } else {
+            Text(
+                    text = formatPrice(total),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = successColor
+            )
+        }
     }
 }
 
@@ -1571,7 +1709,7 @@ private fun buildOrderCopyText(
                 }
                 if (cityStateZip.isNotBlank()) appendLine(cityStateZip)
                 append("\n")
-                appendLine(formatPrice(total))
+                appendLine(formatPrice(order.totalOverride ?: total))
                 append("\n")
                 order.cards.forEach { card ->
                     appendLine(card.name)

@@ -18,7 +18,8 @@ data class Order(
     val width: Double = 0.0,
     val height: Double = 0.0,
     val pounds: Int = 0,
-    val ounces: Int = 0
+    val ounces: Int = 0,
+    val totalOverride: Long? = null
 )
 
 object OrderStatus {

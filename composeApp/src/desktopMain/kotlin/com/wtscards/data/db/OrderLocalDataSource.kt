@@ -66,7 +66,8 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             width = order.width,
             height = order.height,
             pounds = order.pounds.toLong(),
-            ounces = order.ounces.toLong()
+            ounces = order.ounces.toLong(),
+            totalOverride = order.totalOverride
         )
     }
 
@@ -95,6 +96,7 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             height = order.height,
             pounds = order.pounds.toLong(),
             ounces = order.ounces.toLong(),
+            totalOverride = order.totalOverride,
             id = order.id
         )
     }
@@ -140,6 +142,13 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
         )
     }
 
+    suspend fun updateTotalOverride(orderId: String, totalOverride: Long?) = withContext(Dispatchers.IO) {
+        orderQueries.updateTotalOverride(
+            totalOverride = totalOverride,
+            id = orderId
+        )
+    }
+
     suspend fun replaceOrderCards(orderId: String, cardIds: List<String>) = withContext(Dispatchers.IO) {
         database.transaction {
             orderQueries.deleteOrderCardsByOrderId(orderId)
@@ -178,7 +187,8 @@ class OrderLocalDataSource(private val database: WTSCardsDatabase) {
             width = width,
             height = height,
             pounds = pounds.toInt(),
-            ounces = ounces.toInt()
+            ounces = ounces.toInt(),
+            totalOverride = totalOverride
         )
     }
 
