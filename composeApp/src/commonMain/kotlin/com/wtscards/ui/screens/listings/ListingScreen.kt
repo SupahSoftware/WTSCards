@@ -263,17 +263,25 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
         Spacer(modifier = Modifier.weight(1f))
 
         ListingScreenHeaderMenu(
-                onCopyAllListings = {
+                onCopyAllListingsDetailed = {
                     val text = buildAllListingsText(listings)
                     copyToClipboard(text)
-                    onShowCopyToast("All listings copied to clipboard")
+                    onShowCopyToast("All listings copied to clipboard (detailed)")
+                },
+                onCopyAllListingsCompact = {
+                    val text = buildAllListingsCompactText(listings)
+                    copyToClipboard(text)
+                    onShowCopyToast("All listings copied to clipboard (compact)")
                 }
         )
     }
 }
 
 @Composable
-private fun ListingScreenHeaderMenu(onCopyAllListings: () -> Unit) {
+private fun ListingScreenHeaderMenu(
+        onCopyAllListingsDetailed: () -> Unit,
+        onCopyAllListingsCompact: () -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
 
     Box {
@@ -291,10 +299,24 @@ private fun ListingScreenHeaderMenu(onCopyAllListings: () -> Unit) {
                 modifier = Modifier.background(bgSecondary)
         ) {
             DropdownMenuItem(
-                    text = { Text("Copy all listings to clipboard", color = textPrimary) },
+                    text = { Text("Copy all listings (detailed)", color = textPrimary) },
                     onClick = {
                         expanded = false
-                        onCopyAllListings()
+                        onCopyAllListingsDetailed()
+                    },
+                    leadingIcon = {
+                        Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                tint = accentPrimary
+                        )
+                    }
+            )
+            DropdownMenuItem(
+                    text = { Text("Copy all listings (compact)", color = textPrimary) },
+                    onClick = {
+                        expanded = false
+                        onCopyAllListingsCompact()
                     },
                     leadingIcon = {
                         Icon(
@@ -2199,6 +2221,16 @@ private fun buildAllListingsText(listings: List<Listing>): String {
                 if (!listing.imageUrl.isNullOrBlank()) " [Listing images](${listing.imageUrl})"
                 else ""
         "# ${listing.title}$priceSuffix$imagesSuffix\n\n$body"
+    }
+}
+
+private fun buildAllListingsCompactText(listings: List<Listing>): String {
+    return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
+        val cardCount = listing.cards.size
+        val imagesSuffix =
+                if (!listing.imageUrl.isNullOrBlank()) " - [Listing images](${listing.imageUrl})"
+                else ""
+        "${listing.title} $cardCount cards$imagesSuffix"
     }
 }
 
