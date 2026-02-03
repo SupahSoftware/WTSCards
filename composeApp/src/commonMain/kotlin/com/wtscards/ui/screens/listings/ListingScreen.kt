@@ -238,7 +238,7 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
                 color = textPrimary,
                 modifier = Modifier.alignByBaseline()
         )
-        val totalValue =
+        val totalValueBeforeOverride =
                 listings.sumOf { listing ->
                     listing.cards
                             .filter { card -> card.priceSold == null || card.priceSold <= 0 }
@@ -250,14 +250,45 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
                                 )
                             }
                 }
+        val totalValue =
+                listings.sumOf { listing ->
+                    val listingTotal = listing.cards
+                            .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                            .sumOf { card ->
+                                calculateListingPrice(
+                                        card.priceInPennies,
+                                        listing.discount,
+                                        listing.nicePrices
+                                )
+                            }
+                    listing.lotPriceOverride ?: listingTotal
+                }
         if (totalValue > 0) {
             Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                    text = "Total listings value ${formatPrice(totalValue)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = successColor,
-                    modifier = Modifier.alignByBaseline()
-            )
+            if (totalValueBeforeOverride != totalValue) {
+                Text(
+                        text = "Total listings value ${formatPrice(totalValueBeforeOverride)}",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                                textDecoration = TextDecoration.LineThrough
+                        ),
+                        color = textSecondary,
+                        modifier = Modifier.alignByBaseline()
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                        text = formatPrice(totalValue),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = successColor,
+                        modifier = Modifier.alignByBaseline()
+                )
+            } else {
+                Text(
+                        text = "Total listings value ${formatPrice(totalValue)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = successColor,
+                        modifier = Modifier.alignByBaseline()
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))

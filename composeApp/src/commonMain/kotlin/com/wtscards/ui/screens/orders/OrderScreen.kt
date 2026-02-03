@@ -261,17 +261,38 @@ private fun HeaderRow(orders: List<Order>, statusFilters: Set<String>, onStatusF
                     color = textPrimary,
                     modifier = Modifier.alignByBaseline()
             )
+            val totalBeforeOverride = orders.sumOf { order ->
+                order.cards.sumOf { it.priceSold ?: 0L } + order.shippingCost
+            }
             val totalSold = orders.sumOf { order ->
                 order.totalOverride ?: (order.cards.sumOf { it.priceSold ?: 0L } + order.shippingCost)
             }
             if (totalSold > 0) {
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                        text = "Total sold orders ${formatPrice(totalSold)}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = successColor,
-                        modifier = Modifier.alignByBaseline()
-                )
+                if (totalBeforeOverride != totalSold) {
+                    Text(
+                            text = "Total sold orders ${formatPrice(totalBeforeOverride)}",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                    textDecoration = TextDecoration.LineThrough
+                            ),
+                            color = textSecondary,
+                            modifier = Modifier.alignByBaseline()
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                            text = formatPrice(totalSold),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = successColor,
+                            modifier = Modifier.alignByBaseline()
+                    )
+                } else {
+                    Text(
+                            text = "Total sold orders ${formatPrice(totalSold)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = successColor,
+                            modifier = Modifier.alignByBaseline()
+                    )
+                }
             }
         }
 
