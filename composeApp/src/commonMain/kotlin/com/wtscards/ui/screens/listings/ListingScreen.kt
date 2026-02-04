@@ -621,18 +621,19 @@ private fun ListingCard(
                         onShowCopyToast("Title copied to clipboard")
                     },
                     onCopyBodyWithLinks = {
+                        val availableCards =
+                                listing.cards.filter { card ->
+                                    card.priceSold == null || card.priceSold <= 0
+                                }
+                        val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
                         val totalPrice =
-                                listing.cards
-                                        .filter { card ->
-                                            card.priceSold == null || card.priceSold <= 0
-                                        }
-                                        .sumOf { card ->
-                                            calculateListingPrice(
-                                                    card.priceInPennies,
-                                                    listing.discount,
-                                                    listing.nicePrices
-                                            )
-                                        }
+                                availableCards.sumOf { card ->
+                                    calculateListingPrice(
+                                            card.priceInPennies,
+                                            listing.discount,
+                                            listing.nicePrices
+                                    )
+                                }
                         val fullBody =
                                 buildFullBody(
                                         preBodyText,
@@ -641,7 +642,8 @@ private fun ListingCard(
                                         listing.imageUrl,
                                         listing.title,
                                         listing.lotPriceOverride,
-                                        totalPrice
+                                        totalPrice,
+                                        allSold
                                 )
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
@@ -654,18 +656,19 @@ private fun ListingCard(
                                         listing.nicePrices,
                                         includeLinks = false
                                 )
+                        val availableCards =
+                                listing.cards.filter { card ->
+                                    card.priceSold == null || card.priceSold <= 0
+                                }
+                        val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
                         val totalPrice =
-                                listing.cards
-                                        .filter { card ->
-                                            card.priceSold == null || card.priceSold <= 0
-                                        }
-                                        .sumOf { card ->
-                                            calculateListingPrice(
-                                                    card.priceInPennies,
-                                                    listing.discount,
-                                                    listing.nicePrices
-                                            )
-                                        }
+                                availableCards.sumOf { card ->
+                                    calculateListingPrice(
+                                            card.priceInPennies,
+                                            listing.discount,
+                                            listing.nicePrices
+                                    )
+                                }
                         val fullBody =
                                 buildFullBody(
                                         preBodyText,
@@ -674,7 +677,8 @@ private fun ListingCard(
                                         listing.imageUrl,
                                         listing.title,
                                         listing.lotPriceOverride,
-                                        totalPrice
+                                        totalPrice,
+                                        allSold
                                 )
                         copyToClipboard(fullBody)
                         onShowCopyToast("Body copied to clipboard")
@@ -2109,14 +2113,19 @@ private fun buildFullBody(
         imageUrl: String? = null,
         title: String? = null,
         lotPriceOverride: Long? = null,
-        totalPrice: Long? = null
+        totalPrice: Long? = null,
+        allSold: Boolean = false
 ): String {
     return buildString {
         if (title != null && lotPriceOverride != null && totalPrice != null) {
             append("# $title")
-            append(
-                    " - Lot value ${formatPrice(totalPrice)}, whole lot for ${formatPrice(lotPriceOverride)} or priced individually"
-            )
+            if (allSold) {
+                append(" - SOLD THANK YOU!!")
+            } else {
+                append(
+                        " - Lot value ${formatPrice(totalPrice)}, whole lot for ${formatPrice(lotPriceOverride)} or priced individually"
+                )
+            }
             append("\n\n")
         }
         if (preBodyText.isNotBlank()) {
@@ -2234,20 +2243,25 @@ private fun generateMarkdownBody(
 private fun buildAllListingsText(listings: List<Listing>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
         val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
+        val availableCards =
+                listing.cards.filter { card -> card.priceSold == null || card.priceSold <= 0 }
+        val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
         val totalPrice =
-                listing.cards
-                        .filter { card -> card.priceSold == null || card.priceSold <= 0 }
-                        .sumOf { card ->
-                            calculateListingPrice(
-                                    card.priceInPennies,
-                                    listing.discount,
-                                    listing.nicePrices
-                            )
-                        }
+                availableCards.sumOf { card ->
+                    calculateListingPrice(
+                            card.priceInPennies,
+                            listing.discount,
+                            listing.nicePrices
+                    )
+                }
         val priceSuffix =
-                if (listing.lotPriceOverride != null)
+                if (listing.lotPriceOverride != null) {
+                    if (allSold) {
+                        " - SOLD THANK YOU!!"
+                    } else {
                         " - Lot value ${formatPrice(totalPrice)}, whole lot for ${formatPrice(listing.lotPriceOverride)} or priced individually"
-                else ""
+                    }
+                } else ""
         val imagesSuffix =
                 if (!listing.imageUrl.isNullOrBlank()) " [Listing images](${listing.imageUrl})"
                 else ""
@@ -2258,10 +2272,15 @@ private fun buildAllListingsText(listings: List<Listing>): String {
 private fun buildAllListingsCompactText(listings: List<Listing>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
         val cardCount = listing.cards.size
+        val availableCards =
+                listing.cards.filter { card -> card.priceSold == null || card.priceSold <= 0 }
+        val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
+        val soldSuffix =
+                if (listing.lotPriceOverride != null && allSold) " - SOLD THANK YOU!!" else ""
         val imagesSuffix =
                 if (!listing.imageUrl.isNullOrBlank()) " - [Listing images](${listing.imageUrl})"
                 else ""
-        "${listing.title} $cardCount cards$imagesSuffix"
+        "${listing.title} $cardCount cards$soldSuffix$imagesSuffix"
     }
 }
 
