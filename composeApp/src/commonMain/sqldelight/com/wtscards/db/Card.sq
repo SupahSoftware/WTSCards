@@ -12,7 +12,7 @@ selectAll:
 SELECT * FROM CardEntity;
 
 selectUnsold:
-SELECT * FROM CardEntity WHERE priceSold IS NULL;
+SELECT * FROM CardEntity WHERE priceSold IS NULL OR id NOT IN (SELECT cardId FROM OrderCardEntity);
 
 selectById:
 SELECT * FROM CardEntity WHERE id = ?;
@@ -50,4 +50,4 @@ count:
 SELECT COUNT(*) FROM CardEntity;
 
 countUnsold:
-SELECT COUNT(*) FROM CardEntity WHERE priceSold IS NULL;
+SELECT COUNT(*) FROM CardEntity WHERE priceSold IS NULL OR id NOT IN (SELECT cardId FROM OrderCardEntity);
