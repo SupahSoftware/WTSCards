@@ -124,6 +124,10 @@ fun main() = application {
             }
         }
 
+        val onExportSingleOrderLabel: (Order, OrderViewModel) -> Unit = { order, viewModel ->
+            exportSingleOrderShippingLabel(order, viewModel)
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -143,6 +147,7 @@ fun main() = application {
                 importViewModel = importViewModel,
                 onBrowseFiles = onBrowseFiles,
                 onExportShippingLabels = onExportShippingLabels,
+                onExportSingleOrderLabel = onExportSingleOrderLabel,
                 onRestoreComplete = ::exitApplication
             )
         }
@@ -189,11 +194,23 @@ private fun exportShippingLabelsCsv(orders: List<Order>, viewModel: OrderViewMod
         viewModel.onDismissShippingLabelsDialog()
         return
     }
-    
+
     try {
         val csvContent = buildShippingLabelsCsv(orders)
         file.writeText(csvContent)
         viewModel.onShippingLabelsExported(orders.map { it.id })
+    } catch (e: Exception) {
+        viewModel.onShippingLabelsExportError(e.message ?: "Failed to save CSV file")
+    }
+}
+
+private fun exportSingleOrderShippingLabel(order: Order, viewModel: OrderViewModel) {
+    val file = selectSaveLocation() ?: return
+
+    try {
+        val csvContent = buildShippingLabelsCsv(listOf(order))
+        file.writeText(csvContent)
+        viewModel.onSingleOrderLabelExported(order.id)
     } catch (e: Exception) {
         viewModel.onShippingLabelsExportError(e.message ?: "Failed to save CSV file")
     }

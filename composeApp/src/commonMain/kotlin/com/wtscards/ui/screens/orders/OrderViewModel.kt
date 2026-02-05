@@ -141,6 +141,21 @@ class OrderViewModel(
         )
     }
 
+    fun onSingleOrderLabelExported(orderId: String) {
+        coroutineScope.launch {
+            try {
+                orderUseCase.updateStatus(orderId, OrderStatus.LABEL_CREATED)
+                uiState = uiState.copy(
+                    toast = ToastState("Exported shipping label", isError = false)
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    toast = ToastState(e.message ?: "Failed to update order status", isError = true)
+                )
+            }
+        }
+    }
+
     fun onSearchQueryChanged(query: String) {
         uiState = uiState.copy(searchQuery = query)
     }

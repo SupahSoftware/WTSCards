@@ -24,8 +24,10 @@ data class Order(
 
 object OrderStatus {
     const val NEW = "New"
+    const val RESERVED = "Reserved"
+    const val READY_FOR_LABEL = "Ready for label"
     const val LABEL_CREATED = "Label created"
     const val SHIPPED = "Shipped"
 
-    val allStatuses = listOf(NEW, LABEL_CREATED, SHIPPED)
+    val allStatuses = listOf(NEW, RESERVED, READY_FOR_LABEL, LABEL_CREATED, SHIPPED)
 }

@@ -81,6 +81,8 @@ import com.wtscards.ui.theme.bgSecondary
 import com.wtscards.ui.theme.bgSurface
 import com.wtscards.ui.theme.borderInput
 import com.wtscards.ui.theme.errorColor
+import com.wtscards.ui.theme.readyForLabelColor
+import com.wtscards.ui.theme.reservedColor
 import com.wtscards.ui.theme.successColor
 import com.wtscards.ui.theme.textOnAccent
 import com.wtscards.ui.theme.textPrimary
@@ -100,6 +102,7 @@ fun OrderScreen(
         onShowShippingLabelsDialog: () -> Unit,
         onDismissShippingLabelsDialog: () -> Unit,
         onExportShippingLabels: (List<Order>) -> Unit,
+        onCreateSingleLabel: (Order) -> Unit,
         onSearchQueryChanged: (String) -> Unit,
         onStatusFilterToggled: (String) -> Unit,
         onSortOptionChanged: (OrderSortOption) -> Unit,
@@ -178,6 +181,7 @@ fun OrderScreen(
                     onShowTotalOverrideDialog = onShowTotalOverrideDialog,
                     onDeleteOrder = onDeleteOrder,
                     onShowToast = onShowToast,
+                    onCreateSingleLabel = onCreateSingleLabel,
                     freeShippingEnabled = uiState.freeShippingEnabled,
                     freeShippingThreshold = uiState.freeShippingThreshold,
                     nicePricesEnabled = uiState.nicePricesEnabled
@@ -313,6 +317,8 @@ private fun HeaderRow(orders: List<Order>, statusFilters: Set<String>, onStatusF
                                             checkedColor =
                                                     when (status) {
                                                         OrderStatus.NEW -> errorColor
+                                                        OrderStatus.RESERVED -> reservedColor
+                                                        OrderStatus.READY_FOR_LABEL -> readyForLabelColor
                                                         OrderStatus.LABEL_CREATED -> warningColor
                                                         OrderStatus.SHIPPED -> successColor
                                                         else -> accentPrimary
@@ -397,6 +403,7 @@ private fun ContentArea(
         onShowTotalOverrideDialog: (String, Long?) -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
+        onCreateSingleLabel: (Order) -> Unit,
         freeShippingEnabled: Boolean,
         freeShippingThreshold: Long,
         nicePricesEnabled: Boolean
@@ -449,6 +456,7 @@ private fun ContentArea(
                         onShowTotalOverrideDialog = onShowTotalOverrideDialog,
                         onDeleteOrder = onDeleteOrder,
                         onShowToast = onShowToast,
+                        onCreateSingleLabel = onCreateSingleLabel,
                         freeShippingEnabled = freeShippingEnabled,
                         freeShippingThreshold = freeShippingThreshold,
                         nicePricesEnabled = nicePricesEnabled
@@ -659,7 +667,7 @@ private fun OrderDialogs(
 
     if (uiState.showShippingLabelsDialog) {
         ShippingLabelsConfirmDialog(
-                newOrders = uiState.newStatusOrders,
+                readyOrders = uiState.readyForLabelOrders,
                 onDismiss = onDismissShippingLabelsDialog,
                 onExport = onExportShippingLabels
         )
@@ -967,7 +975,7 @@ private fun SplitOrderConfirmDialog(
 
 @Composable
 private fun ShippingLabelsConfirmDialog(
-        newOrders: List<Order>,
+        readyOrders: List<Order>,
         onDismiss: () -> Unit,
         onExport: (List<Order>) -> Unit
 ) {
@@ -981,9 +989,9 @@ private fun ShippingLabelsConfirmDialog(
                 )
             },
             text = {
-                if (newOrders.isEmpty()) {
+                if (readyOrders.isEmpty()) {
                     Text(
-                            text = "No orders with 'New' status to export.",
+                            text = "No orders with 'Ready for label' status to export.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = textSecondary
                     )
@@ -991,13 +999,13 @@ private fun ShippingLabelsConfirmDialog(
                     Column {
                         Text(
                                 text =
-                                        "${newOrders.size} shipping label row${if (newOrders.size > 1) "s" else ""} will be created in a CSV file that Pirate Ship will accept as an import.",
+                                        "${readyOrders.size} shipping label row${if (readyOrders.size > 1) "s" else ""} will be created in a CSV file that Pirate Ship will accept as an import.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = textSecondary
                         )
 
                         val incompleteOrders =
-                                newOrders.filter { order ->
+                                readyOrders.filter { order ->
                                     order.streetAddress.isBlank() ||
                                             order.city.isBlank() ||
                                             order.state.isBlank() ||
@@ -1022,8 +1030,8 @@ private fun ShippingLabelsConfirmDialog(
             },
             confirmButton = {
                 Button(
-                        onClick = { onExport(newOrders) },
-                        enabled = newOrders.isNotEmpty(),
+                        onClick = { onExport(readyOrders) },
+                        enabled = readyOrders.isNotEmpty(),
                         colors =
                                 ButtonDefaults.buttonColors(
                                         containerColor = accentPrimary,
@@ -1076,6 +1084,7 @@ private fun OrderList(
         onShowTotalOverrideDialog: (String, Long?) -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
+        onCreateSingleLabel: (Order) -> Unit,
         freeShippingEnabled: Boolean,
         freeShippingThreshold: Long,
         nicePricesEnabled: Boolean
@@ -1100,6 +1109,7 @@ private fun OrderList(
                     onShowTotalOverrideDialog = onShowTotalOverrideDialog,
                     onDeleteOrder = onDeleteOrder,
                     onShowToast = onShowToast,
+                    onCreateSingleLabel = onCreateSingleLabel,
                     freeShippingEnabled = freeShippingEnabled,
                     freeShippingThreshold = freeShippingThreshold,
                     nicePricesEnabled = nicePricesEnabled
@@ -1121,6 +1131,7 @@ private fun OrderCard(
         onShowTotalOverrideDialog: (String, Long?) -> Unit,
         onDeleteOrder: (String) -> Unit,
         onShowToast: (String) -> Unit,
+        onCreateSingleLabel: (Order) -> Unit,
         freeShippingEnabled: Boolean,
         freeShippingThreshold: Long,
         nicePricesEnabled: Boolean
@@ -1196,6 +1207,8 @@ private fun OrderCard(
                         backgroundColor =
                                 when (order.status.trim()) {
                                     OrderStatus.NEW -> errorColor
+                                    OrderStatus.RESERVED -> reservedColor
+                                    OrderStatus.READY_FOR_LABEL -> readyForLabelColor
                                     OrderStatus.LABEL_CREATED -> warningColor
                                     OrderStatus.SHIPPED -> successColor
                                     else -> bgPrimary
@@ -1272,6 +1285,20 @@ private fun OrderCard(
                                     leadingIcon = {
                                         Icon(
                                                 Icons.Default.ContentCopy,
+                                                contentDescription = null,
+                                                tint = accentPrimary
+                                        )
+                                    }
+                            )
+                            DropdownMenuItem(
+                                    text = { Text("Create label", color = textPrimary) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        onCreateSingleLabel(order)
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                                Icons.Default.LocalShipping,
                                                 contentDescription = null,
                                                 tint = accentPrimary
                                         )

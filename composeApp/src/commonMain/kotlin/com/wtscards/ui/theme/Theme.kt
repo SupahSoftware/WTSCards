@@ -25,6 +25,8 @@ val successColor = Color(0xFF4CAF50)
 val errorColor = Color(0xFFF44336)
 val warningColor = Color(0xFFFFB300)
 val infoColor = Color(0xFF29B6F6)
+val reservedColor = Color(0xFF9C27B0)      // Purple
+val readyForLabelColor = Color(0xFF00BCD4) // Aqua/Teal
 
 val borderDivider = Color(0xFF333333)
 val borderInput = Color(0xFF555555)

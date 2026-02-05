@@ -46,8 +46,8 @@ data class OrderUiState(
     val defaultBoxWidth: String = "9",
     val defaultBoxHeight: String = "6"
 ) {
-    val newStatusOrders: List<Order>
-        get() = orders.filter { it.status == OrderStatus.NEW }
+    val readyForLabelOrders: List<Order>
+        get() = orders.filter { it.status == OrderStatus.READY_FOR_LABEL }
 
     val filteredOrders: List<Order>
         get() {

@@ -36,6 +36,7 @@ fun App(
         importViewModel: ImportViewModel,
         onBrowseFiles: () -> Unit,
         onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit,
+        onExportSingleOrderLabel: (Order, OrderViewModel) -> Unit,
         onRestoreComplete: () -> Unit
 ) {
     WTSCardsTheme {
@@ -45,6 +46,7 @@ fun App(
                     importViewModel = importViewModel,
                     onBrowseFiles = onBrowseFiles,
                     onExportShippingLabels = onExportShippingLabels,
+                    onExportSingleOrderLabel = onExportSingleOrderLabel,
                     onRestoreComplete = onRestoreComplete
             )
         }
@@ -57,6 +59,7 @@ fun MainScreen(
         importViewModel: ImportViewModel,
         onBrowseFiles: () -> Unit,
         onExportShippingLabels: (List<Order>, OrderViewModel) -> Unit,
+        onExportSingleOrderLabel: (Order, OrderViewModel) -> Unit,
         onRestoreComplete: () -> Unit
 ) {
     var currentRoute by remember { mutableStateOf(NavigationItem.Collection.route) }
@@ -211,6 +214,9 @@ fun MainScreen(
                                 orderViewModel::onDismissShippingLabelsDialog,
                         onExportShippingLabels = { orders ->
                             onExportShippingLabels(orders, orderViewModel)
+                        },
+                        onCreateSingleLabel = { order ->
+                            onExportSingleOrderLabel(order, orderViewModel)
                         },
                         onSearchQueryChanged = orderViewModel::onSearchQueryChanged,
                         onStatusFilterToggled = orderViewModel::onStatusFilterToggled,
