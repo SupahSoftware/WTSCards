@@ -143,7 +143,7 @@ fun ListingScreen(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            ListingScreenHeader(listings = uiState.listings, onShowCopyToast = onShowCopyToast)
+            ListingScreenHeader(listings = uiState.listings, cardIdsInOrders = uiState.cardIdsInOrders, onShowCopyToast = onShowCopyToast)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -230,7 +230,7 @@ fun ListingScreen(
 }
 
 @Composable
-private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (String) -> Unit) {
+private fun ListingScreenHeader(listings: List<Listing>, cardIdsInOrders: Set<String>, onShowCopyToast: (String) -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
                 text = "Listings",
@@ -241,7 +241,7 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
         val totalValueBeforeOverride =
                 listings.sumOf { listing ->
                     listing.cards
-                            .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                            .filter { card -> !isCardSold(card, cardIdsInOrders) }
                             .sumOf { card ->
                                 calculateListingPrice(
                                         card.priceInPennies,
@@ -253,7 +253,7 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
         val totalValue =
                 listings.sumOf { listing ->
                     val listingTotal = listing.cards
-                            .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                            .filter { card -> !isCardSold(card, cardIdsInOrders) }
                             .sumOf { card ->
                                 calculateListingPrice(
                                         card.priceInPennies,
@@ -295,12 +295,12 @@ private fun ListingScreenHeader(listings: List<Listing>, onShowCopyToast: (Strin
 
         ListingScreenHeaderMenu(
                 onCopyAllListingsDetailed = {
-                    val text = buildAllListingsText(listings)
+                    val text = buildAllListingsText(listings, cardIdsInOrders)
                     copyToClipboard(text)
                     onShowCopyToast("All listings copied to clipboard (detailed)")
                 },
                 onCopyAllListingsCompact = {
-                    val text = buildAllListingsCompactText(listings)
+                    val text = buildAllListingsCompactText(listings, cardIdsInOrders)
                     copyToClipboard(text)
                     onShowCopyToast("All listings copied to clipboard (compact)")
                 }
@@ -456,6 +456,7 @@ private fun ContentArea(
             else -> {
                 ListingList(
                         listings = uiState.filteredListings,
+                        cardIdsInOrders = uiState.cardIdsInOrders,
                         onEditListing = onEditListing,
                         onShowAddCardsDialog = onShowAddCardsDialog,
                         onShowDeleteListingDialog = onShowDeleteListingDialog,
@@ -475,6 +476,7 @@ private fun ContentArea(
 @Composable
 private fun ListingList(
         listings: List<Listing>,
+        cardIdsInOrders: Set<String>,
         onEditListing: (Listing) -> Unit,
         onShowAddCardsDialog: (String) -> Unit,
         onShowDeleteListingDialog: (String, String) -> Unit,
@@ -496,6 +498,7 @@ private fun ListingList(
         items(items = listings, key = { it.id }) { listing ->
             ListingCard(
                     listing = listing,
+                    cardIdsInOrders = cardIdsInOrders,
                     onEditListing = { onEditListing(listing) },
                     onShowAddCardsDialog = { onShowAddCardsDialog(listing.id) },
                     onShowDeleteListingDialog = {
@@ -520,6 +523,7 @@ private fun ListingList(
 @Composable
 private fun ListingCard(
         listing: Listing,
+        cardIdsInOrders: Set<String>,
         onEditListing: () -> Unit,
         onShowAddCardsDialog: () -> Unit,
         onShowDeleteListingDialog: () -> Unit,
@@ -531,7 +535,7 @@ private fun ListingCard(
         preBodyText: String,
         postBodyText: String
 ) {
-    val markdownBody = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
+    val markdownBody = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices, cardIdsInOrders)
 
     Column(
             modifier =
@@ -576,7 +580,7 @@ private fun ListingCard(
             if (listing.cards.isNotEmpty()) {
                 val totalPrice =
                         listing.cards
-                                .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                                .filter { card -> !isCardSold(card, cardIdsInOrders) }
                                 .sumOf { card ->
                                     calculateListingPrice(
                                             card.priceInPennies,
@@ -623,7 +627,7 @@ private fun ListingCard(
                     onCopyBodyWithLinks = {
                         val availableCards =
                                 listing.cards.filter { card ->
-                                    card.priceSold == null || card.priceSold <= 0
+                                    !isCardSold(card, cardIdsInOrders)
                                 }
                         val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
                         val totalPrice =
@@ -654,11 +658,12 @@ private fun ListingCard(
                                         listing.cards,
                                         listing.discount,
                                         listing.nicePrices,
+                                        cardIdsInOrders,
                                         includeLinks = false
                                 )
                         val availableCards =
                                 listing.cards.filter { card ->
-                                    card.priceSold == null || card.priceSold <= 0
+                                    !isCardSold(card, cardIdsInOrders)
                                 }
                         val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
                         val totalPrice =
@@ -693,7 +698,7 @@ private fun ListingCard(
             val sortedCards =
                     listing.cards.sortedWith(
                             compareBy<Card> { card ->
-                                if (card.priceSold != null && card.priceSold > 0) 1 else 0
+                                if (isCardSold(card, cardIdsInOrders)) 1 else 0
                             }
                                     .thenByDescending { card -> card.priceInPennies }
                     )
@@ -701,6 +706,7 @@ private fun ListingCard(
             sortedCards.forEach { card ->
                 CardItem(
                         card = card,
+                        cardIdsInOrders = cardIdsInOrders,
                         discountPercent = listing.discount,
                         nicePrices = listing.nicePrices,
                         onRemove = { onShowRemoveCardDialog(card.id, card.name) }
@@ -709,7 +715,7 @@ private fun ListingCard(
 
             val totalPrice =
                     listing.cards
-                            .filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                            .filter { card -> !isCardSold(card, cardIdsInOrders) }
                             .sumOf { card ->
                                 calculateListingPrice(
                                         card.priceInPennies,
@@ -849,9 +855,9 @@ private fun ListingOverflowMenu(
 }
 
 @Composable
-private fun CardItem(card: Card, discountPercent: Int, nicePrices: Boolean, onRemove: () -> Unit) {
+private fun CardItem(card: Card, cardIdsInOrders: Set<String>, discountPercent: Int, nicePrices: Boolean, onRemove: () -> Unit) {
     val adjustedPrice = calculateListingPrice(card.priceInPennies, discountPercent, nicePrices)
-    val isSold = card.priceSold != null && card.priceSold > 0
+    val isSold = isCardSold(card, cardIdsInOrders)
     val textColor = if (isSold) textTertiary else textPrimary
     val textDecoration = if (isSold) TextDecoration.LineThrough else null
 
@@ -2168,12 +2174,13 @@ private fun generateMarkdownBody(
         cards: List<Card>,
         discountPercent: Int,
         nicePrices: Boolean,
+        cardIdsInOrders: Set<String>,
         includeLinks: Boolean = true
 ): String {
     if (cards.isEmpty()) return ""
 
-    val availableCards = cards.filter { card -> card.priceSold == null || card.priceSold <= 0 }
-    val soldCards = cards.filter { card -> card.priceSold != null && card.priceSold > 0 }
+    val availableCards = cards.filter { card -> !isCardSold(card, cardIdsInOrders) }
+    val soldCards = cards.filter { card -> isCardSold(card, cardIdsInOrders) }
 
     val sections = mutableListOf<String>()
 
@@ -2240,11 +2247,11 @@ private fun generateMarkdownBody(
     return sections.joinToString("\n\n")
 }
 
-private fun buildAllListingsText(listings: List<Listing>): String {
+private fun buildAllListingsText(listings: List<Listing>, cardIdsInOrders: Set<String>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
-        val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices)
+        val body = generateMarkdownBody(listing.cards, listing.discount, listing.nicePrices, cardIdsInOrders)
         val availableCards =
-                listing.cards.filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                listing.cards.filter { card -> !isCardSold(card, cardIdsInOrders) }
         val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
         val totalPrice =
                 availableCards.sumOf { card ->
@@ -2269,11 +2276,11 @@ private fun buildAllListingsText(listings: List<Listing>): String {
     }
 }
 
-private fun buildAllListingsCompactText(listings: List<Listing>): String {
+private fun buildAllListingsCompactText(listings: List<Listing>, cardIdsInOrders: Set<String>): String {
     return listings.filter { it.cards.isNotEmpty() }.joinToString("\n\n") { listing ->
         val cardCount = listing.cards.size
         val availableCards =
-                listing.cards.filter { card -> card.priceSold == null || card.priceSold <= 0 }
+                listing.cards.filter { card -> !isCardSold(card, cardIdsInOrders) }
         val allSold = listing.cards.isNotEmpty() && availableCards.isEmpty()
         val soldSuffix =
                 if (listing.lotPriceOverride != null && allSold) " - SOLD THANK YOU!!" else ""
@@ -2287,6 +2294,10 @@ private fun buildAllListingsCompactText(listings: List<Listing>): String {
 private fun formatPrice(priceInPennies: Long): String {
     val dollars = priceInPennies / 100.0
     return "$${String.format("%.2f", dollars)}"
+}
+
+private fun isCardSold(card: Card, cardIdsInOrders: Set<String>): Boolean {
+    return (card.priceSold != null && card.priceSold > 0) && card.id in cardIdsInOrders
 }
 
 private fun copyToClipboard(text: String) {

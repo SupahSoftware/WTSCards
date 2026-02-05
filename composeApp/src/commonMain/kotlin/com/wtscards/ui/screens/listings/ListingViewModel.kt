@@ -33,6 +33,7 @@ class ListingViewModel(
         observeListings()
         observeCards()
         observeSettings()
+        observeOrders()
     }
 
     private fun observeListings() {
@@ -56,6 +57,17 @@ class ListingViewModel(
         cardUseCase
                 .getAllCardsFlow()
                 .onEach { cards -> uiState = uiState.copy(availableCards = cards) }
+                .catch {}
+                .launchIn(coroutineScope)
+    }
+
+    private fun observeOrders() {
+        orderUseCase
+                .getAllOrdersFlow()
+                .onEach { orders ->
+                    val cardIdsInOrders = orders.flatMap { it.cards.map { card -> card.id } }.toSet()
+                    uiState = uiState.copy(cardIdsInOrders = cardIdsInOrders)
+                }
                 .catch {}
                 .launchIn(coroutineScope)
     }

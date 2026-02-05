@@ -33,7 +33,8 @@ data class ListingUiState(
         val defaultBoxCost: String = "10.00",
         val defaultBoxLength: String = "6",
         val defaultBoxWidth: String = "9",
-        val defaultBoxHeight: String = "6"
+        val defaultBoxHeight: String = "6",
+        val cardIdsInOrders: Set<String> = emptySet()
 ) {
     val filteredListings: List<Listing>
         get() {
